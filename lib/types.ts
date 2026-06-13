@@ -22,6 +22,7 @@ export interface Application {
   region: ApplicationRegion | null;
   declaration_accepted: boolean;
   statement: string | null;
+  details: Record<string, unknown>;
   status: ApplicationStatus;
   cohort_id: string | null;
   created_at: string;

@@ -12,17 +12,49 @@ import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+const TOP_LEVEL_FORM_KEYS = new Set([
+  "full_name",
+  "email",
+  "phone",
+  "program",
+  "region",
+  "statement",
+  "declaration_accepted",
+  "title",
+  "first_name",
+  "middle_name",
+  "surname",
+  "mobile_number",
+  "email_personal",
+]);
+
 export async function submitApplication(formData: FormData) {
-  const fullName = String(formData.get("full_name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
-  const phone = String(formData.get("phone") || "").trim() || null;
-  const program = String(formData.get("program") || "").trim();
-  const programLevel = String(formData.get("program_level") || "diploma").trim();
   const region = String(formData.get("region") || "").trim() || null;
+  const returnTo = region === "usa" ? "/apply" : "/apply/degree";
+
+  let fullName = String(formData.get("full_name") || "").trim();
+  if (!fullName) {
+    fullName = [
+      formData.get("title"),
+      formData.get("first_name"),
+      formData.get("middle_name"),
+      formData.get("surname"),
+    ]
+      .map((v) => String(v || "").trim())
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  let email = String(formData.get("email") || "").trim();
+  if (!email) email = String(formData.get("email_personal") || "").trim();
+
+  let phone = String(formData.get("phone") || "").trim();
+  if (!phone) phone = String(formData.get("mobile_number") || "").trim();
+
+  const program = String(formData.get("program") || "").trim();
+  const programLevel = region === "usa" ? "diploma" : "degree";
   const statement = String(formData.get("statement") || "").trim() || null;
   const declarationAccepted = formData.get("declaration_accepted") === "on";
-
-  const returnTo = programLevel === "degree" ? "/apply/degree" : "/apply";
 
   if (!fullName || !email || !program) {
     redirect(`${returnTo}?error=Please+fill+in+all+required+fields`);
@@ -32,25 +64,33 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=You+must+agree+to+the+declaration+to+apply`);
   }
 
+  const details: Record<string, unknown> = {};
+  for (const key of new Set(formData.keys())) {
+    if (TOP_LEVEL_FORM_KEYS.has(key)) continue;
+    const values = formData.getAll(key).map((v) => String(v));
+    details[key] = values.length > 1 ? values : values[0];
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("applications").insert({
     full_name: fullName,
     email,
-    phone,
+    phone: phone || null,
     program,
     program_level: programLevel,
     region,
     declaration_accepted: declarationAccepted,
     statement,
+    details,
   });
 
   if (error) {
     redirect(`${returnTo}?error=${encodeURIComponent(error.message)}`);
   }
 
-  await sendNewApplicationEmail({ fullName, email, phone, program, statement });
+  await sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement });
 
-  if (programLevel === "degree") {
+  if (region !== "usa") {
     await sendAccreditationEmail({ to: email, fullName, program });
   }
 

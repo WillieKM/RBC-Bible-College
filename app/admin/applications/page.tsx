@@ -39,11 +39,23 @@ export default async function AdminApplicationsPage({
                 <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
                 <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
                 <p className="text-sm text-slate-500">
-                  {app.program_level === "degree" ? "Degree (TBCS)" : "Diploma (RBC)"}
-                  {app.region ? ` · ${app.region === "usa" ? "USA" : "International"}` : ""}
+                  {app.region === "usa" ? "RBCI-USA" : "RBCI-KE (TBCS)"}
                 </p>
                 {app.statement && (
                   <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>
+                )}
+                {app.details && Object.keys(app.details).length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-sm font-medium text-slate-600">Full application details</summary>
+                    <dl className="mt-2 space-y-1 text-sm text-slate-600">
+                      {Object.entries(app.details).map(([key, value]) => (
+                        <div key={key} className="flex flex-wrap gap-2">
+                          <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
+                          <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
                 )}
               </div>
               <form action={reviewApplication} className="flex shrink-0 flex-col gap-2">

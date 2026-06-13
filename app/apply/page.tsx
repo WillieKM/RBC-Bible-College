@@ -3,6 +3,10 @@ import { Declaration } from "@/components/Declaration";
 import Link from "next/link";
 import Image from "next/image";
 
+const inputClass =
+  "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold";
+const labelClass = "block text-sm font-medium text-slate-300";
+
 export default async function ApplyPage({
   searchParams,
 }: {
@@ -15,10 +19,8 @@ export default async function ApplyPage({
       <div className="w-full max-w-lg rounded-2xl bg-ink-light p-8 shadow-xl border border-gold/20">
         <div className="flex flex-col items-center text-center">
           <Image src="/logo.jpg" alt="Revelation Bible College International" width={72} height={72} className="rounded-full" />
-          <h1 className="mt-4 text-2xl font-bold text-gold">Apply for Admission</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Fill out the form below to submit your application to Revelation Bible College.
-          </p>
+          <h1 className="mt-4 text-xl font-bold text-gold">Revelation Bible College International</h1>
+          <p className="mt-1 text-sm text-slate-400">(RBCI-USA) Application Form</p>
         </div>
 
         {success && (
@@ -34,93 +36,108 @@ export default async function ApplyPage({
 
         {!success && (
           <form action={submitApplication} className="mt-6 space-y-4">
-            <input type="hidden" name="program_level" value="diploma" />
+            <input type="hidden" name="region" value="usa" />
+
+            <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Personal Information</h2>
+
             <div>
-              <label htmlFor="full_name" className="block text-sm font-medium text-slate-300">
-                Full name
-              </label>
-              <input
-                id="full_name"
-                name="full_name"
-                type="text"
-                required
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              />
+              <label htmlFor="full_name" className={labelClass}>What is your name *</label>
+              <input id="full_name" name="full_name" type="text" required className={inputClass} />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              />
+              <label htmlFor="phone" className={labelClass}>Contact Information — Telephone number *</label>
+              <input id="phone" name="phone" type="tel" required className={inputClass} />
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-slate-300">
-                Phone
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              />
+              <label htmlFor="email" className={labelClass}>Email Address *</label>
+              <input id="email" name="email" type="email" required className={inputClass} />
             </div>
             <div>
-              <label htmlFor="program" className="block text-sm font-medium text-slate-300">
-                Program
-              </label>
-              <select
-                id="program"
-                name="program"
-                required
-                defaultValue=""
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              >
-                <option value="" disabled>
-                  Select a program
-                </option>
-                <optgroup label="Diploma Programs">
-                  <option value="Diploma in Theology">Diploma in Theology</option>
-                  <option value="Diploma in Biblical Studies">Diploma in Biblical Studies</option>
-                  <option value="Diploma in Christian Ministry">Diploma in Christian Ministry</option>
-                </optgroup>
+              <label htmlFor="date_of_birth" className={labelClass}>Date of birth *</label>
+              <input id="date_of_birth" name="date_of_birth" type="date" required className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="gender" className={labelClass}>Gender *</label>
+              <select id="gender" name="gender" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
             <div>
-              <label htmlFor="region" className="block text-sm font-medium text-slate-300">
-                Where will you be studying from?
-              </label>
-              <select
-                id="region"
-                name="region"
-                required
-                defaultValue=""
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              >
-                <option value="" disabled>
-                  Select your region
-                </option>
-                <option value="usa">United States</option>
-                <option value="international">Outside the United States</option>
+              <label htmlFor="nationality" className={labelClass}>Nationality *</label>
+              <input id="nationality" name="nationality" type="text" required className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="city_of_residence" className={labelClass}>What is your city of Residence *</label>
+              <input id="city_of_residence" name="city_of_residence" type="text" required className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="occupation" className={labelClass}>Occupation</label>
+              <input id="occupation" name="occupation" type="text" className={inputClass} />
+            </div>
+
+            <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Marital Status</h2>
+
+            <div>
+              <label htmlFor="is_married" className={labelClass}>Are you married? *</label>
+              <select id="is_married" name="is_married" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
               </select>
             </div>
             <div>
-              <label htmlFor="statement" className="block text-sm font-medium text-slate-300">
-                Personal statement
-              </label>
-              <textarea
-                id="statement"
-                name="statement"
-                rows={4}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-              />
+              <label htmlFor="marriage_length" className={labelClass}>If yes, how long have you been in marriage?</label>
+              <input id="marriage_length" name="marriage_length" type="text" className={inputClass} />
             </div>
+            <div>
+              <label htmlFor="spouse_agrees" className={labelClass}>Does your spouse agree with your decision?</label>
+              <select id="spouse_agrees" name="spouse_agrees" defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="spouse_phone" className={labelClass}>Spouse Telephone number (if any)</label>
+              <input id="spouse_phone" name="spouse_phone" type="tel" className={inputClass} />
+            </div>
+
+            <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Education</h2>
+
+            <div>
+              <label htmlFor="highest_education" className={labelClass}>Highest level of education you have attained *</label>
+              <select id="highest_education" name="highest_education" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="PHD">PHD</option>
+                <option value="Masters">Masters</option>
+                <option value="Degree">Degree</option>
+                <option value="Diploma">Diploma</option>
+                <option value="Certificate">Certificate</option>
+                <option value="Basic Education">Basic Education</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="program" className={labelClass}>What level are you applying for in Revelation Bible College? *</label>
+              <select id="program" name="program" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="Certificate">Certificate</option>
+                <option value="Diploma">Diploma</option>
+                <option value="Bachelor's/Degree">Bachelor&apos;s/Degree</option>
+                <option value="Masters">Masters</option>
+                <option value="PHD">PHD</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="statement" className={labelClass}>Personal statement</label>
+              <textarea id="statement" name="statement" rows={4} className={inputClass} />
+            </div>
+
             <Declaration />
+
             <button
               type="submit"
               className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"
@@ -131,7 +148,7 @@ export default async function ApplyPage({
         )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          Applying for a Bachelor&apos;s, Master&apos;s, or Doctorate program?{" "}
+          Applying from Kenya or outside the United States?{" "}
           <Link href="/apply/degree" className="text-gold hover:underline">
             Apply here
           </Link>
