@@ -35,9 +35,22 @@ export default async function ApplyPage({
         )}
 
         {!success && (
-          <form action={submitApplication} className="mt-6 space-y-4">
+          <form action={submitApplication} className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="rbc" />
-            <input type="hidden" name="region" value="usa" />
+
+            <div>
+              <p className={labelClass}>Which campus / region are you applying from? *</p>
+              <div className="mt-2 flex gap-3">
+                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                  <input type="radio" name="region" value="usa" required defaultChecked className="sr-only" />
+                  USA Campus
+                </label>
+                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                  <input type="radio" name="region" value="international" required className="sr-only" />
+                  Kenya / Other (International)
+                </label>
+              </div>
+            </div>
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Personal Information</h2>
 
@@ -131,6 +144,31 @@ export default async function ApplyPage({
             <div>
               <label htmlFor="statement" className={labelClass}>Personal statement</label>
               <textarea id="statement" name="statement" rows={4} className={inputClass} />
+            </div>
+
+            <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Fees Structure</h2>
+
+            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=international]:checked]:block">
+              <p className="text-center text-xs uppercase tracking-widest text-slate-400">Kenya Campus</p>
+              <p className="mt-2 text-center font-semibold text-gold">DIPLOMA COURSE — TUITION FEES</p>
+              <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">KSH 60,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">KSH 1,000</span></div>
+              <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
+              <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">KSH 60,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">KSH 30,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">KSH 15,000</span></div>
+              <p className="mt-5 font-semibold text-gold">Payments should be made through</p>
+              <p className="mt-1">Lipa na M-Pesa</p>
+              <p>Paybill # 247247</p>
+              <p>A/C # 0729249697</p>
+            </div>
+
+            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=usa]:checked]:block">
+              <p className="text-center text-xs uppercase tracking-widest text-slate-400">USA Campus</p>
+              <p className="mt-3 text-center text-slate-300">
+                Tuition fees for the USA campus will be confirmed with you by email once your
+                application is reviewed.
+              </p>
             </div>
 
             <Declaration />

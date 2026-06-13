@@ -519,10 +519,27 @@ export default async function ApplyDegreePage({
 
             <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=usa]:checked]:block">
               <p className="text-center text-xs uppercase tracking-widest text-slate-400">USA Campus</p>
-              <p className="mt-3 text-center text-slate-300">
-                Tuition fees for the USA campus will be confirmed with you by email once your
-                application is reviewed.
-              </p>
+              <p className="mt-2 text-center font-semibold text-gold">BACHELOR&apos;S COURSE — TUITION FEES</p>
+              <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">$2,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">$250</span></div>
+              <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
+              <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">$2,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">$1,000</span></div>
+              <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">$500</span></div>
+
+              <div className="mt-5 border-t border-gold/20 pt-4">
+                <p className="text-center font-semibold text-gold">MASTER&apos;S COURSE — TUITION FEES</p>
+                <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">$2,300</span></div>
+                <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">$300</span></div>
+                <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
+                <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">$2,300</span></div>
+                <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">$1,150</span></div>
+                <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">$575</span></div>
+              </div>
+
+              <p className="mt-5 font-semibold text-gold">Payments should be made through</p>
+              <p className="mt-1">CashApp / Zelle</p>
+              <p>+1 (206) 326-8094</p>
             </div>
 
             <h2 className={sectionClass}>Declaration</h2>
