@@ -18,6 +18,7 @@ const TOP_LEVEL_FORM_KEYS = new Set([
   "phone",
   "program",
   "region",
+  "source",
   "statement",
   "declaration_accepted",
   "title",
@@ -29,8 +30,9 @@ const TOP_LEVEL_FORM_KEYS = new Set([
 ]);
 
 export async function submitApplication(formData: FormData) {
+  const source = String(formData.get("source") || "").trim();
   const region = String(formData.get("region") || "").trim() || null;
-  const returnTo = region === "usa" ? "/apply" : "/apply/degree";
+  const returnTo = source === "tbcs" ? "/apply/degree" : "/apply";
 
   let fullName = String(formData.get("full_name") || "").trim();
   if (!fullName) {
@@ -52,7 +54,7 @@ export async function submitApplication(formData: FormData) {
   if (!phone) phone = String(formData.get("mobile_number") || "").trim();
 
   const program = String(formData.get("program") || "").trim();
-  const programLevel = region === "usa" ? "diploma" : "degree";
+  const programLevel = source === "tbcs" ? "degree" : "diploma";
   const statement = String(formData.get("statement") || "").trim() || null;
   const declarationAccepted = formData.get("declaration_accepted") === "on";
 
@@ -90,7 +92,7 @@ export async function submitApplication(formData: FormData) {
 
   await sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement });
 
-  if (region !== "usa") {
+  if (source === "tbcs") {
     await sendAccreditationEmail({ to: email, fullName, program });
   }
 

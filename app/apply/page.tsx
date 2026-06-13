@@ -36,6 +36,7 @@ export default async function ApplyPage({
 
         {!success && (
           <form action={submitApplication} className="mt-6 space-y-4">
+            <input type="hidden" name="source" value="rbc" />
             <input type="hidden" name="region" value="usa" />
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Personal Information</h2>
@@ -125,10 +126,6 @@ export default async function ApplyPage({
                 <option value="" disabled>Select</option>
                 <option value="Certificate">Certificate</option>
                 <option value="Diploma">Diploma</option>
-                <option value="Bachelor's/Degree">Bachelor&apos;s/Degree</option>
-                <option value="Masters">Masters</option>
-                <option value="PHD">PHD</option>
-                <option value="Others">Others</option>
               </select>
             </div>
             <div>

@@ -39,7 +39,8 @@ export default async function AdminApplicationsPage({
                 <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
                 <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
                 <p className="text-sm text-slate-500">
-                  {app.region === "usa" ? "RBCI-USA" : "RBCI-KE (TBCS)"}
+                  {app.program_level === "degree" ? "TBCS (Bachelor's/Master's/Doctorate)" : "RBC Diploma"}
+                  {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
                 </p>
                 {app.statement && (
                   <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>

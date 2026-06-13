@@ -56,9 +56,9 @@ export default async function ApplyDegreePage({
             height={106}
             className="h-auto w-full max-w-[280px] rounded-lg"
           />
-          <h1 className="mt-4 text-2xl font-bold text-gold">Bachelor&apos;s and Master&apos;s Application Form</h1>
+          <h1 className="mt-4 text-2xl font-bold text-gold">Bachelor&apos;s, Master&apos;s &amp; Doctorate Application Form</h1>
           <p className="mt-1 text-sm text-slate-400">
-            (RBCI-KE) — offered in partnership with Tabernacle Bible College and Seminary
+            Offered in partnership with Tabernacle Bible College and Seminary
           </p>
         </div>
 
@@ -75,9 +75,22 @@ export default async function ApplyDegreePage({
         )}
 
         {!success && (
-          <form action={submitApplication} className="mt-6 space-y-4">
-            <input type="hidden" name="program_level" value="degree" />
-            <input type="hidden" name="region" value="international" />
+          <form action={submitApplication} className="group mt-6 space-y-4">
+            <input type="hidden" name="source" value="tbcs" />
+
+            <div>
+              <p className={labelClass}>Which campus / region are you applying from? *</p>
+              <div className="mt-2 flex gap-3">
+                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                  <input type="radio" name="region" value="usa" required className="sr-only" />
+                  USA Campus
+                </label>
+                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                  <input type="radio" name="region" value="international" required defaultChecked className="sr-only" />
+                  Kenya / Other (International)
+                </label>
+              </div>
+            </div>
 
             <h2 className={sectionClass}>Personal Information</h2>
             <p className="text-xs text-slate-400">Please take care that the exams you put on your legal name.</p>
@@ -456,6 +469,11 @@ export default async function ApplyDegreePage({
                   <option value="Master of Divinity (M.Div.)">Master of Divinity (M.Div.)</option>
                   <option value="Master of Arts in Christian Ministry">Master of Arts in Christian Ministry</option>
                 </optgroup>
+                <optgroup label="Doctorate Programs">
+                  <option value="Doctor of Theology (Th.D.)">Doctor of Theology (Th.D.)</option>
+                  <option value="Doctor of Divinity (D.Div.)">Doctor of Divinity (D.Div.)</option>
+                  <option value="Doctor of Ministry (D.Min.)">Doctor of Ministry (D.Min.)</option>
+                </optgroup>
               </select>
             </div>
             <div>
@@ -471,9 +489,11 @@ export default async function ApplyDegreePage({
               </select>
             </div>
 
-            <h2 className={sectionClass}>Fees Structure — Kenya Campus</h2>
-            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
-              <p className="text-center font-semibold text-gold">BACHELOR&apos;S COURSE — TUITION FEES</p>
+            <h2 className={sectionClass}>Fees Structure</h2>
+
+            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=international]:checked]:block">
+              <p className="text-center text-xs uppercase tracking-widest text-slate-400">Kenya Campus</p>
+              <p className="mt-2 text-center font-semibold text-gold">BACHELOR&apos;S COURSE — TUITION FEES</p>
               <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">KSH 120,000</span></div>
               <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">KSH 10,000</span></div>
               <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
@@ -495,6 +515,14 @@ export default async function ApplyDegreePage({
               <p className="mt-1">Lipa na M-Pesa</p>
               <p>Paybill # 247247</p>
               <p>A/C # 0729249697</p>
+            </div>
+
+            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=usa]:checked]:block">
+              <p className="text-center text-xs uppercase tracking-widest text-slate-400">USA Campus</p>
+              <p className="mt-3 text-center text-slate-300">
+                Tuition fees for the USA campus will be confirmed with you by email once your
+                application is reviewed.
+              </p>
             </div>
 
             <h2 className={sectionClass}>Declaration</h2>
