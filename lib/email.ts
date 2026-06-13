@@ -131,6 +131,25 @@ export async function sendGradedEmail(opts: {
     ));
 }
 
+// ─── Degree accreditation confirmation (to applicant) ──────────────────────
+
+export async function sendAccreditationEmail(opts: {
+  to: string;
+  fullName: string;
+  program: string;
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  await send(opts.to, `Your application — accreditation information`,
+    wrap("Accreditation Confirmation",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Thank you for applying for <strong>${opts.program}</strong>.</p>
+       <p style="font-size:15px;color:#475569;">This program is offered in partnership with Tabernacle Bible College and Seminary. We confirm that Tabernacle Bible College and Seminary is the accrediting institution for this program.</p>
+       <div style="margin-top:16px;text-align:center;"><img src="${baseUrl}/tbcs-logo.png" alt="Tabernacle Bible College and Seminary" style="max-width:280px;width:100%;height:auto;border-radius:8px;" /></div>
+       <p style="margin-top:16px;font-size:15px;color:#475569;">We'll be in touch with next steps regarding your application.</p>`
+    ));
+}
+
 // ─── Account invite (to new user) ──────────────────────────────────────────
 
 export async function sendAccountInviteEmail(opts: {

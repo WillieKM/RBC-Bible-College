@@ -2,7 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendNewApplicationEmail, sendApplicationDecisionEmail, sendAccountInviteEmail } from "@/lib/email";
+import {
+  sendNewApplicationEmail,
+  sendApplicationDecisionEmail,
+  sendAccountInviteEmail,
+  sendAccreditationEmail,
+} from "@/lib/email";
 import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,10 +17,19 @@ export async function submitApplication(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const program = String(formData.get("program") || "").trim();
+  const programLevel = String(formData.get("program_level") || "diploma").trim();
+  const region = String(formData.get("region") || "").trim() || null;
   const statement = String(formData.get("statement") || "").trim() || null;
+  const declarationAccepted = formData.get("declaration_accepted") === "on";
+
+  const returnTo = programLevel === "degree" ? "/apply/degree" : "/apply";
 
   if (!fullName || !email || !program) {
-    redirect("/apply?error=Please+fill+in+all+required+fields");
+    redirect(`${returnTo}?error=Please+fill+in+all+required+fields`);
+  }
+
+  if (!declarationAccepted) {
+    redirect(`${returnTo}?error=You+must+agree+to+the+declaration+to+apply`);
   }
 
   const supabase = await createClient();
@@ -24,16 +38,23 @@ export async function submitApplication(formData: FormData) {
     email,
     phone,
     program,
+    program_level: programLevel,
+    region,
+    declaration_accepted: declarationAccepted,
     statement,
   });
 
   if (error) {
-    redirect(`/apply?error=${encodeURIComponent(error.message)}`);
+    redirect(`${returnTo}?error=${encodeURIComponent(error.message)}`);
   }
 
   await sendNewApplicationEmail({ fullName, email, phone, program, statement });
 
-  redirect("/apply?success=1");
+  if (programLevel === "degree") {
+    await sendAccreditationEmail({ to: email, fullName, program });
+  }
+
+  redirect(`${returnTo}?success=1`);
 }
 
 export async function reviewApplication(formData: FormData) {

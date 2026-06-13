@@ -38,6 +38,10 @@ export default async function AdminApplicationsPage({
                 <p className="font-semibold text-slate-900">{app.full_name}</p>
                 <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
                 <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
+                <p className="text-sm text-slate-500">
+                  {app.program_level === "degree" ? "Degree (TBCS)" : "Diploma (RBC)"}
+                  {app.region ? ` · ${app.region === "usa" ? "USA" : "International"}` : ""}
+                </p>
                 {app.statement && (
                   <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>
                 )}

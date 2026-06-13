@@ -9,6 +9,8 @@ export interface Profile {
 }
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type ProgramLevel = "diploma" | "degree";
+export type ApplicationRegion = "usa" | "international";
 
 export interface Application {
   id: string;
@@ -16,6 +18,9 @@ export interface Application {
   email: string;
   phone: string | null;
   program: string;
+  program_level: ProgramLevel;
+  region: ApplicationRegion | null;
+  declaration_accepted: boolean;
   statement: string | null;
   status: ApplicationStatus;
   cohort_id: string | null;
