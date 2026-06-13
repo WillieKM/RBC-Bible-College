@@ -31,7 +31,7 @@ export default async function ProfessorAssignmentPage({
 
   return (
     <div>
-      <Link href={`/professor/courses/${assignment.course_id}`} className="text-sm text-blue-700 hover:underline">
+      <Link href={`/professor/courses/${assignment.course_id}`} className="text-sm text-gold-dark hover:underline">
         ← Back to {assignment.courses?.title}
       </Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{assignment.title}</h1>
@@ -51,7 +51,7 @@ export default async function ProfessorAssignmentPage({
             </div>
             {s.content && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{s.content}</p>}
             {s.file_url && (
-              <a href={s.file_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm text-blue-700 hover:underline">
+              <a href={s.file_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm text-gold-dark hover:underline">
                 View attached file →
               </a>
             )}
@@ -82,7 +82,7 @@ export default async function ProfessorAssignmentPage({
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
-              <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+              <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
                 {s.grade !== null ? "Update Grade" : "Save Grade"}
               </button>
               {s.graded_at && <span className="text-xs text-green-600">Graded {new Date(s.graded_at).toLocaleString()}</span>}

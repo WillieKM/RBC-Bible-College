@@ -21,7 +21,7 @@ export default async function ProfessorHomePage() {
           <Link
             key={course.id}
             href={`/professor/courses/${course.id}`}
-            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-blue-300"
+            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
           >
             <p className="font-semibold text-slate-900">
               {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}

@@ -1,6 +1,7 @@
 import { logout } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/types";
 import Link from "next/link";
+import Image from "next/image";
 
 export function DashboardShell({
   profile,
@@ -13,16 +14,19 @@ export function DashboardShell({
 }) {
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-gold/20 bg-ink">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
-            <span className="font-bold text-slate-900">Bible School Admin</span>
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/logo.jpg" alt="Revelation Bible College International" width={32} height={32} className="rounded-full" />
+              <span className="font-bold text-gold">Revelation Bible College</span>
+            </Link>
             <nav className="flex gap-4">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium text-slate-600 hover:text-blue-700"
+                  className="text-sm font-medium text-slate-300 hover:text-gold"
                 >
                   {link.label}
                 </Link>
@@ -30,11 +34,11 @@ export function DashboardShell({
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">
-              {profile.full_name} <span className="text-slate-400">({profile.role})</span>
+            <span className="text-sm text-slate-400">
+              {profile.full_name} <span className="text-slate-500">({profile.role})</span>
             </span>
             <form action={logout}>
-              <button className="text-sm font-medium text-slate-500 hover:text-red-600">
+              <button className="text-sm font-medium text-slate-400 hover:text-red-400">
                 Sign out
               </button>
             </form>

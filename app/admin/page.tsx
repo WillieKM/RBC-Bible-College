@@ -14,15 +14,15 @@ export default async function AdminHomePage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link href="/admin/applications" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300">
+        <Link href="/admin/applications" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
           <p className="text-sm font-medium text-slate-500">Pending Applications</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{pendingCount ?? 0}</p>
         </Link>
-        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300">
+        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
           <p className="text-sm font-medium text-slate-500">Courses</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{courseCount ?? 0}</p>
         </Link>
-        <Link href="/admin/users" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300">
+        <Link href="/admin/users" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
           <p className="text-sm font-medium text-slate-500">Students</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{studentCount ?? 0}</p>
         </Link>

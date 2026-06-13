@@ -34,7 +34,7 @@ export default async function StudentAssignmentPage({
 
   return (
     <div>
-      <Link href={`/student/courses/${assignment.course_id}`} className="text-sm text-blue-700 hover:underline">
+      <Link href={`/student/courses/${assignment.course_id}`} className="text-sm text-gold-dark hover:underline">
         ← Back to {assignment.courses?.title}
       </Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{assignment.title}</h1>
@@ -71,12 +71,12 @@ export default async function StudentAssignmentPage({
           <label className="block text-sm font-medium text-slate-700">Attach a file (optional)</label>
           <input name="file" type="file" className="mt-1 block text-sm" />
           {submission?.file_url && (
-            <a href={submission.file_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-blue-700 hover:underline">
+            <a href={submission.file_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-gold-dark hover:underline">
               View current file →
             </a>
           )}
         </div>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           {submission ? "Resubmit" : "Submit"}
         </button>
         {submission && (

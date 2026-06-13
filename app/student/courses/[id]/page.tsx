@@ -30,7 +30,7 @@ export default async function StudentCoursePage({
 
   return (
     <div>
-      <Link href="/student" className="text-sm text-blue-700 hover:underline">← Back to courses</Link>
+      <Link href="/student" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{enrollment.courses.title}</h1>
       {enrollment.courses.code && <p className="text-slate-500">{enrollment.courses.code}</p>}
 
@@ -42,7 +42,7 @@ export default async function StudentCoursePage({
             <Link
               key={a.id}
               href={`/student/assignments/${a.id}`}
-              className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-blue-300"
+              className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
             >
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-slate-900">{a.title}</p>
@@ -52,7 +52,7 @@ export default async function StudentCoursePage({
                       Graded: {submission.grade}{a.points_possible ? ` / ${a.points_possible}` : ""}
                     </span>
                   ) : (
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">Submitted</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Submitted</span>
                   )
                 ) : (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Not submitted</span>

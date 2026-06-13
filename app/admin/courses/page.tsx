@@ -46,7 +46,7 @@ export default async function AdminCoursesPage() {
             ))}
           </select>
         </div>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Add Course
         </button>
       </form>
@@ -55,7 +55,7 @@ export default async function AdminCoursesPage() {
         {(courses ?? []).map((course: Course) => (
           <div key={course.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
             <div>
-              <Link href={`/admin/courses/${course.id}`} className="font-semibold text-slate-900 hover:text-blue-700">
+              <Link href={`/admin/courses/${course.id}`} className="font-semibold text-slate-900 hover:text-gold-dark">
                 {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
               </Link>
               <p className="text-sm text-slate-500">

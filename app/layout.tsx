@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bible School Admin",
-  description: "Applications, courses, and assignment management",
+  title: "Revelation Bible College International",
+  description: "Applications, courses, and assignment management for Revelation Bible College International",
 };
 
 export default function RootLayout({

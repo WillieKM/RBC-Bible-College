@@ -1,7 +1,8 @@
 import nodemailer from "nodemailer";
 
-const SCHOOL_NAME = process.env.SCHOOL_NAME || "Bible School Admin";
-const SCHOOL_COLOR = "#1e3a8a";
+const SCHOOL_NAME = process.env.SCHOOL_NAME || "Revelation Bible College";
+const SCHOOL_COLOR = "#14110c";
+const SCHOOL_ACCENT = "#d4af37";
 
 function mailer() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return null;
@@ -26,7 +27,7 @@ function wrap(title: string, body: string): string {
 <body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.10);">
     <div style="background:${SCHOOL_COLOR};padding:28px 32px;color:white;">
-      <p style="margin:0 0 6px;font-size:12px;opacity:.65;text-transform:uppercase;letter-spacing:.08em;">${SCHOOL_NAME}</p>
+      <p style="margin:0 0 6px;font-size:12px;color:${SCHOOL_ACCENT};text-transform:uppercase;letter-spacing:.08em;">${SCHOOL_NAME}</p>
       <h1 style="margin:0;font-size:22px;font-weight:700;">${title}</h1>
     </div>
     <div style="padding:28px 32px;">${body}</div>
@@ -76,7 +77,7 @@ export async function sendApplicationDecisionEmail(opts: {
       wrap("Application Approved",
         `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved. You'll receive a separate email with instructions to set up your account.</p>
-         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_COLOR};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>` : ""}`
+         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>` : ""}`
       ));
   } else {
     await send(opts.to, `Update on your application to ${SCHOOL_NAME}`,
@@ -101,7 +102,7 @@ export async function sendNewSubmissionEmail(opts: {
     wrap("New Assignment Submission",
       `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
        <p style="font-size:15px;color:#475569;"><strong>${opts.studentName}</strong> submitted <strong>${opts.assignmentTitle}</strong> for <strong>${opts.courseTitle}</strong>.</p>
-       <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_COLOR};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Review Submission →</a></div>`
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Review Submission →</a></div>`
     ));
 }
 
@@ -126,7 +127,7 @@ export async function sendGradedEmail(opts: {
          <p style="margin:6px 0 0;font-size:20px;color:#1e293b;font-weight:700;">${opts.grade}${opts.pointsPossible ? ` / ${opts.pointsPossible}` : ""}</p>
        </div>
        ${opts.feedback ? `<p style="font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Feedback</p><p style="font-size:14px;color:#475569;white-space:pre-wrap;">${opts.feedback}</p>` : ""}
-       <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_COLOR};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Submission →</a></div>`
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Submission →</a></div>`
     ));
 }
 
@@ -142,6 +143,6 @@ export async function sendAccountInviteEmail(opts: {
     wrap("Welcome",
       `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
        <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${opts.role}</strong>. Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
-       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_COLOR};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>`
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>`
     ));
 }

@@ -19,7 +19,7 @@ export default async function StudentHomePage() {
           <Link
             key={e.id}
             href={`/student/courses/${e.courses.id}`}
-            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-blue-300"
+            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
           >
             <p className="font-semibold text-slate-900">
               {e.courses.title} {e.courses.code ? <span className="text-slate-400">({e.courses.code})</span> : null}

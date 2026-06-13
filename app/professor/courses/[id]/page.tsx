@@ -25,7 +25,7 @@ export default async function ProfessorCoursePage({
 
   return (
     <div>
-      <Link href="/professor" className="text-sm text-blue-700 hover:underline">← Back to courses</Link>
+      <Link href="/professor" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{course.title}</h1>
       {course.code && <p className="text-slate-500">{course.code}</p>}
 
@@ -48,7 +48,7 @@ export default async function ProfessorCoursePage({
           <label className="block text-sm font-medium text-slate-700">Description</label>
           <textarea name="description" rows={3} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Create Assignment
         </button>
       </form>
@@ -59,7 +59,7 @@ export default async function ProfessorCoursePage({
           <Link
             key={a.id}
             href={`/professor/assignments/${a.id}`}
-            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-blue-300"
+            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
           >
             <p className="font-semibold text-slate-900">{a.title}</p>
             <p className="text-sm text-slate-500">

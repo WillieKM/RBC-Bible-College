@@ -27,7 +27,7 @@ export default async function AdminUsersPage() {
             <option value="student">Student</option>
           </select>
         </div>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Invite User
         </button>
       </form>

@@ -25,7 +25,7 @@ export default async function AdminCourseDetailPage({
 
   return (
     <div>
-      <Link href="/admin/courses" className="text-sm text-blue-700 hover:underline">← Back to courses</Link>
+      <Link href="/admin/courses" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{course.title}</h1>
       {course.code && <p className="text-slate-500">{course.code}</p>}
 
@@ -54,7 +54,7 @@ export default async function AdminCourseDetailPage({
             <option key={s.id} value={s.id}>{s.full_name} ({s.email})</option>
           ))}
         </select>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Enroll
         </button>
       </form>

@@ -1,4 +1,5 @@
 import { login } from "@/lib/actions/auth";
+import Image from "next/image";
 
 export default async function LoginPage({
   searchParams,
@@ -8,20 +9,23 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm border border-slate-200">
-        <h1 className="text-2xl font-bold text-slate-900">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Bible School Admin</p>
+    <div className="flex min-h-screen items-center justify-center bg-ink px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-ink-light p-8 shadow-xl border border-gold/20">
+        <div className="flex flex-col items-center text-center">
+          <Image src="/logo.jpg" alt="Revelation Bible College International" width={88} height={88} className="rounded-full" />
+          <h1 className="mt-4 text-xl font-bold text-gold">Revelation Bible College</h1>
+          <p className="mt-1 text-sm text-slate-400">Sign in to continue</p>
+        </div>
 
         {error && (
-          <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
             {error}
           </div>
         )}
 
         <form action={login} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-300">
               Email
             </label>
             <input
@@ -29,11 +33,11 @@ export default async function LoginPage({
               name="email"
               type="email"
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
               Password
             </label>
             <input
@@ -41,12 +45,12 @@ export default async function LoginPage({
               name="password"
               type="password"
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"
           >
             Sign in
           </button>

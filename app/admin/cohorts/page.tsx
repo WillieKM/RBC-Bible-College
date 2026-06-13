@@ -23,7 +23,7 @@ export default async function AdminCohortsPage() {
           <label className="block text-sm font-medium text-slate-700">End date</label>
           <input name="end_date" type="date" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
-        <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Add Cohort
         </button>
       </form>
