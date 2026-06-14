@@ -6,6 +6,20 @@ import { sendAccountInviteEmail } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
+
+async function enrollStudentInProgramModules(supabase: SupabaseClient, studentId: string, programId: string) {
+  const { data: modules } = await supabase.from("courses").select("id").eq("program_id", programId);
+  if (!modules || modules.length === 0) return;
+
+  await supabase
+    .from("enrollments")
+    .upsert(
+      modules.map((m) => ({ course_id: m.id, student_id: studentId })),
+      { onConflict: "course_id,student_id", ignoreDuplicates: true }
+    );
+}
+
 // ─── Cohorts ────────────────────────────────────────────────────────────
 
 export async function createCohort(formData: FormData) {
@@ -69,8 +83,27 @@ export async function updateStudentProgram(formData: FormData) {
   const programId = String(formData.get("program_id") || "") || null;
 
   await supabase.from("profiles").update({ program_id: programId }).eq("id", id);
+
+  if (programId) {
+    await enrollStudentInProgramModules(supabase, id, programId);
+  }
+
   revalidatePath("/admin/users");
   revalidatePath("/admin/programs");
+  revalidatePath(`/admin/programs/${programId}`);
+}
+
+export async function enrollProgramInModules(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const programId = String(formData.get("program_id"));
+
+  const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+  for (const student of students ?? []) {
+    await enrollStudentInProgramModules(supabase, student.id, programId);
+  }
+
+  revalidatePath(`/admin/programs/${programId}`);
 }
 
 // ─── Courses ────────────────────────────────────────────────────────────
@@ -88,17 +121,82 @@ export async function createCourse(formData: FormData) {
   const professorId = String(formData.get("professor_id") || "") || null;
   if (!title) return;
 
-  await supabase.from("courses").insert({
-    title,
-    code,
-    description,
-    credits: credits ? Number(credits) : null,
-    cohort_id: cohortId,
-    program_id: programId,
-    professor_id: professorId,
-  });
+  const { data: course } = await supabase
+    .from("courses")
+    .insert({
+      title,
+      code,
+      description,
+      credits: credits ? Number(credits) : null,
+      cohort_id: cohortId,
+      program_id: programId,
+      professor_id: professorId,
+    })
+    .select("id")
+    .single();
+
+  if (programId && course) {
+    const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+    if (students && students.length > 0) {
+      await supabase
+        .from("enrollments")
+        .upsert(
+          students.map((s) => ({ course_id: course.id, student_id: s.id })),
+          { onConflict: "course_id,student_id", ignoreDuplicates: true }
+        );
+    }
+  }
+
   revalidatePath("/admin/courses");
   revalidatePath("/admin/programs");
+  revalidatePath(`/admin/programs/${programId}`);
+}
+
+export async function updateCourse(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+
+  const id = String(formData.get("id"));
+  const title = String(formData.get("title") || "").trim();
+  const code = String(formData.get("code") || "").trim() || null;
+  const description = String(formData.get("description") || "").trim() || null;
+  const credits = String(formData.get("credits") || "").trim();
+  const cohortId = String(formData.get("cohort_id") || "") || null;
+  const programId = String(formData.get("program_id") || "") || null;
+  const professorId = String(formData.get("professor_id") || "") || null;
+  const prerequisiteId = String(formData.get("prerequisite_id") || "") || null;
+  if (!title) return;
+
+  await supabase
+    .from("courses")
+    .update({
+      title,
+      code,
+      description,
+      credits: credits ? Number(credits) : null,
+      cohort_id: cohortId,
+      program_id: programId,
+      professor_id: professorId,
+      prerequisite_id: prerequisiteId,
+    })
+    .eq("id", id);
+
+  if (programId) {
+    const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+    if (students && students.length > 0) {
+      await supabase
+        .from("enrollments")
+        .upsert(
+          students.map((s) => ({ course_id: id, student_id: s.id })),
+          { onConflict: "course_id,student_id", ignoreDuplicates: true }
+        );
+    }
+  }
+
+  revalidatePath(`/admin/courses/${id}`);
+  revalidatePath("/admin/courses");
+  revalidatePath("/admin/programs");
+  revalidatePath(`/admin/programs/${programId}`);
 }
 
 export async function deleteCourse(formData: FormData) {

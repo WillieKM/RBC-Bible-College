@@ -55,6 +55,7 @@ export interface Course {
   description: string | null;
   credits: number | null;
   professor_id: string | null;
+  prerequisite_id: string | null;
   created_at: string;
 }
 

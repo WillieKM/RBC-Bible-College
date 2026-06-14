@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { assignProgramProfessor, createCourse, updateStudentProgram } from "@/lib/actions/admin";
+import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram } from "@/lib/actions/admin";
 import type { Cohort, Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -50,7 +50,17 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
       </form>
       <p className="mt-2 text-sm text-slate-500">The assigned professor is emailed whenever a new application comes in for this program.</p>
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Modules</h2>
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-800">Modules</h2>
+        {(modules ?? []).length > 0 && (students ?? []).length > 0 && (
+          <form action={enrollProgramInModules}>
+            <input type="hidden" name="program_id" value={(program as Program).id} />
+            <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              Enroll all students in all modules
+            </button>
+          </form>
+        )}
+      </div>
       <form action={createCourse} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="program_id" value={(program as Program).id} />
         <div>
