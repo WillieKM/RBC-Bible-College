@@ -29,6 +29,7 @@ const TOP_LEVEL_FORM_KEYS = new Set([
   "surname",
   "mobile_number",
   "email_personal",
+  "passport_photo",
 ]);
 
 export async function submitApplication(formData: FormData) {
@@ -75,6 +76,22 @@ export async function submitApplication(formData: FormData) {
     details[key] = values.length > 1 ? values : values[0];
   }
 
+  let photoUrl: string | null = null;
+  const photo = formData.get("passport_photo");
+  if (photo instanceof File && photo.size > 0) {
+    const admin = createAdminClient();
+    const ext = photo.name.split(".").pop() || "jpg";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await admin.storage
+      .from("application-photos")
+      .upload(path, photo, { contentType: photo.type });
+
+    if (!uploadError) {
+      const { data: publicUrl } = admin.storage.from("application-photos").getPublicUrl(path);
+      photoUrl = publicUrl.publicUrl;
+    }
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("applications").insert({
     full_name: fullName,
@@ -85,6 +102,7 @@ export async function submitApplication(formData: FormData) {
     region,
     declaration_accepted: declarationAccepted,
     statement,
+    photo_url: photoUrl,
     details,
   });
 

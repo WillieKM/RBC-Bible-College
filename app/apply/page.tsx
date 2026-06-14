@@ -35,7 +35,7 @@ export default async function ApplyPage({
         )}
 
         {!success && (
-          <form action={submitApplication} className="group mt-6 space-y-4">
+          <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="rbc" />
 
             <div>
@@ -66,6 +66,12 @@ export default async function ApplyPage({
                 Tuition fees will be confirmed with you by email once your application is
                 reviewed.
               </p>
+              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+                <p>Paybill: 542542</p>
+                <p>Account Number: 03009422856350</p>
+              </div>
             </div>
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Personal Information</h2>
@@ -105,6 +111,10 @@ export default async function ApplyPage({
             <div>
               <label htmlFor="occupation" className={labelClass}>Occupation</label>
               <input id="occupation" name="occupation" type="text" className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo</label>
+              <input id="passport_photo" name="passport_photo" type="file" accept="image/*" className={inputClass} />
             </div>
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Marital Status</h2>

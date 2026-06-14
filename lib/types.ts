@@ -31,6 +31,7 @@ export interface Application {
   region: ApplicationRegion | null;
   declaration_accepted: boolean;
   statement: string | null;
+  photo_url: string | null;
   details: Record<string, unknown>;
   status: ApplicationStatus;
   cohort_id: string | null;

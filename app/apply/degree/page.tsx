@@ -75,7 +75,7 @@ export default async function ApplyDegreePage({
         )}
 
         {!success && (
-          <form action={submitApplication} className="group mt-6 space-y-4">
+          <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="tbcs" />
 
             <div>
@@ -121,6 +121,12 @@ export default async function ApplyDegreePage({
                 Tuition fees will be confirmed with you by email once your application is
                 reviewed.
               </p>
+              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+                <p>Paybill: 542542</p>
+                <p>Account Number: 03009422856350</p>
+              </div>
             </div>
 
             <h2 className={sectionClass}>Personal Information</h2>
@@ -167,6 +173,10 @@ export default async function ApplyDegreePage({
             <div>
               <label htmlFor="middle_name" className={labelClass}>Middle Name</label>
               <input id="middle_name" name="middle_name" type="text" className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo</label>
+              <input id="passport_photo" name="passport_photo" type="file" accept="image/*" className={inputClass} />
             </div>
             <div>
               <label htmlFor="home_address" className={labelClass}>Home Address *</label>
@@ -236,8 +246,8 @@ export default async function ApplyDegreePage({
             </p>
 
             <div>
-              <label htmlFor="has_disability" className={labelClass}>Do you have a disability or learning difficulty? *</label>
-              <select id="has_disability" name="has_disability" required defaultValue="" className={inputClass}>
+              <label htmlFor="has_disability" className={labelClass}>Do you have a disability or learning difficulty?</label>
+              <select id="has_disability" name="has_disability" defaultValue="" className={inputClass}>
                 <option value="" disabled>Select</option>
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
@@ -245,9 +255,9 @@ export default async function ApplyDegreePage({
             </div>
             <div>
               <label htmlFor="has_medical_condition" className={labelClass}>
-                Do you have a medical condition or health difficulty that may affect your attendance or participation? *
+                Do you have a medical condition or health difficulty that may affect your attendance or participation?
               </label>
-              <select id="has_medical_condition" name="has_medical_condition" required defaultValue="" className={inputClass}>
+              <select id="has_medical_condition" name="has_medical_condition" defaultValue="" className={inputClass}>
                 <option value="" disabled>Select</option>
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
