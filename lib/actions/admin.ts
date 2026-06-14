@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
 
-async function enrollStudentInProgramModules(supabase: SupabaseClient, studentId: string, programId: string) {
+export async function enrollStudentInProgramModules(supabase: SupabaseClient, studentId: string, programId: string) {
   const { data: modules } = await supabase.from("courses").select("id").eq("program_id", programId);
   if (!modules || modules.length === 0) return;
 

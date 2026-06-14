@@ -10,6 +10,7 @@ import {
   sendAccreditationEmail,
 } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
+import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -175,6 +176,10 @@ export async function reviewApplication(formData: FormData) {
       role: "student",
       program_id: programId,
     });
+
+    if (programId) {
+      await enrollStudentInProgramModules(admin, invited.user.id, programId);
+    }
 
     await supabase
       .from("applications")
