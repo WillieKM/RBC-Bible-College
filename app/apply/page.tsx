@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold";
+  "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold [color-scheme:dark]";
 const labelClass = "block text-sm font-medium text-slate-300";
 
 export default async function ApplyPage({
@@ -61,26 +61,10 @@ export default async function ApplyPage({
               </div>
             </div>
 
-            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=international]:checked]:block">
-              <p className="text-center text-xs uppercase tracking-widest text-slate-400">Kenya Campus</p>
-              <p className="mt-2 text-center font-semibold text-gold">DIPLOMA COURSE — TUITION FEES</p>
-              <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">KSH 60,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">KSH 1,000</span></div>
-              <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
-              <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">KSH 60,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">KSH 30,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">KSH 15,000</span></div>
-              <p className="mt-5 font-semibold text-gold">Payments should be made through</p>
-              <p className="mt-1">Lipa na M-Pesa</p>
-              <p>Paybill # 247247</p>
-              <p>A/C # 0729249697</p>
-            </div>
-
-            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=usa]:checked]:block">
-              <p className="text-center text-xs uppercase tracking-widest text-slate-400">USA Campus</p>
-              <p className="mt-3 text-center text-slate-300">
-                Tuition fees for the USA campus will be confirmed with you by email once your
-                application is reviewed.
+            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
+              <p className="text-center text-slate-300">
+                Tuition fees will be confirmed with you by email once your application is
+                reviewed.
               </p>
             </div>
 
@@ -166,7 +150,7 @@ export default async function ApplyPage({
               </select>
             </div>
             <div>
-              <label htmlFor="statement" className={labelClass}>Personal statement</label>
+              <label htmlFor="statement" className={labelClass}>Life Experience</label>
               <textarea id="statement" name="statement" rows={4} className={inputClass} />
             </div>
 

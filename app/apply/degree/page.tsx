@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold";
+  "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold [color-scheme:dark]";
 const labelClass = "block text-sm font-medium text-slate-300";
 const sectionClass = "rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink";
 
@@ -116,55 +116,11 @@ export default async function ApplyDegreePage({
 
             <h2 className={sectionClass}>Fees Structure</h2>
 
-            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=international]:checked]:block">
-              <p className="text-center text-xs uppercase tracking-widest text-slate-400">Kenya Campus</p>
-              <p className="mt-2 text-center font-semibold text-gold">BACHELOR&apos;S COURSE — TUITION FEES</p>
-              <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">KSH 120,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">KSH 10,000</span></div>
-              <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
-              <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">KSH 120,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">KSH 60,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">KSH 30,000</span></div>
-
-              <div className="mt-5 border-t border-gold/20 pt-4">
-                <p className="text-center font-semibold text-gold">MASTER&apos;S COURSE — TUITION FEES</p>
-                <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">KSH 150,000</span></div>
-                <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">KSH 20,000</span></div>
-                <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
-                <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">KSH 150,000</span></div>
-                <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">KSH 75,000</span></div>
-                <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">KSH 37,500</span></div>
-              </div>
-
-              <p className="mt-5 font-semibold text-gold">Payments should be made through</p>
-              <p className="mt-1">Lipa na M-Pesa</p>
-              <p>Paybill # 247247</p>
-              <p>A/C # 0729249697</p>
-            </div>
-
-            <div className="hidden rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200 group-has-[input[name=region][value=usa]:checked]:block">
-              <p className="text-center text-xs uppercase tracking-widest text-slate-400">USA Campus</p>
-              <p className="mt-2 text-center font-semibold text-gold">BACHELOR&apos;S COURSE — TUITION FEES</p>
-              <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">$2,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">$250</span></div>
-              <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
-              <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">$2,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">$1,000</span></div>
-              <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">$500</span></div>
-
-              <div className="mt-5 border-t border-gold/20 pt-4">
-                <p className="text-center font-semibold text-gold">MASTER&apos;S COURSE — TUITION FEES</p>
-                <div className="mt-3 flex justify-between"><span>Total cost including materials</span><span className="font-semibold">$2,300</span></div>
-                <div className="mt-1 flex justify-between"><span>Enrolment Fee (paid on submitting the application form)</span><span className="font-semibold">$300</span></div>
-                <p className="mt-4 font-semibold text-gold">Payment Plans Available</p>
-                <div className="mt-1 flex justify-between"><span>Plan One — Pay in full</span><span className="font-semibold">$2,300</span></div>
-                <div className="mt-1 flex justify-between"><span>Plan Two — Pay in 2 instalments of</span><span className="font-semibold">$1,150</span></div>
-                <div className="mt-1 flex justify-between"><span>Plan Three — Pay in 4 instalments of</span><span className="font-semibold">$575</span></div>
-              </div>
-
-              <p className="mt-5 font-semibold text-gold">Payments should be made through</p>
-              <p className="mt-1">CashApp / Zelle</p>
-              <p>+1 (206) 326-8094</p>
+            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
+              <p className="text-center text-slate-300">
+                Tuition fees will be confirmed with you by email once your application is
+                reviewed.
+              </p>
             </div>
 
             <h2 className={sectionClass}>Personal Information</h2>
@@ -425,17 +381,14 @@ export default async function ApplyDegreePage({
               <label htmlFor="how_did_you_hear" className={labelClass}>How did you hear about Tabernacle Bible College and Seminary? *</label>
               <select id="how_did_you_hear" name="how_did_you_hear" required defaultValue="" className={inputClass}>
                 <option value="" disabled>Select</option>
-                <option value="I am family">I am family</option>
-                <option value="I am a past student">I am a past student</option>
-                <option value="Recommendation from family">Recommendation from family</option>
-                <option value="Recommended by pastor">Recommended by pastor</option>
-                <option value="Recommended from school/college tutor">Recommended from school/college tutor</option>
-                <option value="College advertising">College advertising</option>
+                <option value="Church or pastor recommendation">Church or pastor recommendation</option>
+                <option value="Friend or family member">Friend or family member</option>
+                <option value="Social media">Social media</option>
+                <option value="Online search">Online search</option>
                 <option value="College website">College website</option>
-                <option value="Stand at the College">Stand at the College</option>
-                <option value="College stand at vocational event">College stand at vocational event</option>
-                <option value="College presentation at school">College presentation at school</option>
-                <option value="Other ways">Other ways</option>
+                <option value="Past or current student">Past or current student</option>
+                <option value="Conference, crusade, or event">Conference, crusade, or event</option>
+                <option value="Other">Other</option>
               </select>
             </div>
             <div>
@@ -456,6 +409,15 @@ export default async function ApplyDegreePage({
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
                 <option value="I am self-funded">I am self-funded</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="spouse_consent" className={labelClass}>If you have a spouse (not sponsor), do they consent to you taking this course? *</label>
+              <select id="spouse_consent" name="spouse_consent" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+                <option value="I am not married">I am not married</option>
               </select>
             </div>
             <div>
@@ -541,6 +503,12 @@ export default async function ApplyDegreePage({
                 <option value="Part Time">Part Time</option>
                 <option value="Full Time">Full Time</option>
               </select>
+            </div>
+
+            <h2 className={sectionClass}>Life Experience</h2>
+            <div>
+              <label htmlFor="statement" className={labelClass}>Tell us about your life experience and your call to ministry</label>
+              <textarea id="statement" name="statement" rows={4} className={inputClass} />
             </div>
 
             <h2 className={sectionClass}>Declaration</h2>
