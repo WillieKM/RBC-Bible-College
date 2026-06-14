@@ -64,6 +64,32 @@ export async function sendNewApplicationEmail(opts: {
     ));
 }
 
+// ─── Application submitted (to program professor) ──────────────────────────
+
+export async function sendNewApplicationToProfessorEmail(opts: {
+  to: string;
+  professorName: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  program: string;
+}) {
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;width:100px;vertical-align:top;">${label}</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;font-weight:500;">${value}</td></tr>`;
+
+  await send(opts.to, `New Application for ${opts.program}: ${opts.fullName}`,
+    wrap("New Application In Your Program",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new application has been submitted for <strong>${opts.program}</strong>, which you're assigned to.</p>
+       <table style="width:100%;border-collapse:collapse;">
+         ${row("Name", opts.fullName)}
+         ${row("Email", opts.email)}
+         ${opts.phone ? row("Phone", opts.phone) : ""}
+       </table>
+       <p style="margin-top:16px;font-size:14px;color:#475569;">An admin will review this application and follow up.</p>`
+    ));
+}
+
 // ─── Application decision (to applicant) ───────────────────────────────────
 
 export async function sendApplicationDecisionEmail(opts: {

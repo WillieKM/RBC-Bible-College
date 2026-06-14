@@ -6,14 +6,20 @@ export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("*, courses(*, cohorts(name))")
-    .eq("student_id", profile.id);
+  const [{ data: enrollments }, { data: program }] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select("*, courses(*, cohorts(name))")
+      .eq("student_id", profile.id),
+    profile.program_id
+      ? supabase.from("programs").select("*").eq("id", profile.program_id).single()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">My Courses</h1>
+      <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
+      <p className="text-sm text-slate-500">{program ? program.name : "No program assigned yet"}</p>
       <div className="mt-6 space-y-2">
         {(enrollments ?? []).map((e) => (
           <Link

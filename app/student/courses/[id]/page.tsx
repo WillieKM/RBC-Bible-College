@@ -32,7 +32,12 @@ export default async function StudentCoursePage({
     <div>
       <Link href="/student" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{enrollment.courses.title}</h1>
-      {enrollment.courses.code && <p className="text-slate-500">{enrollment.courses.code}</p>}
+      <p className="text-slate-500">
+        {enrollment.courses.code}
+        {enrollment.courses.code && enrollment.courses.credits ? " · " : ""}
+        {enrollment.courses.credits ? `${enrollment.courses.credits} credits` : ""}
+      </p>
+      {enrollment.courses.description && <p className="mt-2 text-sm text-slate-600">{enrollment.courses.description}</p>}
 
       <h2 className="mt-6 text-lg font-semibold text-slate-800">Assignments</h2>
       <div className="mt-3 space-y-2">

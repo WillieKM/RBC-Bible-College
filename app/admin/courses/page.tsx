@@ -1,19 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { createCourse, deleteCourse } from "@/lib/actions/admin";
-import type { Cohort, Course, Profile } from "@/lib/types";
+import type { Cohort, Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
 export default async function AdminCoursesPage() {
   const supabase = await createClient();
 
-  const [{ data: courses }, { data: cohorts }, { data: professors }] = await Promise.all([
+  const [{ data: courses }, { data: cohorts }, { data: professors }, { data: programs }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
     supabase.from("cohorts").select("*").order("start_date", { ascending: false }),
     supabase.from("profiles").select("*").eq("role", "professor"),
+    supabase.from("programs").select("*").order("name", { ascending: true }),
   ]);
 
   const cohortMap = new Map((cohorts ?? []).map((c: Cohort) => [c.id, c.name]));
   const professorMap = new Map((professors ?? []).map((p: Profile) => [p.id, p.full_name]));
+  const programMap = new Map((programs ?? []).map((p: Program) => [p.id, p.name]));
 
   return (
     <div>
@@ -34,6 +36,15 @@ export default async function AdminCoursesPage() {
             <option value="">None</option>
             {(cohorts ?? []).map((c: Cohort) => (
               <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Program</label>
+          <select name="program_id" defaultValue="" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <option value="">None</option>
+            {(programs ?? []).map((p: Program) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         </div>
@@ -62,6 +73,8 @@ export default async function AdminCoursesPage() {
                 {course.cohort_id ? cohortMap.get(course.cohort_id) ?? "Unknown cohort" : "No cohort"}
                 {" · "}
                 {course.professor_id ? professorMap.get(course.professor_id) ?? "Unknown professor" : "Unassigned"}
+                {" · "}
+                {course.program_id ? programMap.get(course.program_id) ?? "Unknown program" : "No program"}
               </p>
             </div>
             <form action={deleteCourse}>

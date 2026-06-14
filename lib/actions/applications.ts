@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   sendNewApplicationEmail,
+  sendNewApplicationToProfessorEmail,
   sendApplicationDecisionEmail,
   sendAccountInviteEmail,
   sendAccreditationEmail,
@@ -92,6 +93,25 @@ export async function submitApplication(formData: FormData) {
 
   await sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement });
 
+  const admin = createAdminClient();
+  const { data: programRow } = await admin
+    .from("programs")
+    .select("professor_id, profiles(full_name, email)")
+    .eq("name", program)
+    .maybeSingle();
+
+  const programProfessor = programRow?.profiles as unknown as { full_name: string; email: string } | null;
+  if (programRow?.professor_id && programProfessor?.email) {
+    await sendNewApplicationToProfessorEmail({
+      to: programProfessor.email,
+      professorName: programProfessor.full_name,
+      fullName,
+      email,
+      phone: phone || null,
+      program,
+    });
+  }
+
   if (source === "tbcs") {
     await sendAccreditationEmail({ to: email, fullName, program });
   }
@@ -128,11 +148,32 @@ export async function reviewApplication(formData: FormData) {
       redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message)}`);
     }
 
+    let programId: string | null = null;
+    if (application.program) {
+      const { data: existingProgram } = await admin
+        .from("programs")
+        .select("id")
+        .eq("name", application.program)
+        .maybeSingle();
+
+      if (existingProgram) {
+        programId = existingProgram.id;
+      } else {
+        const { data: newProgram } = await admin
+          .from("programs")
+          .insert({ name: application.program, program_level: application.program_level })
+          .select("id")
+          .single();
+        programId = newProgram?.id ?? null;
+      }
+    }
+
     await admin.from("profiles").insert({
       id: invited.user.id,
       full_name: application.full_name,
       email: application.email,
       role: "student",
+      program_id: programId,
     });
 
     await supabase

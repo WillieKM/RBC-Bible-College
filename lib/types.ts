@@ -5,6 +5,15 @@ export interface Profile {
   full_name: string;
   email: string;
   role: Role;
+  program_id: string | null;
+  created_at: string;
+}
+
+export interface Program {
+  id: string;
+  name: string;
+  program_level: ProgramLevel;
+  professor_id: string | null;
   created_at: string;
 }
 
@@ -40,8 +49,11 @@ export interface Cohort {
 export interface Course {
   id: string;
   cohort_id: string | null;
+  program_id: string | null;
   title: string;
   code: string | null;
+  description: string | null;
+  credits: number | null;
   professor_id: string | null;
   created_at: string;
 }

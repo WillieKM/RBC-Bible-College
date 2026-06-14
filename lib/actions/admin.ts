@@ -29,6 +29,50 @@ export async function deleteCohort(formData: FormData) {
   revalidatePath("/admin/cohorts");
 }
 
+// ─── Programs ───────────────────────────────────────────────────────────
+
+export async function createProgram(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+
+  const name = String(formData.get("name") || "").trim();
+  const programLevel = String(formData.get("program_level") || "diploma");
+  if (!name || !["diploma", "degree"].includes(programLevel)) return;
+
+  await supabase.from("programs").insert({ name, program_level: programLevel });
+  revalidatePath("/admin/programs");
+}
+
+export async function deleteProgram(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  await supabase.from("programs").delete().eq("id", id);
+  revalidatePath("/admin/programs");
+}
+
+export async function assignProgramProfessor(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const professorId = String(formData.get("professor_id") || "") || null;
+
+  await supabase.from("programs").update({ professor_id: professorId }).eq("id", id);
+  revalidatePath("/admin/programs");
+  revalidatePath(`/admin/programs/${id}`);
+}
+
+export async function updateStudentProgram(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const programId = String(formData.get("program_id") || "") || null;
+
+  await supabase.from("profiles").update({ program_id: programId }).eq("id", id);
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/programs");
+}
+
 // ─── Courses ────────────────────────────────────────────────────────────
 
 export async function createCourse(formData: FormData) {
@@ -37,12 +81,24 @@ export async function createCourse(formData: FormData) {
 
   const title = String(formData.get("title") || "").trim();
   const code = String(formData.get("code") || "").trim() || null;
+  const description = String(formData.get("description") || "").trim() || null;
+  const credits = String(formData.get("credits") || "").trim();
   const cohortId = String(formData.get("cohort_id") || "") || null;
+  const programId = String(formData.get("program_id") || "") || null;
   const professorId = String(formData.get("professor_id") || "") || null;
   if (!title) return;
 
-  await supabase.from("courses").insert({ title, code, cohort_id: cohortId, professor_id: professorId });
+  await supabase.from("courses").insert({
+    title,
+    code,
+    description,
+    credits: credits ? Number(credits) : null,
+    cohort_id: cohortId,
+    program_id: programId,
+    professor_id: professorId,
+  });
   revalidatePath("/admin/courses");
+  revalidatePath("/admin/programs");
 }
 
 export async function deleteCourse(formData: FormData) {

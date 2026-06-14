@@ -27,7 +27,12 @@ export default async function AdminCourseDetailPage({
     <div>
       <Link href="/admin/courses" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{course.title}</h1>
-      {course.code && <p className="text-slate-500">{course.code}</p>}
+      <p className="text-slate-500">
+        {course.code}
+        {course.code && course.credits ? " · " : ""}
+        {course.credits ? `${course.credits} credits` : ""}
+      </p>
+      {course.description && <p className="mt-2 text-sm text-slate-600">{course.description}</p>}
 
       <h2 className="mt-6 text-lg font-semibold text-slate-800">Enrolled Students</h2>
       <div className="mt-3 space-y-2">

@@ -9,15 +9,15 @@ export default async function ProfessorHomePage() {
 
   const { data: courses } = await supabase
     .from("courses")
-    .select("*, cohorts(name)")
+    .select("*, cohorts(name), programs(name)")
     .eq("professor_id", profile.id)
     .order("created_at", { ascending: false });
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">My Courses</h1>
+      <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
       <div className="mt-6 space-y-2">
-        {(courses ?? []).map((course: Course & { cohorts?: { name: string } | null }) => (
+        {(courses ?? []).map((course: Course & { cohorts?: { name: string } | null; programs?: { name: string } | null }) => (
           <Link
             key={course.id}
             href={`/professor/courses/${course.id}`}
@@ -26,10 +26,13 @@ export default async function ProfessorHomePage() {
             <p className="font-semibold text-slate-900">
               {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
             </p>
-            <p className="text-sm text-slate-500">{course.cohorts?.name ?? "No cohort"}</p>
+            <p className="text-sm text-slate-500">
+              {course.cohorts?.name ?? "No cohort"}
+              {course.programs?.name ? ` · ${course.programs.name}` : ""}
+            </p>
           </Link>
         ))}
-        {(courses ?? []).length === 0 && <p className="text-sm text-slate-500">No courses assigned yet.</p>}
+        {(courses ?? []).length === 0 && <p className="text-sm text-slate-500">No modules assigned yet.</p>}
       </div>
     </div>
   );

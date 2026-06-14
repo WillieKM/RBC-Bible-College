@@ -27,7 +27,12 @@ export default async function ProfessorCoursePage({
     <div>
       <Link href="/professor" className="text-sm text-gold-dark hover:underline">← Back to courses</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{course.title}</h1>
-      {course.code && <p className="text-slate-500">{course.code}</p>}
+      <p className="text-slate-500">
+        {course.code}
+        {course.code && course.credits ? " · " : ""}
+        {course.credits ? `${course.credits} credits` : ""}
+      </p>
+      {course.description && <p className="mt-2 text-sm text-slate-600">{course.description}</p>}
 
       <h2 className="mt-6 text-lg font-semibold text-slate-800">New Assignment</h2>
       <form action={createAssignment} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

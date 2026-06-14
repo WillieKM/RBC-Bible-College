@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { inviteUser, updateUserRole } from "@/lib/actions/admin";
-import type { Profile } from "@/lib/types";
+import { inviteUser, updateUserRole, updateStudentProgram } from "@/lib/actions/admin";
+import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
-  const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  const [{ data: profiles }, { data: programs }] = await Promise.all([
+    supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+    supabase.from("programs").select("*").order("name", { ascending: true }),
+  ]);
 
   return (
     <div>
@@ -39,17 +42,33 @@ export default async function AdminUsersPage() {
               <p className="font-semibold text-slate-900">{p.full_name}</p>
               <p className="text-sm text-slate-500">{p.email}</p>
             </div>
-            <form action={updateUserRole} className="flex items-center gap-2">
-              <input type="hidden" name="id" value={p.id} />
-              <select name="role" defaultValue={p.role} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">
-                <option value="admin">Admin</option>
-                <option value="professor">Professor</option>
-                <option value="student">Student</option>
-              </select>
-              <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                Save
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              <form action={updateUserRole} className="flex items-center gap-2">
+                <input type="hidden" name="id" value={p.id} />
+                <select name="role" defaultValue={p.role} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">
+                  <option value="admin">Admin</option>
+                  <option value="professor">Professor</option>
+                  <option value="student">Student</option>
+                </select>
+                <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                  Save
+                </button>
+              </form>
+              {p.role === "student" && (
+                <form action={updateStudentProgram} className="flex items-center gap-2">
+                  <input type="hidden" name="id" value={p.id} />
+                  <select name="program_id" defaultValue={p.program_id ?? ""} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">
+                    <option value="">No program</option>
+                    {(programs ?? []).map((program: Program) => (
+                      <option key={program.id} value={program.id}>{program.name}</option>
+                    ))}
+                  </select>
+                  <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                    Save
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         ))}
         {(profiles ?? []).length === 0 && <p className="text-sm text-slate-500">No users yet.</p>}
