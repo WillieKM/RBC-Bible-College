@@ -6,7 +6,6 @@ import {
   sendNewApplicationEmail,
   sendNewApplicationToProfessorEmail,
   sendApplicationDecisionEmail,
-  sendAccountInviteEmail,
   sendAccreditationEmail,
 } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
@@ -213,7 +212,6 @@ export async function reviewApplication(formData: FormData) {
       .eq("id", id);
 
     await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
-    await sendAccountInviteEmail({ to: application.email, fullName: application.full_name, role: "student", loginUrl: `${baseUrl}/login` });
   } else {
     await supabase
       .from("applications")
