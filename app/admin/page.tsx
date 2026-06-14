@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ApplyLinks } from "@/components/ApplyLinks";
 import Link from "next/link";
 
 export default async function AdminHomePage() {
@@ -54,6 +55,10 @@ export default async function AdminHomePage() {
           Manage Users
         </Link>
       </div>
+
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Application Links</h2>
+      <p className="mt-1 text-sm text-slate-500">Share these with prospective students.</p>
+      <ApplyLinks />
     </div>
   );
 }
