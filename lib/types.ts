@@ -6,6 +6,7 @@ export interface Profile {
   email: string;
   role: Role;
   program_id: string | null;
+  student_number: string | null;
   created_at: string;
 }
 

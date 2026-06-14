@@ -187,12 +187,20 @@ export async function reviewApplication(formData: FormData) {
       }
     }
 
+    const year = new Date().getFullYear();
+    const { count: studentCount } = await admin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .like("student_number", `RBC-${year}-%`);
+    const studentNumber = `RBC-${year}-${String((studentCount ?? 0) + 1).padStart(4, "0")}`;
+
     await admin.from("profiles").insert({
       id: invited.user.id,
       full_name: application.full_name,
       email: application.email,
       role: "student",
       program_id: programId,
+      student_number: studentNumber,
     });
 
     if (programId) {
@@ -204,7 +212,7 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString(), cohort_id: cohortId })
       .eq("id", id);
 
-    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login` });
+    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
     await sendAccountInviteEmail({ to: application.email, fullName: application.full_name, role: "student", loginUrl: `${baseUrl}/login` });
   } else {
     await supabase

@@ -70,6 +70,9 @@ export default async function AdminStudentsPage() {
               <div>
                 <p className="font-semibold text-slate-900">{student.full_name}</p>
                 <p className="text-sm text-slate-500">{student.email}</p>
+                {student.student_number && (
+                  <p className="text-xs text-slate-400">Student ID: {student.student_number}</p>
+                )}
               </div>
               <div className="text-right">
                 {program ? (

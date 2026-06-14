@@ -60,6 +60,9 @@ export default async function StudentHomePage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
       <p className="text-sm text-slate-500">{program ? program.name : "No program assigned yet"}</p>
+      {profile.student_number && (
+        <p className="text-sm text-slate-500">Student ID: {profile.student_number}</p>
+      )}
 
       {profile.program_id && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

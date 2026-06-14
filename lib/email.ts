@@ -97,12 +97,14 @@ export async function sendApplicationDecisionEmail(opts: {
   fullName: string;
   approved: boolean;
   loginUrl?: string;
+  studentNumber?: string;
 }) {
   if (opts.approved) {
     await send(opts.to, `Your application to ${SCHOOL_NAME} has been approved`,
       wrap("Application Approved",
         `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved. You'll receive a separate email with instructions to set up your account.</p>
+         ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Your student ID is <strong>${opts.studentNumber}</strong>. Please keep this for your records.</p>` : ""}
          ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>` : ""}`
       ));
   } else {
