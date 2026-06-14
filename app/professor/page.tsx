@@ -58,24 +58,42 @@ export default async function ProfessorHomePage() {
       )}
 
       <h2 className="mt-6 text-lg font-semibold text-slate-800">Modules</h2>
-      <div className="mt-3 space-y-2">
-        {(courses ?? []).map((course: Course & { cohorts?: { name: string } | null; programs?: { name: string } | null }) => (
-          <Link
-            key={course.id}
-            href={`/professor/courses/${course.id}`}
-            className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
-          >
-            <p className="font-semibold text-slate-900">
-              {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
-            </p>
-            <p className="text-sm text-slate-500">
-              {course.cohorts?.name ?? "No cohort"}
-              {course.programs?.name ? ` · ${course.programs.name}` : ""}
-            </p>
-          </Link>
-        ))}
-        {(courses ?? []).length === 0 && <p className="text-sm text-slate-500">No modules assigned yet.</p>}
-      </div>
+      {(() => {
+        type CourseWithRelations = Course & { cohorts?: { name: string } | null; programs?: { name: string } | null };
+        const NO_PROGRAM = "No program assigned";
+        const groups = new Map<string, CourseWithRelations[]>();
+        for (const course of (courses ?? []) as CourseWithRelations[]) {
+          const programName = course.programs?.name ?? NO_PROGRAM;
+          const list = groups.get(programName) ?? [];
+          list.push(course);
+          groups.set(programName, list);
+        }
+        const sortedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+
+        if (sortedGroups.length === 0) {
+          return <p className="mt-3 text-sm text-slate-500">No modules assigned yet.</p>;
+        }
+
+        return sortedGroups.map(([programName, programCourses]) => (
+          <div key={programName} className="mt-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{programName}</h3>
+            <div className="mt-2 space-y-2">
+              {programCourses.map((course) => (
+                <Link
+                  key={course.id}
+                  href={`/professor/courses/${course.id}`}
+                  className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
+                >
+                  <p className="font-semibold text-slate-900">
+                    {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
+                  </p>
+                  <p className="text-sm text-slate-500">{course.cohorts?.name ?? "No cohort"}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ));
+      })()}
     </div>
   );
 }

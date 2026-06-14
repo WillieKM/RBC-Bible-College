@@ -56,41 +56,61 @@ export default async function AdminStudentsPage() {
     return credits;
   }
 
+  const NO_PROGRAM = "No program assigned";
+  const studentGroups = new Map<string, Profile[]>();
+  for (const student of (students ?? []) as Profile[]) {
+    const programName = student.program_id ? programMap.get(student.program_id)?.name ?? NO_PROGRAM : NO_PROGRAM;
+    const list = studentGroups.get(programName) ?? [];
+    list.push(student);
+    studentGroups.set(programName, list);
+  }
+  const sortedGroups = [...studentGroups.entries()].sort(([a], [b]) => {
+    if (a === NO_PROGRAM) return 1;
+    if (b === NO_PROGRAM) return -1;
+    return a.localeCompare(b);
+  });
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Students</h1>
 
-      <div className="mt-6 space-y-2">
-        {(students ?? []).map((student: Profile) => {
-          const program = student.program_id ? programMap.get(student.program_id) : null;
-          const total = student.program_id ? totalCreditsByProgram.get(student.program_id) ?? 0 : 0;
-          const completed = completedCredits(student.id, student.program_id);
-          return (
-            <div key={student.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-              <div>
-                <p className="font-semibold text-slate-900">{student.full_name}</p>
-                <p className="text-sm text-slate-500">{student.email}</p>
-                {student.student_number && (
-                  <p className="text-xs text-slate-400">Student ID: {student.student_number}</p>
-                )}
-              </div>
-              <div className="text-right">
-                {program ? (
-                  <>
-                    <Link href={`/admin/programs/${program.id}`} className="text-sm font-medium text-gold-dark hover:underline">
-                      {program.name}
-                    </Link>
-                    <p className="text-sm text-slate-500">{completed} of {total} credits completed</p>
-                  </>
-                ) : (
-                  <span className="text-sm text-slate-400">No program assigned</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        {(students ?? []).length === 0 && <p className="text-sm text-slate-500">No students yet.</p>}
-      </div>
+      {sortedGroups.length === 0 && <p className="mt-6 text-sm text-slate-500">No students yet.</p>}
+
+      {sortedGroups.map(([programName, programStudents]) => (
+        <div key={programName} className="mt-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{programName}</h2>
+          <div className="mt-2 space-y-2">
+            {programStudents.map((student) => {
+              const program = student.program_id ? programMap.get(student.program_id) : null;
+              const total = student.program_id ? totalCreditsByProgram.get(student.program_id) ?? 0 : 0;
+              const completed = completedCredits(student.id, student.program_id);
+              return (
+                <div key={student.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">{student.full_name}</p>
+                    <p className="text-sm text-slate-500">{student.email}</p>
+                    {student.student_number && (
+                      <p className="text-xs text-slate-400">Student ID: {student.student_number}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {program ? (
+                      <>
+                        <Link href={`/admin/programs/${program.id}`} className="text-sm font-medium text-gold-dark hover:underline">
+                          {program.name}
+                        </Link>
+                        <p className="text-sm text-slate-500">{completed} of {total} credits completed</p>
+                      </>
+                    ) : (
+                      <span className="text-sm text-slate-400">No program assigned</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
