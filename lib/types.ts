@@ -58,6 +58,7 @@ export interface Course {
   credits: number | null;
   professor_id: string | null;
   prerequisite_id: string | null;
+  release_days: number | null;
   created_at: string;
 }
 

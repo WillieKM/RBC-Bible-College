@@ -179,6 +179,28 @@ export async function sendAccreditationEmail(opts: {
     ));
 }
 
+// ─── Module release notification (to student) ──────────────────────────────
+
+export async function sendModuleReleaseEmail(opts: {
+  to: string;
+  studentName: string;
+  moduleTitle: string;
+  moduleCode: string | null;
+  programName: string;
+  portalUrl: string;
+}) {
+  await send(opts.to, `New module available: ${opts.moduleTitle}`,
+    wrap("New Module Available",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new module is now available for you in your <strong>${opts.programName}</strong> program:</p>
+       <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${opts.moduleTitle}${opts.moduleCode ? ` <span style="font-size:14px;font-weight:400;color:#64748b;">(${opts.moduleCode})</span>` : ""}</p>
+       </div>
+       <p style="font-size:15px;color:#475569;">Log in to your student portal to access the module, view assignments, and submit your work.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Student Portal →</a></div>`
+    ));
+}
+
 // ─── Account invite (to new user) ──────────────────────────────────────────
 
 export async function sendAccountInviteEmail(opts: {

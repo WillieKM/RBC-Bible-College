@@ -165,6 +165,8 @@ export async function updateCourse(formData: FormData) {
   const programId = String(formData.get("program_id") || "") || null;
   const professorId = String(formData.get("professor_id") || "") || null;
   const prerequisiteId = String(formData.get("prerequisite_id") || "") || null;
+  const releaseDaysRaw = String(formData.get("release_days") || "").trim();
+  const releaseDays = releaseDaysRaw !== "" ? Number(releaseDaysRaw) : null;
   if (!title) return;
 
   await supabase
@@ -178,6 +180,7 @@ export async function updateCourse(formData: FormData) {
       program_id: programId,
       professor_id: professorId,
       prerequisite_id: prerequisiteId,
+      release_days: releaseDays,
     })
     .eq("id", id);
 

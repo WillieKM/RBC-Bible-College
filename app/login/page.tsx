@@ -1,20 +1,37 @@
 import { login } from "@/lib/actions/auth";
 import Image from "next/image";
 
+const PORTALS = {
+  student: {
+    title: "Student Portal",
+    subtitle: "Sign in to access your modules and assignments",
+  },
+  professor: {
+    title: "Professor Portal",
+    subtitle: "Sign in to manage your courses and grade submissions",
+  },
+  admin: {
+    title: "Admin Sign In",
+    subtitle: "Sign in to manage the school",
+  },
+} as const;
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; portal?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, portal } = await searchParams;
+  const portalKey = portal === "student" || portal === "professor" || portal === "admin" ? portal : null;
+  const { title, subtitle } = portalKey ? PORTALS[portalKey] : { title: "Sign In", subtitle: "Sign in to continue" };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
       <div className="w-full max-w-sm rounded-2xl bg-ink-light p-8 shadow-xl border border-gold/20">
         <div className="flex flex-col items-center text-center">
           <Image src="/logo.jpg" alt="Revelation Bible College International" width={88} height={88} className="rounded-full" />
-          <h1 className="mt-4 text-xl font-bold text-gold">Revelation Bible College</h1>
-          <p className="mt-1 text-sm text-slate-400">Sign in to continue</p>
+          <h1 className="mt-4 text-xl font-bold text-gold">{title}</h1>
+          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
         </div>
 
         {error && (

@@ -93,6 +93,18 @@ export default async function AdminCourseDetailPage({
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Send notification after (days)</label>
+          <input
+            name="release_days"
+            type="number"
+            min="0"
+            defaultValue={course.release_days ?? ""}
+            placeholder="e.g. 7"
+            className="mt-1 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <p className="mt-1 text-xs text-slate-400">Days after enrollment to email students about this module. Leave blank to disable.</p>
+        </div>
         <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
           Save
         </button>

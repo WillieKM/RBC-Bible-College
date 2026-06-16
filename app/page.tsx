@@ -57,12 +57,26 @@ export default function Home() {
         </div>
       </div>
 
-      <Link
-        href="/login"
-        className="mt-8 rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
-      >
-        Sign In
-      </Link>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link
+          href="/login?portal=student"
+          className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
+        >
+          Student Portal
+        </Link>
+        <Link
+          href="/login?portal=professor"
+          className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
+        >
+          Professor Portal
+        </Link>
+        <Link
+          href="/login?portal=admin"
+          className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
+        >
+          Admin Sign In
+        </Link>
+      </div>
     </div>
   );
 }
