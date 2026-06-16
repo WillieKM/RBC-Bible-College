@@ -86,12 +86,26 @@ export default async function AdminStudentsPage() {
               const completed = completedCredits(student.id, student.program_id);
               return (
                 <div key={student.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-                  <div>
-                    <p className="font-semibold text-slate-900">{student.full_name}</p>
-                    <p className="text-sm text-slate-500">{student.email}</p>
-                    {student.student_number && (
-                      <p className="text-xs text-slate-400">Student ID: {student.student_number}</p>
+                  <div className="flex items-center gap-3">
+                    {student.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={student.avatar_url}
+                        alt={student.full_name}
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-gold/30"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10 text-sm font-bold text-gold">
+                        {student.full_name.charAt(0).toUpperCase()}
+                      </div>
                     )}
+                    <div>
+                      <p className="font-semibold text-slate-900">{student.full_name}</p>
+                      <p className="text-sm text-slate-500">{student.email}</p>
+                      {student.student_number && (
+                        <p className="text-xs text-slate-400">ID: {student.student_number}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     {program ? (

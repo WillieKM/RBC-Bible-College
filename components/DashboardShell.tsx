@@ -73,6 +73,18 @@ export function DashboardShell({
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name}
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-gold/40"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-xs font-bold text-gold">
+                {profile.full_name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="text-sm text-slate-400">
               {profile.full_name}{" "}
               <span className="text-slate-500">({profile.role})</span>

@@ -200,6 +200,7 @@ export async function reviewApplication(formData: FormData) {
       role: "student",
       program_id: programId,
       student_number: studentNumber,
+      avatar_url: application.photo_url ?? null,
     });
 
     if (programId) {
