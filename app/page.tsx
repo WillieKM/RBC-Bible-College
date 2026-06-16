@@ -59,19 +59,19 @@ export default function Home() {
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link
-          href="/login?portal=student"
+          href="/student"
           className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
         >
           Student Portal
         </Link>
         <Link
-          href="/login?portal=professor"
+          href="/professor"
           className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
         >
           Professor Portal
         </Link>
         <Link
-          href="/login?portal=admin"
+          href="/admin"
           className="rounded-lg border border-gold/40 bg-transparent px-5 py-2.5 text-sm font-semibold text-gold hover:bg-ink-light"
         >
           Admin Sign In

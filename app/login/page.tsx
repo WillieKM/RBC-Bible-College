@@ -19,11 +19,20 @@ const PORTALS = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; portal?: string }>;
+  searchParams: Promise<{ error?: string; portal?: string; redirect?: string }>;
 }) {
-  const { error, portal } = await searchParams;
+  const { error, portal, redirect: redirectTo } = await searchParams;
   const portalKey = portal === "student" || portal === "professor" || portal === "admin" ? portal : null;
-  const { title, subtitle } = portalKey ? PORTALS[portalKey] : { title: "Sign In", subtitle: "Sign in to continue" };
+
+  // Infer portal label from redirect path if no explicit portal param
+  const inferredPortal = !portalKey && redirectTo
+    ? redirectTo.startsWith("/student") ? "student"
+    : redirectTo.startsWith("/professor") ? "professor"
+    : redirectTo.startsWith("/admin") ? "admin"
+    : null
+    : portalKey;
+
+  const { title, subtitle } = inferredPortal ? PORTALS[inferredPortal as keyof typeof PORTALS] : { title: "Sign In", subtitle: "Sign in to continue" };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
@@ -41,7 +50,7 @@ export default async function LoginPage({
         )}
 
         <form action={login} className="mt-6 space-y-4">
-          {portalKey && <input type="hidden" name="portal" value={portalKey} />}
+          {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-300">
               Email

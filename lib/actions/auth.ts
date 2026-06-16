@@ -14,7 +14,7 @@ export async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  const portal = String(formData.get("portal") || "").trim();
+  const redirectTo = String(formData.get("redirect") || "").trim();
 
   const { data: userData } = await supabase.auth.getUser();
   const { data: profile } = await supabase
@@ -23,21 +23,19 @@ export async function login(formData: FormData) {
     .eq("id", userData.user!.id)
     .single();
 
-  // Admins can be directed to any portal via the login page choice
-  if (profile?.role === "admin" && (portal === "student" || portal === "professor")) {
-    redirect(`/${portal}`);
+  const ROLE_HOME: Record<string, string> = {
+    admin: "/admin",
+    professor: "/professor",
+    student: "/student",
+  };
+
+  // Honour an explicit redirect (set by middleware or portal button) if the
+  // user's role allows it, or if they are admin (who can access everything).
+  if (redirectTo && (profile?.role === "admin" || redirectTo.startsWith(`/${profile?.role}`))) {
+    redirect(redirectTo);
   }
 
-  switch (profile?.role) {
-    case "admin":
-      redirect("/admin");
-    case "professor":
-      redirect("/professor");
-    case "student":
-      redirect("/student");
-    default:
-      redirect("/login?error=No+role+assigned+to+this+account");
-  }
+  redirect(ROLE_HOME[profile?.role ?? ""] ?? "/login?error=No+role+assigned+to+this+account");
 }
 
 export async function logout() {
