@@ -13,5 +13,5 @@ const LINKS = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireRole(["admin"]);
-  return <DashboardShell profile={profile} links={LINKS}>{children}</DashboardShell>;
+  return <DashboardShell profile={profile} links={LINKS} activePortal="admin">{children}</DashboardShell>;
 }

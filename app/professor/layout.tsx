@@ -7,5 +7,5 @@ const LINKS = [
 
 export default async function ProfessorLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireRole(["professor"]);
-  return <DashboardShell profile={profile} links={LINKS}>{children}</DashboardShell>;
+  return <DashboardShell profile={profile} links={LINKS} activePortal="professor">{children}</DashboardShell>;
 }

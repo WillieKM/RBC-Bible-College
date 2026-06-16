@@ -10,6 +10,7 @@ export default async function AdminHomePage() {
     { count: programCount },
     { count: courseCount },
     { count: studentCount },
+    { count: professorCount },
     { data: recentSubmissions },
     { data: recentGrades },
     { data: recentAssignments },
@@ -19,15 +20,14 @@ export default async function AdminHomePage() {
     supabase.from("programs").select("*", { count: "exact", head: true }),
     supabase.from("courses").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "professor"),
 
-    // Recent student submissions
     supabase
       .from("submissions")
       .select("id, submitted_at, student_id, assignment_id, grade, profiles(full_name), assignments(title, courses(title))")
       .order("submitted_at", { ascending: false })
       .limit(8),
 
-    // Recently graded
     supabase
       .from("submissions")
       .select("id, graded_at, grade, profiles(full_name), assignments(title, courses(title)), graded_by_profile:graded_by(full_name)")
@@ -35,14 +35,12 @@ export default async function AdminHomePage() {
       .order("graded_at", { ascending: false })
       .limit(8),
 
-    // Recently created assignments
     supabase
       .from("assignments")
       .select("id, title, created_at, courses(title, professor_id, profiles:professor_id(full_name))")
       .order("created_at", { ascending: false })
       .limit(6),
 
-    // Recent applications
     supabase
       .from("applications")
       .select("id, full_name, program, status, created_at, region")
@@ -61,44 +59,97 @@ export default async function AdminHomePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <Link href="/student" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-gold hover:text-gold">
-            Student View
+      <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+
+      {/* Stats */}
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <Link href="/admin/applications" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Pending</p>
+          <p className="mt-1 text-3xl font-bold text-amber-600">{pendingCount ?? 0}</p>
+        </Link>
+        <Link href="/admin/programs" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Programs</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{programCount ?? 0}</p>
+        </Link>
+        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Modules</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{courseCount ?? 0}</p>
+        </Link>
+        <Link href="/admin/students" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Students</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{studentCount ?? 0}</p>
+        </Link>
+        <Link href="/admin/users" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Professors</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{professorCount ?? 0}</p>
+        </Link>
+      </div>
+
+      {/* Management section */}
+      <h2 className="mt-10 text-lg font-semibold text-slate-800">Manage</h2>
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+        <Link href="/admin/applications" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Applications</p>
+            {(pendingCount ?? 0) > 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                {pendingCount} pending
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-500">Review, approve or reject applications. Approval auto-creates the student account and enrols them in their program modules.</p>
+        </Link>
+
+        <Link href="/admin/courses" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Modules (Courses)</p>
+          <p className="text-sm text-slate-500">Add or edit modules. Assign a professor to each module. Students in the linked program are enrolled automatically.</p>
+        </Link>
+
+        <Link href="/admin/users" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Professors &amp; Users</p>
+          <p className="text-sm text-slate-500">Invite professors, change user roles, and assign students to a program. Professors are assigned per module, not per student directly.</p>
+        </Link>
+
+        <Link href="/admin/programs" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Programs</p>
+          <p className="text-sm text-slate-500">Create diploma or degree programs. Each program has its own set of modules and a lead professor. Students apply to a specific program.</p>
+        </Link>
+
+        <Link href="/admin/cohorts" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Cohorts / Terms</p>
+          <p className="text-sm text-slate-500">Organise modules into intake terms (e.g. "Fall 2026"). Modules can be linked to a cohort for scheduling purposes.</p>
+        </Link>
+
+        <Link href="/admin/students" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
+          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Student Roster</p>
+          <p className="text-sm text-slate-500">View all students grouped by program, track credit completion, and monitor progress across cohorts.</p>
+        </Link>
+      </div>
+
+      {/* How assignment works */}
+      <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
+        <p className="text-sm font-semibold text-blue-800">How student–professor assignment works</p>
+        <p className="mt-1 text-sm text-blue-700">
+          Students are assigned to professors <strong>automatically through modules</strong>. When you create a module and assign a professor to it, every student enrolled in that module is linked to that professor. When a student is approved and assigned to a program, they are instantly enrolled in all that program&apos;s modules — and therefore all the professors teaching those modules — with no extra steps required.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/admin/courses" className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+            Manage Modules &amp; Assign Professors
           </Link>
-          <Link href="/professor" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-gold hover:text-gold">
-            Professor View
+          <Link href="/admin/programs" className="rounded-lg border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+            Manage Programs
           </Link>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Link href="/admin/applications" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Pending Applications</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{pendingCount ?? 0}</p>
-        </Link>
-        <Link href="/admin/programs" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Programs</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{programCount ?? 0}</p>
-        </Link>
-        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Modules</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{courseCount ?? 0}</p>
-        </Link>
-        <Link href="/admin/students" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Students</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{studentCount ?? 0}</p>
-        </Link>
-      </div>
-
       {/* Activity feed */}
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <h2 className="mt-10 text-lg font-semibold text-slate-800">Recent Activity</h2>
+      <div className="mt-3 grid grid-cols-1 gap-6 lg:grid-cols-2">
 
-        {/* Recent applications */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800">Recent Applications</h2>
+            <h3 className="font-semibold text-slate-800">Recent Applications</h3>
             <Link href="/admin/applications" className="text-xs text-gold-dark hover:underline">View all</Link>
           </div>
           <div className="mt-3 space-y-2">
@@ -122,9 +173,8 @@ export default async function AdminHomePage() {
           </div>
         </div>
 
-        {/* Recent assignments created by professors */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">New Assignments (Professors)</h2>
+          <h3 className="font-semibold text-slate-800">New Assignments (Professors)</h3>
           <div className="mt-3 space-y-2">
             {(recentAssignments ?? []).map((a) => {
               const course = a.courses as unknown as { title: string; profiles: { full_name: string } | null } | null;
@@ -145,9 +195,8 @@ export default async function AdminHomePage() {
           </div>
         </div>
 
-        {/* Recent student submissions */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">Recent Submissions (Students)</h2>
+          <h3 className="font-semibold text-slate-800">Recent Submissions (Students)</h3>
           <div className="mt-3 space-y-2">
             {(recentSubmissions ?? []).map((s) => {
               const student = s.profiles as unknown as { full_name: string } | null;
@@ -173,9 +222,8 @@ export default async function AdminHomePage() {
           </div>
         </div>
 
-        {/* Recent grading activity */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">Recent Grading (Professors)</h2>
+          <h3 className="font-semibold text-slate-800">Recent Grading (Professors)</h3>
           <div className="mt-3 space-y-2">
             {(recentGrades ?? []).map((s) => {
               const student = s.profiles as unknown as { full_name: string } | null;
@@ -197,32 +245,10 @@ export default async function AdminHomePage() {
             {(recentGrades ?? []).length === 0 && <p className="text-sm text-slate-400">No grades recorded yet.</p>}
           </div>
         </div>
-
       </div>
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Quick Links</h2>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Link href="/admin/applications" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          Review Applications
-        </Link>
-        <Link href="/admin/programs" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          Manage Programs
-        </Link>
-        <Link href="/admin/courses" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          Manage Modules
-        </Link>
-        <Link href="/admin/cohorts" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          Manage Cohorts
-        </Link>
-        <Link href="/admin/students" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          View Students
-        </Link>
-        <Link href="/admin/users" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-gold hover:bg-slate-50">
-          Manage Users
-        </Link>
-      </div>
-
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Application Links</h2>
+      {/* Application Links */}
+      <h2 className="mt-10 text-lg font-semibold text-slate-800">Application Links</h2>
       <p className="mt-1 text-sm text-slate-500">Share these with prospective students.</p>
       <ApplyLinks />
     </div>
