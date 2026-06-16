@@ -2,45 +2,26 @@ import { login } from "@/lib/actions/auth";
 import Image from "next/image";
 
 const PORTALS = {
-  student: {
-    title: "Student Portal",
-    subtitle: "Sign in to access your modules and assignments",
-  },
-  professor: {
-    title: "Professor Portal",
-    subtitle: "Sign in to manage your courses and grade submissions",
-  },
-  admin: {
-    title: "Admin Sign In",
-    subtitle: "Sign in to manage the school",
-  },
+  "/student":   { title: "Student Portal",   subtitle: "Sign in to access your modules and assignments" },
+  "/professor": { title: "Professor Portal", subtitle: "Sign in to manage your courses and grade submissions" },
+  "/admin":     { title: "Admin Sign In",    subtitle: "Sign in to manage the school" },
 } as const;
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; portal?: string; redirect?: string }>;
+  searchParams: Promise<{ error?: string; returnTo?: string }>;
 }) {
-  const { error, portal, redirect: redirectTo } = await searchParams;
-  const portalKey = portal === "student" || portal === "professor" || portal === "admin" ? portal : null;
-
-  // Infer portal label from redirect path if no explicit portal param
-  const inferredPortal = !portalKey && redirectTo
-    ? redirectTo.startsWith("/student") ? "student"
-    : redirectTo.startsWith("/professor") ? "professor"
-    : redirectTo.startsWith("/admin") ? "admin"
-    : null
-    : portalKey;
-
-  const { title, subtitle } = inferredPortal ? PORTALS[inferredPortal as keyof typeof PORTALS] : { title: "Sign In", subtitle: "Sign in to continue" };
+  const { error, returnTo } = await searchParams;
+  const portal = returnTo && returnTo in PORTALS ? PORTALS[returnTo as keyof typeof PORTALS] : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
       <div className="w-full max-w-sm rounded-2xl bg-ink-light p-8 shadow-xl border border-gold/20">
         <div className="flex flex-col items-center text-center">
           <Image src="/logo.jpg" alt="Revelation Bible College International" width={88} height={88} className="rounded-full" />
-          <h1 className="mt-4 text-xl font-bold text-gold">{title}</h1>
-          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+          <h1 className="mt-4 text-xl font-bold text-gold">{portal?.title ?? "Sign In"}</h1>
+          <p className="mt-1 text-sm text-slate-400">{portal?.subtitle ?? "Sign in to continue"}</p>
         </div>
 
         {error && (
@@ -50,11 +31,9 @@ export default async function LoginPage({
         )}
 
         <form action={login} className="mt-6 space-y-4">
-          {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
+          {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-300">
-              Email
-            </label>
+            <label htmlFor="email" className="block text-sm font-medium text-slate-300">Email</label>
             <input
               id="email"
               name="email"
@@ -64,9 +43,7 @@ export default async function LoginPage({
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
-              Password
-            </label>
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300">Password</label>
             <input
               id="password"
               name="password"

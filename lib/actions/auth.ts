@@ -3,18 +3,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
+const ROLE_HOME: Record<string, string> = {
+  admin: "/admin",
+  professor: "/professor",
+  student: "/student",
+};
+
+const ALLOWED_RETURN = new Set(["/admin", "/professor", "/student"]);
+
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
+  const returnTo = String(formData.get("returnTo") || "").trim();
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    const params = new URLSearchParams({ error: error.message });
+    if (returnTo) params.set("returnTo", returnTo);
+    redirect(`/login?${params.toString()}`);
   }
-
-  const redirectTo = String(formData.get("redirect") || "").trim();
 
   const { data: userData } = await supabase.auth.getUser();
   const { data: profile } = await supabase
@@ -23,19 +32,16 @@ export async function login(formData: FormData) {
     .eq("id", userData.user!.id)
     .single();
 
-  const ROLE_HOME: Record<string, string> = {
-    admin: "/admin",
-    professor: "/professor",
-    student: "/student",
-  };
+  const role = profile?.role ?? "";
 
-  // Honour an explicit redirect (set by middleware or portal button) if the
-  // user's role allows it, or if they are admin (who can access everything).
-  if (redirectTo && (profile?.role === "admin" || redirectTo.startsWith(`/${profile?.role}`))) {
-    redirect(redirectTo);
+  // Admin can go anywhere; others can only go to their own portal
+  if (returnTo && ALLOWED_RETURN.has(returnTo)) {
+    if (role === "admin" || returnTo === ROLE_HOME[role]) {
+      redirect(returnTo);
+    }
   }
 
-  redirect(ROLE_HOME[profile?.role ?? ""] ?? "/login?error=No+role+assigned+to+this+account");
+  redirect(ROLE_HOME[role] ?? "/login?error=No+role+assigned");
 }
 
 export async function logout() {
