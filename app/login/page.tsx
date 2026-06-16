@@ -10,9 +10,9 @@ const PORTALS = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; returnTo?: string }>;
+  searchParams: Promise<{ error?: string; returnTo?: string; message?: string }>;
 }) {
-  const { error, returnTo } = await searchParams;
+  const { error, returnTo, message } = await searchParams;
   const portal = returnTo && returnTo in PORTALS ? PORTALS[returnTo as keyof typeof PORTALS] : null;
 
   return (
@@ -24,6 +24,11 @@ export default async function LoginPage({
           <p className="mt-1 text-sm text-slate-400">{portal?.subtitle ?? "Sign in to continue"}</p>
         </div>
 
+        {message && (
+          <div className="mt-4 rounded-lg bg-green-950 border border-green-800 px-3 py-2 text-sm text-green-300">
+            {message}
+          </div>
+        )}
         {error && (
           <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
             {error}
@@ -58,6 +63,11 @@ export default async function LoginPage({
           >
             Sign in
           </button>
+          <p className="text-center text-sm">
+            <a href="/login/reset" className="text-slate-400 hover:text-gold">
+              Forgot password?
+            </a>
+          </p>
         </form>
       </div>
     </div>

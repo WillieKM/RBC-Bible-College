@@ -3,6 +3,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 
 const LINKS = [
   { href: "/student", label: "My Courses" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
