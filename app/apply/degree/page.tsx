@@ -41,9 +41,11 @@ const ADVERTISING_OPTIONS = [
 export default async function ApplyDegreePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; region?: string }>;
 }) {
-  const { error, success } = await searchParams;
+  const { error, success, region } = await searchParams;
+  const presetRegion = region === "usa" || region === "international" ? region : null;
+  const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4 py-12">
@@ -60,6 +62,11 @@ export default async function ApplyDegreePage({
           <p className="mt-1 text-sm text-slate-400">
             Offered in partnership with Tabernacle Bible College and Seminary
           </p>
+          {regionLabel && (
+            <span className="mt-2 rounded-full border border-gold/40 px-3 py-0.5 text-xs font-semibold text-gold">
+              {regionLabel}
+            </span>
+          )}
         </div>
 
         {success && (
@@ -77,6 +84,24 @@ export default async function ApplyDegreePage({
         {!success && (
           <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="tbcs" />
+
+            {presetRegion ? (
+              <input type="hidden" name="region" value={presetRegion} />
+            ) : (
+              <div>
+                <p className={labelClass}>Which campus / region are you applying from? *</p>
+                <div className="mt-2 flex gap-3">
+                  <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                    <input type="radio" name="region" value="usa" required className="sr-only" />
+                    USA Campus
+                  </label>
+                  <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                    <input type="radio" name="region" value="international" required defaultChecked className="sr-only" />
+                    Kenya / Other (International)
+                  </label>
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="program" className={labelClass}>Program *</label>
@@ -100,34 +125,6 @@ export default async function ApplyDegreePage({
               </select>
             </div>
 
-            <div>
-              <p className={labelClass}>Which campus / region are you applying from? *</p>
-              <div className="mt-2 flex gap-3">
-                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
-                  <input type="radio" name="region" value="usa" required className="sr-only" />
-                  USA Campus
-                </label>
-                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
-                  <input type="radio" name="region" value="international" required defaultChecked className="sr-only" />
-                  Kenya / Other (International)
-                </label>
-              </div>
-            </div>
-
-            <h2 className={sectionClass}>Fees Structure</h2>
-
-            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
-              <p className="text-center text-slate-300">
-                Tuition fees will be confirmed with you by email once your application is
-                reviewed.
-              </p>
-              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-                <p>Paybill: 542542</p>
-                <p>Account Number: 03009422856350</p>
-              </div>
-            </div>
 
             <h2 className={sectionClass}>Personal Information</h2>
             <p className="text-xs text-slate-400">Please take care that the exams you put on your legal name.</p>
@@ -521,6 +518,19 @@ export default async function ApplyDegreePage({
               <textarea id="statement" name="statement" rows={4} className={inputClass} />
             </div>
 
+            <h2 className={sectionClass}>Fees</h2>
+            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
+              <p className="text-center text-slate-300">
+                Tuition fees will be confirmed with you by email once your application is reviewed.
+              </p>
+              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+                <p>Paybill: 542542</p>
+                <p>Account Number: 03009422856350</p>
+              </div>
+            </div>
+
             <h2 className={sectionClass}>Declaration</h2>
             <div className="rounded-lg border border-slate-700 bg-ink p-3 text-sm text-slate-300">
               I confirm all the information provided on this form is correct. I will update the
@@ -552,12 +562,6 @@ export default async function ApplyDegreePage({
         )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          Applying from the United States?{" "}
-          <Link href="/apply" className="text-gold hover:underline">
-            Apply here
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">
             Back to home
           </Link>

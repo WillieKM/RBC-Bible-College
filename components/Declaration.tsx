@@ -9,10 +9,7 @@ export function Declaration() {
       </p>
       <p className="mt-2 text-sm text-slate-300">
         I understand and agree that tuition fees are non-refundable after four (4) weeks from the
-        commencement date of the course. I further understand that should I choose to withdraw,
-        defer, discontinue, or be dismissed from the program for any reason, I remain responsible
-        for payment of the full course fee. Any outstanding balance must be paid in full within
-        one (1) month of the date of withdrawal, deferment, or dismissal.
+        commencement date of the course.
       </p>
       <p className="mt-2 text-sm text-slate-300">
         By signing this declaration, I acknowledge that I have read, understood, and agreed to

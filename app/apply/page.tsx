@@ -7,12 +7,28 @@ const inputClass =
   "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold [color-scheme:dark]";
 const labelClass = "block text-sm font-medium text-slate-300";
 
+const FEES_BLOCK = (
+  <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
+    <p className="text-center text-slate-300">
+      Tuition fees will be confirmed with you by email once your application is reviewed.
+    </p>
+    <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+      <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+      <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+      <p>Paybill: 542542</p>
+      <p>Account Number: 03009422856350</p>
+    </div>
+  </div>
+);
+
 export default async function ApplyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; region?: string }>;
 }) {
-  const { error, success } = await searchParams;
+  const { error, success, region } = await searchParams;
+  const presetRegion = region === "usa" || region === "international" ? region : null;
+  const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4 py-12">
@@ -21,6 +37,11 @@ export default async function ApplyPage({
           <Image src="/logo.jpg" alt="Revelation Bible College International" width={72} height={72} className="rounded-full" />
           <h1 className="mt-4 text-xl font-bold text-gold">Revelation Bible College International</h1>
           <p className="mt-1 text-sm text-slate-400">Diploma Application Form</p>
+          {regionLabel && (
+            <span className="mt-2 rounded-full border border-gold/40 px-3 py-0.5 text-xs font-semibold text-gold">
+              {regionLabel}
+            </span>
+          )}
         </div>
 
         {success && (
@@ -38,6 +59,24 @@ export default async function ApplyPage({
           <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="rbc" />
 
+            {presetRegion ? (
+              <input type="hidden" name="region" value={presetRegion} />
+            ) : (
+              <div>
+                <p className={labelClass}>Which campus / region are you applying from? *</p>
+                <div className="mt-2 flex gap-3">
+                  <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                    <input type="radio" name="region" value="usa" required defaultChecked className="sr-only" />
+                    USA Campus
+                  </label>
+                  <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+                    <input type="radio" name="region" value="international" required className="sr-only" />
+                    Kenya / Other (International)
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="program" className={labelClass}>What level are you applying for in Revelation Bible College? *</label>
               <select id="program" name="program" required defaultValue="" className={inputClass}>
@@ -45,33 +84,6 @@ export default async function ApplyPage({
                 <option value="Certificate">Certificate</option>
                 <option value="Diploma">Diploma</option>
               </select>
-            </div>
-
-            <div>
-              <p className={labelClass}>Which campus / region are you applying from? *</p>
-              <div className="mt-2 flex gap-3">
-                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
-                  <input type="radio" name="region" value="usa" required defaultChecked className="sr-only" />
-                  USA Campus
-                </label>
-                <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
-                  <input type="radio" name="region" value="international" required className="sr-only" />
-                  Kenya / Other (International)
-                </label>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
-              <p className="text-center text-slate-300">
-                Tuition fees will be confirmed with you by email once your application is
-                reviewed.
-              </p>
-              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-                <p>Paybill: 542542</p>
-                <p>Account Number: 03009422856350</p>
-              </div>
             </div>
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Personal Information</h2>
@@ -164,6 +176,8 @@ export default async function ApplyPage({
               <textarea id="statement" name="statement" rows={4} className={inputClass} />
             </div>
 
+            {FEES_BLOCK}
+
             <Declaration />
 
             <button
@@ -176,12 +190,6 @@ export default async function ApplyPage({
         )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          Applying from Kenya or outside the United States?{" "}
-          <Link href="/apply/degree" className="text-gold hover:underline">
-            Apply here
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">
             Back to home
           </Link>

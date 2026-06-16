@@ -18,12 +18,20 @@ export default function Home() {
           </div>
           <h2 className="mt-3 font-semibold text-gold">Diploma Programs</h2>
           <p className="mt-1 text-sm text-slate-400">Revelation Bible College International</p>
-          <Link
-            href="/apply"
-            className="mt-auto w-full rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
-          >
-            Apply Now
-          </Link>
+          <div className="mt-auto grid w-full grid-cols-2 gap-2">
+            <Link
+              href="/apply?region=usa"
+              className="rounded-lg bg-gold px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
+            >
+              USA Campus
+            </Link>
+            <Link
+              href="/apply?region=international"
+              className="rounded-lg bg-gold px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
+            >
+              Kenya / International
+            </Link>
+          </div>
         </div>
 
         <div className="flex h-full flex-col items-center rounded-2xl border border-gold/20 bg-ink-light p-6 text-center">
@@ -32,12 +40,20 @@ export default function Home() {
           </div>
           <h2 className="mt-3 font-semibold text-gold">Bachelor&apos;s, Master&apos;s &amp; Doctorate</h2>
           <p className="mt-1 text-sm text-slate-400">In partnership with Tabernacle Bible College and Seminary</p>
-          <Link
-            href="/apply/degree"
-            className="mt-auto w-full rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
-          >
-            Apply Now
-          </Link>
+          <div className="mt-auto grid w-full grid-cols-2 gap-2">
+            <Link
+              href="/apply/degree?region=usa"
+              className="rounded-lg bg-gold px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
+            >
+              USA Campus
+            </Link>
+            <Link
+              href="/apply/degree?region=international"
+              className="rounded-lg bg-gold px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold-dark"
+            >
+              Kenya / International
+            </Link>
+          </div>
         </div>
       </div>
 
