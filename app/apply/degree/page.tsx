@@ -523,12 +523,14 @@ export default async function ApplyDegreePage({
               <p className="text-center text-slate-300">
                 Tuition fees will be confirmed with you by email once your application is reviewed.
               </p>
-              <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-                <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-                <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-                <p>Paybill: 542542</p>
-                <p>Account Number: 03009422856350</p>
-              </div>
+              {presetRegion === "international" && (
+                <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+                  <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+                  <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+                  <p>Paybill: 542542</p>
+                  <p>Account Number: 03009422856350</p>
+                </div>
+              )}
             </div>
 
             <h2 className={sectionClass}>Declaration</h2>

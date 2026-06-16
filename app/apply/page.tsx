@@ -7,19 +7,23 @@ const inputClass =
   "mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold [color-scheme:dark]";
 const labelClass = "block text-sm font-medium text-slate-300";
 
-const FEES_BLOCK = (
-  <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
-    <p className="text-center text-slate-300">
-      Tuition fees will be confirmed with you by email once your application is reviewed.
-    </p>
-    <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-      <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-      <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-      <p>Paybill: 542542</p>
-      <p>Account Number: 03009422856350</p>
+function FeesBlock({ region }: { region: string | null }) {
+  return (
+    <div className="rounded-lg border border-gold/30 bg-ink p-4 text-sm text-slate-200">
+      <p className="text-center text-slate-300">
+        Tuition fees will be confirmed with you by email once your application is reviewed.
+      </p>
+      {region === "international" && (
+        <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+          <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
+          <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
+          <p>Paybill: 542542</p>
+          <p>Account Number: 03009422856350</p>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+}
 
 export default async function ApplyPage({
   searchParams,
@@ -176,7 +180,7 @@ export default async function ApplyPage({
               <textarea id="statement" name="statement" rows={4} className={inputClass} />
             </div>
 
-            {FEES_BLOCK}
+            <FeesBlock region={presetRegion} />
 
             <Declaration />
 
