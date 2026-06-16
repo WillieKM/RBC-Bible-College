@@ -14,12 +14,19 @@ export async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
+  const portal = String(formData.get("portal") || "").trim();
+
   const { data: userData } = await supabase.auth.getUser();
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", userData.user!.id)
     .single();
+
+  // Admins can be directed to any portal via the login page choice
+  if (profile?.role === "admin" && (portal === "student" || portal === "professor")) {
+    redirect(`/${portal}`);
+  }
 
   switch (profile?.role) {
     case "admin":

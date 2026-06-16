@@ -41,6 +41,7 @@ export default async function LoginPage({
         )}
 
         <form action={login} className="mt-6 space-y-4">
+          {portalKey && <input type="hidden" name="portal" value={portalKey} />}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-300">
               Email
