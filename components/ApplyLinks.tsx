@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 
 const LINKS = [
-  { path: "/apply", label: "RBC Diploma Application" },
-  { path: "/apply/degree", label: "TBCS Degree Application" },
+  { path: "/apply?region=usa", label: "RBC Diploma — USA Campus" },
+  { path: "/apply?region=international", label: "RBC Diploma — Kenya / International" },
+  { path: "/apply/degree?region=usa", label: "TBCS Degree — USA Campus" },
+  { path: "/apply/degree?region=international", label: "TBCS Degree — Kenya / International" },
 ];
 
 export function ApplyLinks() {
