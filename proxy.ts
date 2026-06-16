@@ -49,7 +49,7 @@ export async function proxy(request: NextRequest) {
       .single();
 
     const requiredRole = ROLE_PREFIXES[protectedPrefix];
-    if (profile?.role !== requiredRole) {
+    if (profile?.role !== requiredRole && profile?.role !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
