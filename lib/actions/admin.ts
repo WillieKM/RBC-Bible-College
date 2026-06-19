@@ -271,8 +271,8 @@ export async function updateUserRole(formData: FormData) {
 
 export async function deleteApplication(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const admin = createAdminClient();
   const id = String(formData.get("id"));
-  await supabase.from("applications").delete().eq("id", id);
+  await admin.from("applications").delete().eq("id", id);
   revalidatePath("/admin/applications");
 }
