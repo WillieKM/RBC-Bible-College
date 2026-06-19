@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { reviewApplication } from "@/lib/actions/applications";
+import { deleteApplication } from "@/lib/actions/admin";
 import type { Application, Cohort } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
@@ -18,6 +19,10 @@ export default async function AdminApplicationsPage({
   const pending = (applications ?? []).filter((a: Application) => a.status === "pending");
   const reviewed = (applications ?? []).filter((a: Application) => a.status !== "pending");
 
+  // Track which emails appear more than once in pending (duplicates)
+  const pendingEmailCount = new Map<string, number>();
+  for (const a of pending) pendingEmailCount.set(a.email, (pendingEmailCount.get(a.email) ?? 0) + 1);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Applications</h1>
@@ -32,7 +37,16 @@ export default async function AdminApplicationsPage({
       <div className="mt-3 space-y-3">
         {pending.length === 0 && <p className="text-sm text-slate-500">No pending applications.</p>}
         {pending.map((app: Application) => (
-          <div key={app.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div key={app.id} className={`rounded-xl border bg-white p-5 shadow-sm ${(pendingEmailCount.get(app.email) ?? 1) > 1 ? "border-amber-300" : "border-slate-200"}`}>
+            {(pendingEmailCount.get(app.email) ?? 1) > 1 && (
+              <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5">
+                <span className="text-xs font-semibold text-amber-700">Duplicate — same email has multiple pending applications</span>
+                <form action={deleteApplication}>
+                  <input type="hidden" name="id" value={app.id} />
+                  <button className="text-xs font-semibold text-red-600 hover:underline">Delete this copy</button>
+                </form>
+              </div>
+            )}
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-4">
                 {app.photo_url ? (
@@ -114,9 +128,15 @@ export default async function AdminApplicationsPage({
           <div key={app.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">
             <span className="font-medium text-slate-800">{app.full_name}</span>
             <span className="text-slate-500">{app.email}</span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-              {app.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                {app.status}
+              </span>
+              <form action={deleteApplication}>
+                <input type="hidden" name="id" value={app.id} />
+                <button className="text-xs text-slate-400 hover:text-red-500">Delete</button>
+              </form>
+            </div>
           </div>
         ))}
       </div>

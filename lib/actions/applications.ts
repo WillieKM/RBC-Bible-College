@@ -92,6 +92,19 @@ export async function submitApplication(formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  // Block duplicate pending applications from the same email
+  const { data: existing } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("email", email)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (existing) {
+    redirect(`${returnTo}?error=You+already+have+a+pending+application.+We+will+contact+you+soon.`);
+  }
+
   const { error } = await supabase.from("applications").insert({
     full_name: fullName,
     email,

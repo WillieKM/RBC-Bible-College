@@ -268,3 +268,11 @@ export async function updateUserRole(formData: FormData) {
   await supabase.from("profiles").update({ role }).eq("id", id);
   revalidatePath("/admin/users");
 }
+
+export async function deleteApplication(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  await supabase.from("applications").delete().eq("id", id);
+  revalidatePath("/admin/applications");
+}
