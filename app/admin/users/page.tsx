@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { inviteUser, updateUserRole, updateStudentProgram } from "@/lib/actions/admin";
+import { inviteUser, updateUserRole, updateStudentProgram, resendInvite } from "@/lib/actions/admin";
+import { DeleteButton } from "@/components/DeleteButton";
 import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
@@ -43,6 +44,10 @@ export default async function AdminUsersPage() {
               <p className="text-sm text-slate-500">{p.email}</p>
             </div>
             <div className="flex items-center gap-2">
+              <form action={resendInvite}>
+                <input type="hidden" name="email" value={p.email} />
+                <DeleteButton label="Resend invite" pendingLabel="Sending…" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50" />
+              </form>
               <form action={updateUserRole} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={p.id} />
                 <select name="role" defaultValue={p.role} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">

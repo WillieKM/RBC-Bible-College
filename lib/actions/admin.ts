@@ -276,3 +276,14 @@ export async function deleteApplication(formData: FormData) {
   await admin.from("applications").delete().eq("id", id);
   revalidatePath("/admin/applications");
 }
+
+export async function resendInvite(formData: FormData) {
+  await requireRole(["admin"]);
+  const email = String(formData.get("email") || "").trim();
+  if (!email) return;
+
+  const admin = createAdminClient();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${baseUrl}/login` });
+  revalidatePath("/admin/users");
+}
