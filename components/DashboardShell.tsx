@@ -50,7 +50,7 @@ export function DashboardShell({
       <header className="border-b border-gold/20 bg-ink">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex shrink-0 items-center gap-2">
               <Image
                 src="/logo.jpg"
                 alt="Revelation Bible College International"
@@ -58,14 +58,14 @@ export function DashboardShell({
                 height={32}
                 className="rounded-full"
               />
-              <span className="font-bold text-gold">Revelation Bible College</span>
+              <span className="font-bold text-gold">RBC</span>
             </Link>
-            <nav className="flex gap-4">
+            <nav className="flex flex-wrap gap-x-3 gap-y-1">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium text-slate-300 hover:text-gold"
+                  className="whitespace-nowrap text-sm font-medium text-slate-300 hover:text-gold"
                 >
                   {link.label}
                 </Link>
@@ -85,8 +85,8 @@ export function DashboardShell({
                 {profile.full_name.charAt(0).toUpperCase()}
               </div>
             )}
-            <span className="text-sm text-slate-400">
-              {profile.full_name}{" "}
+            <span className="hidden text-sm text-slate-400 sm:block">
+              {profile.full_name.split(" ")[0]}{" "}
               <span className="text-slate-500">({profile.role})</span>
             </span>
             <form action={logout}>

@@ -9,8 +9,7 @@ const LINKS = [
   { href: "/admin/courses", label: "Courses" },
   { href: "/admin/students", label: "Students" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/announcements", label: "Announcements" },
-  { href: "/settings", label: "Settings" },
+  { href: "/admin/announcements", label: "Notices" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
