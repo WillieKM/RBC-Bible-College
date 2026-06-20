@@ -15,11 +15,19 @@ export default async function AdminInvoiceDetailPage({
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("*, profiles(full_name, email, student_number, program_id, programs(name)), payments(*)")
+    .select("*, profiles(full_name, email, student_number, program_id), payments(*)")
     .eq("id", id)
     .single();
 
   if (!invoice) notFound();
+
+  const studentProfile = invoice.profiles as {
+    full_name: string; email: string; student_number: string | null; program_id: string | null;
+  } | null;
+
+  const { data: program } = studentProfile?.program_id
+    ? await supabase.from("programs").select("name").eq("id", studentProfile.program_id).single()
+    : { data: null };
 
   const payments = ((invoice.payments ?? []) as Payment[]).sort(
     (a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()
@@ -30,10 +38,7 @@ export default async function AdminInvoiceDetailPage({
   const isPaid = balance <= 0;
   const today = new Date().toISOString().slice(0, 10);
 
-  const student = invoice.profiles as {
-    full_name: string; email: string; student_number: string | null;
-    programs?: { name: string } | null;
-  } | null;
+  const student = studentProfile;
 
   return (
     <div className="max-w-2xl">
@@ -48,7 +53,7 @@ export default async function AdminInvoiceDetailPage({
               {student?.full_name ?? "—"} · {student?.email ?? ""}
             </p>
             {student?.student_number && <p className="text-xs text-slate-400">ID: {student.student_number}</p>}
-            {student?.programs?.name && <p className="text-xs text-slate-400">{student.programs.name}</p>}
+            {program?.name && <p className="text-xs text-slate-400">{program.name}</p>}
             <p className="mt-1 text-xs text-slate-400">Created {new Date(invoice.created_at).toLocaleDateString()}</p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${isPaid ? "bg-green-100 text-green-700" : amountPaid > 0 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
