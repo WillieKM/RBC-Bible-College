@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { reviewApplication } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
+import { DeleteButton } from "@/components/DeleteButton";
 import type { Application, Cohort } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
@@ -43,7 +44,7 @@ export default async function AdminApplicationsPage({
                 <span className="text-xs font-semibold text-amber-700">Duplicate — same email has multiple pending applications</span>
                 <form action={deleteApplication}>
                   <input type="hidden" name="id" value={app.id} />
-                  <button className="text-xs font-semibold text-red-600 hover:underline">Delete this copy</button>
+                  <DeleteButton label="Delete this copy" pendingLabel="Deleting…" className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50" />
                 </form>
               </div>
             )}
@@ -134,7 +135,7 @@ export default async function AdminApplicationsPage({
               </span>
               <form action={deleteApplication}>
                 <input type="hidden" name="id" value={app.id} />
-                <button className="text-xs text-slate-400 hover:text-red-500">Delete</button>
+                <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
               </form>
             </div>
           </div>
