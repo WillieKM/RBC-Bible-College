@@ -125,3 +125,26 @@ export interface Attendance {
   notes: string | null;
   created_at: string;
 }
+
+export type PaymentMethod = "cash" | "mpesa" | "bank" | "card" | "other";
+export type InvoiceStatus = "unpaid" | "partial" | "paid";
+
+export interface Invoice {
+  id: string;
+  student_id: string;
+  title: string;
+  total_amount: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Payment {
+  id: string;
+  invoice_id: string;
+  amount: number;
+  payment_date: string;
+  method: PaymentMethod;
+  reference: string | null;
+  notes: string | null;
+  created_at: string;
+}

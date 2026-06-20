@@ -223,6 +223,78 @@ export async function sendApplicationConfirmationEmail(opts: {
     ));
 }
 
+// ─── Invoice (to student) ─────────────────────────────────────────────────────
+
+export async function sendInvoiceEmail(opts: {
+  to: string;
+  studentName: string;
+  invoiceTitle: string;
+  invoiceId: string;
+  totalAmount: number;
+  amountPaid: number;
+  balance: number;
+  payments: { payment_date: string; amount: number; method: string; reference: string | null }[];
+  notes: string | null;
+  portalUrl: string;
+}) {
+  const fmt = (n: number) => `$${n.toFixed(2)}`;
+  const status = opts.balance <= 0 ? "PAID IN FULL" : opts.amountPaid > 0 ? "PARTIAL PAYMENT" : "OUTSTANDING";
+  const statusColor = opts.balance <= 0 ? "#16a34a" : opts.amountPaid > 0 ? "#d97706" : "#dc2626";
+
+  const paymentRows = opts.payments.length > 0
+    ? opts.payments.map((p) =>
+        `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;">${p.payment_date}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;text-transform:capitalize;">${p.method}${p.reference ? ` — ${p.reference}` : ""}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;font-weight:600;text-align:right;">${fmt(p.amount)}</td>
+        </tr>`
+      ).join("")
+    : `<tr><td colspan="3" style="padding:12px;font-size:13px;color:#94a3b8;text-align:center;">No payments recorded yet</td></tr>`;
+
+  await send(opts.to, `Invoice: ${opts.invoiceTitle} — ${SCHOOL_NAME}`,
+    wrap(`Invoice — ${opts.invoiceTitle}`,
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Please find your invoice details below.</p>
+
+       <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:20px 0;border:1px solid #e2e8f0;">
+         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+           <span style="font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Status</span>
+           <span style="font-size:13px;font-weight:700;color:${statusColor};">${status}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+           <span style="font-size:14px;color:#475569;">Total Amount</span>
+           <span style="font-size:14px;font-weight:600;color:#1e293b;">${fmt(opts.totalAmount)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+           <span style="font-size:14px;color:#475569;">Amount Paid</span>
+           <span style="font-size:14px;font-weight:600;color:#16a34a;">${fmt(opts.amountPaid)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;border-top:2px solid #e2e8f0;padding-top:8px;margin-top:8px;">
+           <span style="font-size:15px;font-weight:700;color:#1e293b;">Balance Due</span>
+           <span style="font-size:15px;font-weight:700;color:${opts.balance > 0 ? "#dc2626" : "#16a34a"};">${fmt(Math.max(0, opts.balance))}</span>
+         </div>
+       </div>
+
+       <p style="font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:20px;">Payment History</p>
+       <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+         <thead>
+           <tr style="background:#f8fafc;">
+             <th style="padding:8px 12px;font-size:12px;font-weight:600;color:#94a3b8;text-align:left;">Date</th>
+             <th style="padding:8px 12px;font-size:12px;font-weight:600;color:#94a3b8;text-align:left;">Method</th>
+             <th style="padding:8px 12px;font-size:12px;font-weight:600;color:#94a3b8;text-align:right;">Amount</th>
+           </tr>
+         </thead>
+         <tbody>${paymentRows}</tbody>
+       </table>
+
+       ${opts.notes ? `<p style="margin-top:16px;font-size:13px;color:#64748b;font-style:italic;">${opts.notes}</p>` : ""}
+
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View in Student Portal →</a>
+       </div>`
+    ));
+}
+
 // ─── Program completion (to student) ──────────────────────────────────────────
 
 export async function sendCompletionEmail(opts: {
