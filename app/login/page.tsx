@@ -69,6 +69,9 @@ export default async function LoginPage({
             </a>
           </p>
         </form>
+        <p className="mt-6 text-center text-xs text-slate-600">
+          Access is by invitation only. Contact your administrator if you need an account.
+        </p>
       </div>
     </div>
   );
