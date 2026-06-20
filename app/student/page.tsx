@@ -1,13 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
-import type { Assignment, Course } from "@/lib/types";
+import type { Announcement, Assignment, Course } from "@/lib/types";
 import Link from "next/link";
 
 export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  const [{ data: enrollments }, { data: program }, { data: programCourses }] = await Promise.all([
+  const [{ data: enrollments }, { data: program }, { data: programCourses }, { data: announcements }] = await Promise.all([
     supabase
       .from("enrollments")
       .select("*, courses(*, cohorts(name))")
@@ -18,6 +18,7 @@ export default async function StudentHomePage() {
     profile.program_id
       ? supabase.from("courses").select("*").eq("program_id", profile.program_id)
       : Promise.resolve({ data: [] as Course[] }),
+    supabase.from("announcements").select("*").in("target", ["all", "students"]).order("created_at", { ascending: false }).limit(5),
   ]);
 
   const courseIds = (enrollments ?? []).map((e) => e.courses.id);
@@ -103,6 +104,22 @@ export default async function StudentHomePage() {
                 </Link>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Announcements */}
+      {(announcements ?? []).length > 0 && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-800">Announcements</h2>
+          <div className="mt-3 space-y-3">
+            {(announcements ?? []).map((a: Announcement) => (
+              <div key={a.id} className="border-l-4 border-gold pl-3">
+                <p className="font-medium text-slate-900">{a.title}</p>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.body}</p>
+                <p className="mt-1 text-xs text-slate-400">{new Date(a.created_at).toLocaleDateString()}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

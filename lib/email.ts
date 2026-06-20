@@ -223,6 +223,45 @@ export async function sendApplicationConfirmationEmail(opts: {
     ));
 }
 
+// ─── Program completion (to student) ──────────────────────────────────────────
+
+export async function sendCompletionEmail(opts: {
+  to: string;
+  studentName: string;
+  programName: string;
+  studentNumber: string | null;
+  portalUrl: string;
+}) {
+  await send(opts.to, `Congratulations — You have completed ${opts.programName}`,
+    wrap("Program Completed 🎓",
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Congratulations! You have successfully completed all requirements for the <strong>${opts.programName}</strong> program.</p>
+       ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Student ID: <strong>${opts.studentNumber}</strong></p>` : ""}
+       <p style="font-size:15px;color:#475569;">We are proud of your achievement and commitment. Your certificate will be prepared and you will be contacted with further details.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Your Portal →</a></div>`
+    ));
+}
+
+// ─── Bulk announcement (to students / all) ─────────────────────────────────
+
+export async function sendBulkAnnouncementEmail(opts: {
+  to: string[];
+  title: string;
+  body: string;
+}) {
+  const t = mailer();
+  if (!t) {
+    console.warn("Email skipped — GMAIL_USER / GMAIL_APP_PASSWORD not set");
+    return;
+  }
+  const from = `"${SCHOOL_NAME}" <${process.env.GMAIL_USER}>`;
+  const html = wrap(opts.title, `<p style="font-size:15px;color:#475569;white-space:pre-wrap;">${opts.body}</p>`);
+  // Send in small batches to respect Gmail rate limits
+  for (const to of opts.to) {
+    await t.sendMail({ from, to, subject: opts.title, html }).catch(() => null);
+  }
+}
+
 // ─── Account invite (to new user) ──────────────────────────────────────────
 
 export async function sendAccountInviteEmail(opts: {

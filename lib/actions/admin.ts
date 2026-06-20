@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
@@ -286,4 +286,61 @@ export async function resendInvite(formData: FormData) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${baseUrl}/login` });
   revalidatePath("/admin/users");
+}
+
+export async function updatePaymentStatus(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const status = String(formData.get("payment_status"));
+  if (!["unpaid", "partial", "paid"].includes(status)) return;
+  await supabase.from("profiles").update({ payment_status: status }).eq("id", id);
+  revalidatePath("/admin/students");
+}
+
+export async function markProgramComplete(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const undo = formData.get("undo") === "1";
+
+  const completedAt = undo ? null : new Date().toISOString();
+  await supabase.from("profiles").update({ completed_at: completedAt }).eq("id", id);
+
+  if (!undo) {
+    const { data: student } = await supabase.from("profiles").select("*, programs(name)").eq("id", id).single();
+    if (student) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const programName = (student as unknown as { programs?: { name: string } }).programs?.name ?? "your program";
+      void sendCompletionEmail({
+        to: student.email,
+        studentName: student.full_name,
+        programName,
+        studentNumber: student.student_number,
+        portalUrl: `${baseUrl}/student`,
+      });
+    }
+  }
+
+  revalidatePath("/admin/students");
+}
+
+export async function sendBulkEmail(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const title = String(formData.get("title") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  const target = String(formData.get("target") || "students");
+  if (!title || !body) return;
+
+  let query = supabase.from("profiles").select("email");
+  if (target === "students") query = query.eq("role", "student");
+  else if (target === "professors") query = query.eq("role", "professor");
+  else query = query.in("role", ["student", "professor"]);
+
+  const { data: recipients } = await query;
+  if (!recipients || recipients.length === 0) return;
+
+  void sendBulkAnnouncementEmail({ to: recipients.map((r) => r.email), title, body });
+  revalidatePath("/admin/announcements");
 }

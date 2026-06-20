@@ -1,4 +1,5 @@
 export type Role = "admin" | "professor" | "student";
+export type PaymentStatus = "unpaid" | "partial" | "paid";
 
 export interface Profile {
   id: string;
@@ -8,6 +9,8 @@ export interface Profile {
   program_id: string | null;
   student_number: string | null;
   avatar_url: string | null;
+  payment_status: PaymentStatus;
+  completed_at: string | null;
   created_at: string;
 }
 
@@ -91,4 +94,34 @@ export interface Submission {
   feedback: string | null;
   graded_at: string | null;
   graded_by: string | null;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  author_id: string | null;
+  target: "all" | "students" | "professors";
+  created_at: string;
+}
+
+export interface CourseMaterial {
+  id: string;
+  course_id: string;
+  title: string;
+  type: "link" | "note" | "file";
+  url: string | null;
+  body: string | null;
+  file_url: string | null;
+  created_at: string;
+}
+
+export interface Attendance {
+  id: string;
+  course_id: string;
+  student_id: string;
+  session_date: string;
+  present: boolean;
+  notes: string | null;
+  created_at: string;
 }

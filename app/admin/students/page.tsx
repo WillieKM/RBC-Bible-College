@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
+import { DeleteButton } from "@/components/DeleteButton";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
@@ -107,17 +109,44 @@ export default async function AdminStudentsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="flex flex-col items-end gap-1.5">
                     {program ? (
                       <>
                         <Link href={`/admin/programs/${program.id}`} className="text-sm font-medium text-gold-dark hover:underline">
                           {program.name}
                         </Link>
-                        <p className="text-sm text-slate-500">{completed} of {total} credits completed</p>
+                        <p className="text-sm text-slate-500">{completed} of {total} credits</p>
                       </>
                     ) : (
-                      <span className="text-sm text-slate-400">No program assigned</span>
+                      <span className="text-sm text-slate-400">No program</span>
                     )}
+                    {/* Payment status */}
+                    <form action={updatePaymentStatus} className="flex items-center gap-1">
+                      <input type="hidden" name="id" value={student.id} />
+                      <select
+                        name="payment_status"
+                        defaultValue={student.payment_status ?? "unpaid"}
+                        className={`rounded border px-2 py-0.5 text-xs font-semibold ${student.payment_status === "paid" ? "border-green-300 bg-green-50 text-green-700" : student.payment_status === "partial" ? "border-amber-300 bg-amber-50 text-amber-700" : "border-red-200 bg-red-50 text-red-700"}`}
+                        onChange={undefined}
+                      >
+                        <option value="unpaid">Unpaid</option>
+                        <option value="partial">Partial</option>
+                        <option value="paid">Paid</option>
+                      </select>
+                      <DeleteButton label="Save" pendingLabel="…" className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-50" />
+                    </form>
+                    {/* Completion */}
+                    <form action={markProgramComplete}>
+                      <input type="hidden" name="id" value={student.id} />
+                      {student.completed_at ? (
+                        <>
+                          <input type="hidden" name="undo" value="1" />
+                          <DeleteButton label="✓ Completed — Undo" pendingLabel="…" className="text-xs font-semibold text-green-600 hover:text-red-500 disabled:opacity-50" />
+                        </>
+                      ) : (
+                        <DeleteButton label="Mark Complete" pendingLabel="…" className="text-xs text-slate-400 hover:text-green-600 disabled:opacity-50" />
+                      )}
+                    </form>
                   </div>
                 </div>
               );
