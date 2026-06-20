@@ -122,30 +122,33 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=${encodeURIComponent(error.message)}`);
   }
 
-  await sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement });
-
-  const admin = createAdminClient();
-  const { data: programRow } = await admin
+  // Look up program professor in parallel with firing emails
+  const adminClient = createAdminClient();
+  const { data: programRow } = await adminClient
     .from("programs")
     .select("professor_id, profiles(full_name, email)")
     .eq("name", program)
     .maybeSingle();
 
   const programProfessor = programRow?.profiles as unknown as { full_name: string; email: string } | null;
-  if (programRow?.professor_id && programProfessor?.email) {
-    await sendNewApplicationToProfessorEmail({
-      to: programProfessor.email,
-      professorName: programProfessor.full_name,
-      fullName,
-      email,
-      phone: phone || null,
-      program,
-    });
-  }
 
-  if (source === "tbcs") {
-    await sendAccreditationEmail({ to: email, fullName, program });
-  }
+  // Fire all emails in parallel — allSettled means one failure won't crash the form
+  await Promise.allSettled([
+    sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement }),
+    programRow?.professor_id && programProfessor?.email
+      ? sendNewApplicationToProfessorEmail({
+          to: programProfessor.email,
+          professorName: programProfessor.full_name,
+          fullName,
+          email,
+          phone: phone || null,
+          program,
+        })
+      : Promise.resolve(),
+    source === "tbcs"
+      ? sendAccreditationEmail({ to: email, fullName, program })
+      : Promise.resolve(),
+  ]);
 
   redirect(`${returnTo}?success=1`);
 }
@@ -225,14 +228,15 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString(), cohort_id: cohortId })
       .eq("id", id);
 
-    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
+    // Fire approval email without blocking revalidation
+    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
   } else {
     await supabase
       .from("applications")
       .update({ status: "rejected", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: false });
+    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: false });
   }
 
   revalidatePath("/admin/applications");
