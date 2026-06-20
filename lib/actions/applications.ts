@@ -92,9 +92,10 @@ export async function submitApplication(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  // Block duplicate pending applications from the same email
-  const { data: existing } = await supabase
+  // Use admin client to bypass RLS — anon client can't read existing applications
+  const { data: existing } = await adminClient
     .from("applications")
     .select("id")
     .eq("email", email)
@@ -123,7 +124,6 @@ export async function submitApplication(formData: FormData) {
   }
 
   // Look up program professor in parallel with firing emails
-  const adminClient = createAdminClient();
   const { data: programRow } = await adminClient
     .from("programs")
     .select("professor_id, profiles(full_name, email)")
