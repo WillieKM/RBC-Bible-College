@@ -6,6 +6,7 @@ import {
   sendNewApplicationEmail,
   sendNewApplicationToProfessorEmail,
   sendApplicationDecisionEmail,
+  sendApplicationConfirmationEmail,
   sendAccreditationEmail,
 } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
@@ -94,17 +95,12 @@ export async function submitApplication(formData: FormData) {
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
-  // Use admin client to bypass RLS — anon client can't read existing applications
-  const { data: existing } = await adminClient
+  // Delete any existing pending application from this email so we always keep the latest
+  await adminClient
     .from("applications")
-    .select("id")
+    .delete()
     .eq("email", email)
-    .eq("status", "pending")
-    .maybeSingle();
-
-  if (existing) {
-    redirect(`${returnTo}?error=You+already+have+a+pending+application.+We+will+contact+you+soon.`);
-  }
+    .eq("status", "pending");
 
   const { error } = await supabase.from("applications").insert({
     full_name: fullName,
@@ -134,7 +130,11 @@ export async function submitApplication(formData: FormData) {
 
   // Fire all emails in parallel — allSettled means one failure won't crash the form
   await Promise.allSettled([
+    // Confirmation to the applicant
+    sendApplicationConfirmationEmail({ to: email, fullName, program, region }),
+    // Notification to admissions
     sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement }),
+    // Notification to program professor if assigned
     programRow?.professor_id && programProfessor?.email
       ? sendNewApplicationToProfessorEmail({
           to: programProfessor.email,
@@ -145,6 +145,7 @@ export async function submitApplication(formData: FormData) {
           program,
         })
       : Promise.resolve(),
+    // TBCS accreditation confirmation
     source === "tbcs"
       ? sendAccreditationEmail({ to: email, fullName, program })
       : Promise.resolve(),
