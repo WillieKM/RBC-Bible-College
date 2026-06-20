@@ -123,8 +123,8 @@ export default async function ApplyPage({
               <input id="occupation" name="occupation" type="text" className={inputClass} />
             </div>
             <div>
-              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo</label>
-              <input id="passport_photo" name="passport_photo" type="file" accept="image/*" className={inputClass} />
+              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo *</label>
+              <input id="passport_photo" name="passport_photo" type="file" accept="image/*" required className={inputClass} />
             </div>
 
             <h2 className="rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink">Marital Status</h2>
