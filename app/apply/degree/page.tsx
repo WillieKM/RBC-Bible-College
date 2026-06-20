@@ -41,9 +41,9 @@ const ADVERTISING_OPTIONS = [
 export default async function ApplyDegreePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; region?: string }>;
+  searchParams: Promise<{ error?: string; region?: string }>;
 }) {
-  const { error, success, region } = await searchParams;
+  const { error, region } = await searchParams;
   const presetRegion = region === "usa" || region === "international" ? region : null;
   const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
@@ -69,20 +69,13 @@ export default async function ApplyDegreePage({
           )}
         </div>
 
-        {success && (
-          <div className="mt-4 rounded-lg bg-green-950 border border-green-800 px-3 py-2 text-sm text-green-300">
-            Your application has been submitted! We&apos;ll be in touch by email, including
-            information confirming the accreditation of this program.
-          </div>
-        )}
         {error && (
           <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
             {error}
           </div>
         )}
 
-        {!success && (
-          <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
+        <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="tbcs" />
 
             {presetRegion ? (
@@ -561,7 +554,6 @@ export default async function ApplyDegreePage({
               Submit Application
             </button>
           </form>
-        )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">

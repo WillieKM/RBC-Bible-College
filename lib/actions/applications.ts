@@ -151,7 +151,12 @@ export async function submitApplication(formData: FormData) {
       : Promise.resolve(),
   ]);
 
-  redirect(`${returnTo}?success=1`);
+  const params = new URLSearchParams({
+    name: fullName,
+    email,
+    program,
+  });
+  redirect(`/apply/success?${params.toString()}`);
 }
 
 export async function reviewApplication(formData: FormData) {

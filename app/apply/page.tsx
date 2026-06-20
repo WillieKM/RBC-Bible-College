@@ -28,9 +28,9 @@ function FeesBlock({ region }: { region: string | null }) {
 export default async function ApplyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string; region?: string }>;
+  searchParams: Promise<{ error?: string; region?: string }>;
 }) {
-  const { error, success, region } = await searchParams;
+  const { error, region } = await searchParams;
   const presetRegion = region === "usa" || region === "international" ? region : null;
   const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
@@ -48,19 +48,13 @@ export default async function ApplyPage({
           )}
         </div>
 
-        {success && (
-          <div className="mt-4 rounded-lg bg-green-950 border border-green-800 px-3 py-2 text-sm text-green-300">
-            Your application has been submitted! We&apos;ll be in touch by email.
-          </div>
-        )}
         {error && (
           <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
             {error}
           </div>
         )}
 
-        {!success && (
-          <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
+        <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="rbc" />
 
             {presetRegion ? (
@@ -191,7 +185,6 @@ export default async function ApplyPage({
               Submit Application
             </button>
           </form>
-        )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">
