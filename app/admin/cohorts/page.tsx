@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createCohort, deleteCohort } from "@/lib/actions/admin";
 import type { Cohort } from "@/lib/types";
+import Link from "next/link";
 
 export default async function AdminCohortsPage() {
   const supabase = await createClient();
@@ -32,7 +33,9 @@ export default async function AdminCohortsPage() {
         {(cohorts ?? []).map((cohort: Cohort) => (
           <div key={cohort.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
             <div>
-              <p className="font-semibold text-slate-900">{cohort.name}</p>
+              <Link href={`/admin/cohorts/${cohort.id}`} className="font-semibold text-slate-900 hover:text-gold-dark">
+                {cohort.name}
+              </Link>
               <p className="text-sm text-slate-500">
                 {cohort.start_date ?? "?"} – {cohort.end_date ?? "?"}
               </p>

@@ -349,3 +349,77 @@ export async function sendAccountInviteEmail(opts: {
        <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>`
     ));
 }
+
+// ─── Invoice payment reminder ─────────────────────────────────────────────
+
+export async function sendInvoiceReminderEmail(opts: {
+  to: string;
+  studentName: string;
+  invoices: { title: string; balance: number; currency: string }[];
+  totalBalance: number;
+  currency: string;
+  portalUrl: string;
+}) {
+  const rows = opts.invoices
+    .map(
+      (inv) =>
+        `<tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${inv.title}</td>
+         <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;font-weight:600;color:#dc2626;text-align:right;">${inv.currency}${inv.balance.toFixed(2)}</td></tr>`
+    )
+    .join("");
+
+  await send(
+    opts.to,
+    `Payment reminder — ${opts.currency}${opts.totalBalance.toFixed(2)} outstanding`,
+    wrap(
+      "Payment Reminder",
+      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${opts.studentName},</p>
+       <p style="margin:0 0 16px;font-size:15px;color:#334155;">This is a friendly reminder that you have outstanding fees on your account. Please log in to the student portal to view your invoices and make payment arrangements.</p>
+       <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+         <thead><tr>
+           <th style="text-align:left;font-size:12px;color:#94a3b8;text-transform:uppercase;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Invoice</th>
+           <th style="text-align:right;font-size:12px;color:#94a3b8;text-transform:uppercase;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Balance</th>
+         </tr></thead>
+         <tbody>${rows}</tbody>
+         <tfoot><tr>
+           <td style="padding-top:10px;font-size:14px;font-weight:700;color:#1e293b;">Total Outstanding</td>
+           <td style="padding-top:10px;font-size:16px;font-weight:700;color:#dc2626;text-align:right;">${opts.currency}${opts.totalBalance.toFixed(2)}</td>
+         </tr></tfoot>
+       </table>
+       <p style="margin:0 0 20px;font-size:13px;color:#64748b;">If you have already made payment or have questions about your account, please contact the administrative office.</p>
+       <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">View My Invoices</a>`
+    )
+  );
+}
+
+// ─── Assignment due-date reminder ─────────────────────────────────────────
+
+export async function sendAssignmentDueEmail(opts: {
+  to: string;
+  studentName: string;
+  assignments: { title: string; courseTitle: string; dueDate: string }[];
+  portalUrl: string;
+}) {
+  const items = opts.assignments
+    .map(
+      (a) =>
+        `<li style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">
+           <strong>${a.title}</strong><br>
+           <span style="color:#64748b;font-size:13px;">${a.courseTitle} &mdash; due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
+         </li>`
+    )
+    .join("");
+
+  const count = opts.assignments.length;
+  await send(
+    opts.to,
+    `Reminder: ${count} assignment${count !== 1 ? "s" : ""} due tomorrow`,
+    wrap(
+      `Assignment${count !== 1 ? "s" : ""} Due Tomorrow`,
+      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${opts.studentName},</p>
+       <p style="margin:0 0 16px;font-size:15px;color:#334155;">You have ${count} assignment${count !== 1 ? "s" : ""} due tomorrow. Don&rsquo;t forget to submit!</p>
+       <ul style="list-style:none;padding:0;margin:0 0 20px;">${items}</ul>
+       <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">Go to My Courses</a>`
+    )
+  );
+}

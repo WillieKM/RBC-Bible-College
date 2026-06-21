@@ -308,6 +308,32 @@ export async function resendInvite(formData: FormData) {
   revalidatePath("/admin/users");
 }
 
+export async function updateStudentProfile(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const id = String(formData.get("id"));
+  const fullName = String(formData.get("full_name") || "").trim();
+  const studentNumber = String(formData.get("student_number") || "").trim() || null;
+  const region = String(formData.get("region") || "international");
+  const programId = String(formData.get("program_id") || "") || null;
+
+  if (!fullName) return;
+
+  await admin.from("profiles").update({
+    full_name: fullName,
+    student_number: studentNumber,
+    region,
+    program_id: programId,
+  }).eq("id", id);
+
+  if (programId) {
+    await enrollStudentInProgramModules(admin, id, programId);
+  }
+
+  revalidatePath(`/admin/students/${id}`);
+  revalidatePath("/admin/students");
+}
+
 export async function updatePaymentStatus(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = await createClient();

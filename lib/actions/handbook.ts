@@ -11,13 +11,14 @@ export async function saveHandbookPage(formData: FormData) {
   const id = String(formData.get("id") || "") || null;
   const title = String(formData.get("title") || "").trim();
   const body = String(formData.get("body") || "").trim();
+  const section = String(formData.get("section") || "General").trim() || "General";
   const sortOrder = parseInt(String(formData.get("sort_order") || "0"), 10);
   if (!title || !body) return;
 
   if (id) {
-    await supabase.from("handbook_pages").update({ title, body, sort_order: sortOrder, updated_at: new Date().toISOString() }).eq("id", id);
+    await supabase.from("handbook_pages").update({ title, body, section, sort_order: sortOrder, updated_at: new Date().toISOString() }).eq("id", id);
   } else {
-    await supabase.from("handbook_pages").insert({ title, body, sort_order: sortOrder });
+    await supabase.from("handbook_pages").insert({ title, body, section, sort_order: sortOrder });
   }
   revalidatePath("/admin/handbook");
   revalidatePath("/student/handbook");

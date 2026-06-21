@@ -97,7 +97,7 @@ export default async function AdminStudentsPage() {
               const total = student.program_id ? totalCreditsByProgram.get(student.program_id) ?? 0 : 0;
               const completed = completedCredits(student.id, student.program_id);
               return (
-                <div key={student.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <div key={student.id} className="relative flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold/50">
                   <div className="flex items-center gap-3">
                     {student.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -112,7 +112,9 @@ export default async function AdminStudentsPage() {
                       </div>
                     )}
                     <div>
-                      <p className="font-semibold text-slate-900">{student.full_name}</p>
+                      <Link href={`/admin/students/${student.id}`} className="font-semibold text-slate-900 hover:text-gold-dark after:absolute after:inset-0">
+                        {student.full_name}
+                      </Link>
                       <p className="text-sm text-slate-500">{student.email}</p>
                       {student.student_number && (
                         <p className="text-xs text-slate-400">ID: {student.student_number}</p>

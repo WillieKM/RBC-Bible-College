@@ -190,7 +190,34 @@ export interface HandbookPage {
   id: string;
   title: string;
   body: string;
+  section: string;
   sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrayerRequest {
+  id: string;
+  author_id: string | null;
+  body: string;
+  is_anonymous: boolean;
+  created_at: string;
+}
+
+export interface PrayerInteraction {
+  id: string;
+  request_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface LibraryResource {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  category: string;
+  author_id: string | null;
   created_at: string;
   updated_at: string;
 }
