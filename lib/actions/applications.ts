@@ -10,6 +10,8 @@ import {
   sendAccreditationEmail,
 } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
+import { getCurrentProfile } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -160,7 +162,7 @@ export async function submitApplication(formData: FormData) {
 }
 
 export async function reviewApplication(formData: FormData) {
-  await requireRole(["admin"]);
+  const adminProfile = await requireRole(["admin"]);
 
   const id = String(formData.get("id"));
   const decision = String(formData.get("decision")); // "approve" | "reject"
@@ -234,8 +236,8 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString(), cohort_id: cohortId })
       .eq("id", id);
 
-    // Fire approval email without blocking revalidation
     void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
+    void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
     await supabase
       .from("applications")
@@ -243,6 +245,7 @@ export async function reviewApplication(formData: FormData) {
       .eq("id", id);
 
     void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: false });
+    void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "reject_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email } });
   }
 
   revalidatePath("/admin/applications");

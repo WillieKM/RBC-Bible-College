@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ApplyLinks } from "@/components/ApplyLinks";
 import Link from "next/link";
 
 export default async function AdminHomePage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const [
     { count: pendingCount },
@@ -15,6 +17,9 @@ export default async function AdminHomePage() {
     { data: recentGrades },
     { data: recentAssignments },
     { data: recentApplications },
+    { data: invoiceRows },
+    { data: paymentRows },
+    { count: completedCount },
   ] = await Promise.all([
     supabase.from("applications").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("programs").select("*", { count: "exact", head: true }),
@@ -46,7 +51,15 @@ export default async function AdminHomePage() {
       .select("id, full_name, program, status, created_at, region")
       .order("created_at", { ascending: false })
       .limit(6),
+
+    admin.from("invoices").select("total_amount"),
+    admin.from("payments").select("amount"),
+    admin.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student").not("completed_at", "is", null),
   ]);
+
+  const totalBilled = (invoiceRows ?? []).reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
+  const totalCollected = (paymentRows ?? []).reduce((sum, r) => sum + (r.amount ?? 0), 0);
+  const totalOutstanding = Math.max(0, totalBilled - totalCollected);
 
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -62,26 +75,29 @@ export default async function AdminHomePage() {
       <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
 
       {/* Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Link href="/admin/applications" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Pending</p>
+          <p className="text-sm font-medium text-slate-500">Pending Apps</p>
           <p className="mt-1 text-3xl font-bold text-amber-600">{pendingCount ?? 0}</p>
-        </Link>
-        <Link href="/admin/programs" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Programs</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{programCount ?? 0}</p>
-        </Link>
-        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Modules</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{courseCount ?? 0}</p>
         </Link>
         <Link href="/admin/students" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
           <p className="text-sm font-medium text-slate-500">Students</p>
           <p className="mt-1 text-3xl font-bold text-slate-900">{studentCount ?? 0}</p>
+          {(completedCount ?? 0) > 0 && (
+            <p className="mt-0.5 text-xs text-green-600">{completedCount} completed</p>
+          )}
         </Link>
-        <Link href="/admin/users" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Professors</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{professorCount ?? 0}</p>
+        <Link href="/admin/courses" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Modules</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{courseCount ?? 0}</p>
+          <p className="mt-0.5 text-xs text-slate-400">{programCount ?? 0} programs · {professorCount ?? 0} professors</p>
+        </Link>
+        <Link href="/admin/invoices" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
+          <p className="text-sm font-medium text-slate-500">Revenue</p>
+          <p className="mt-1 text-2xl font-bold text-green-700">K{totalCollected.toLocaleString()}</p>
+          {totalOutstanding > 0 && (
+            <p className="mt-0.5 text-xs text-red-500">K{totalOutstanding.toLocaleString()} outstanding</p>
+          )}
         </Link>
       </div>
 

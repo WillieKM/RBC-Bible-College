@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
-import type { Assignment, CourseMaterial, Attendance } from "@/lib/types";
+import { postDiscussion, deleteDiscussion } from "@/lib/actions/discussions";
+import { DeleteButton } from "@/components/DeleteButton";
+import type { Assignment, CourseMaterial, Attendance, Discussion } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -21,11 +23,12 @@ export default async function StudentCoursePage({
     .single();
   if (!enrollment) notFound();
 
-  const [{ data: assignments }, { data: submissions }, { data: materials }, { data: attendanceRows }] = await Promise.all([
+  const [{ data: assignments }, { data: submissions }, { data: materials }, { data: attendanceRows }, { data: discussions }] = await Promise.all([
     supabase.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
     supabase.from("submissions").select("*").eq("student_id", profile.id),
     supabase.from("course_materials").select("*").eq("course_id", id).order("created_at", { ascending: false }),
     supabase.from("attendance").select("*").eq("course_id", id).eq("student_id", profile.id).order("session_date", { ascending: false }),
+    supabase.from("course_discussions").select("*, profiles(full_name, role)").eq("course_id", id).is("parent_id", null).order("created_at", { ascending: true }),
   ]);
 
   const submissionMap = new Map((submissions ?? []).map((s) => [s.assignment_id, s]));
@@ -119,6 +122,44 @@ export default async function StudentCoursePage({
           );
         })}
         {(assignments ?? []).length === 0 && <p className="text-sm text-slate-500">No assignments yet.</p>}
+      </div>
+
+      {/* Discussions */}
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold text-slate-800">Course Discussion</h2>
+        <form action={postDiscussion} className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <input type="hidden" name="course_id" value={enrollment.courses.id} />
+          <textarea name="body" rows={2} required placeholder="Ask a question or leave a comment…" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+          <div className="mt-2 flex justify-end">
+            <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Post</button>
+          </div>
+        </form>
+        <div className="mt-3 space-y-3">
+          {(discussions ?? []).map((d) => {
+            const disc = d as unknown as Discussion & { profiles?: { full_name: string; role: string } | null };
+            const author = disc.profiles ?? null;
+            return (
+              <div key={disc.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-800">{author?.full_name ?? "Unknown"}</span>
+                    {author?.role === "professor" && <span className="ml-2 rounded-full bg-gold/20 px-2 py-0.5 text-xs font-semibold text-gold-dark">professor</span>}
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{disc.body}</p>
+                    <p className="mt-1 text-xs text-slate-400">{new Date(disc.created_at).toLocaleString()}</p>
+                  </div>
+                  {disc.author_id === profile.id && (
+                    <form action={deleteDiscussion}>
+                      <input type="hidden" name="id" value={disc.id} />
+                      <input type="hidden" name="course_id" value={enrollment.courses.id} />
+                      <DeleteButton label="Delete" pendingLabel="…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
+                    </form>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {(discussions ?? []).length === 0 && <p className="text-sm text-slate-400">No messages yet. Start the conversation!</p>}
+        </div>
       </div>
     </div>
   );

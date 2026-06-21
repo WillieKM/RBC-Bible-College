@@ -33,6 +33,9 @@ export default async function AdminInvoicesPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
+        <a href="/api/export/invoices" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+          Export CSV
+        </a>
       </div>
 
       {/* Create invoice */}

@@ -148,3 +148,53 @@ export interface Payment {
   notes: string | null;
   created_at: string;
 }
+
+export interface Discussion {
+  id: string;
+  course_id: string;
+  author_id: string;
+  parent_id: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  end_date: string | null;
+  type: "holiday" | "exam" | "assignment" | "class" | "other";
+  author_id: string | null;
+  created_at: string;
+}
+
+export interface HandbookPage {
+  id: string;
+  title: string;
+  body: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_id: string | null;
+  actor_name: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}

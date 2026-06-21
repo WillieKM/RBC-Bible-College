@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { sendGradedEmail } from "@/lib/email";
+import { writeAuditLog } from "@/lib/audit";
+import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
 
 export async function createAssignment(formData: FormData) {
@@ -56,7 +58,8 @@ export async function gradeSubmission(formData: FormData) {
 
   if (submission?.profiles && submission?.assignments) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    await sendGradedEmail({
+    const reviewUrl = `${baseUrl}/student/assignments/${assignmentId}`;
+    void sendGradedEmail({
       to: submission.profiles.email,
       studentName: submission.profiles.full_name,
       assignmentTitle: submission.assignments.title,
@@ -64,8 +67,15 @@ export async function gradeSubmission(formData: FormData) {
       grade,
       pointsPossible: submission.assignments.points_possible,
       feedback,
-      reviewUrl: `${baseUrl}/student/assignments/${assignmentId}`,
+      reviewUrl,
     });
+    void createNotification({
+      userId: submission.student_id,
+      title: `Grade posted: ${submission.assignments.title}`,
+      body: `You received ${grade}${submission.assignments.points_possible ? `/${submission.assignments.points_possible}` : ""} pts${feedback ? ` — ${feedback}` : ""}`,
+      link: `/student/assignments/${assignmentId}`,
+    });
+    void writeAuditLog({ actorId: profile.id, actorName: profile.full_name, action: "grade_submission", targetType: "submission", targetId: submissionId, details: { grade, assignmentId, student: submission.profiles.full_name } });
   }
 
   revalidatePath(`/professor/assignments/${assignmentId}`);

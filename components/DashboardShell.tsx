@@ -1,9 +1,11 @@
 import { logout } from "@/lib/actions/auth";
-import type { Profile } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import type { Profile, Notification } from "@/lib/types";
+import { NotificationBell } from "@/components/NotificationBell";
 import Link from "next/link";
 import Image from "next/image";
 
-export function DashboardShell({
+export async function DashboardShell({
   profile,
   links,
   children,
@@ -15,6 +17,19 @@ export function DashboardShell({
   activePortal?: "admin" | "student" | "professor";
 }) {
   const isAdmin = profile.role === "admin";
+  const showBell = profile.role === "student" || profile.role === "professor";
+
+  let notifications: Notification[] = [];
+  if (showBell) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    notifications = (data ?? []) as Notification[];
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -73,6 +88,7 @@ export function DashboardShell({
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            {showBell && <NotificationBell notifications={notifications} />}
             {profile.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

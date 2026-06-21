@@ -74,7 +74,12 @@ export default async function AdminStudentsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">Students</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900">Students</h1>
+        <a href="/api/export/students" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+          Export CSV
+        </a>
+      </div>
 
       {sortedGroups.length === 0 && <p className="mt-6 text-sm text-slate-500">No students yet.</p>}
 
