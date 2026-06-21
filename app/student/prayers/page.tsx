@@ -5,7 +5,7 @@ import { DeleteButton } from "@/components/DeleteButton";
 import type { PrayerRequest, PrayerInteraction } from "@/lib/types";
 
 export default async function StudentPrayersPage() {
-  const profile = await requireRole(["student"]);
+  const profile = await requireRole(["student", "professor"]);
   const supabase = await createClient();
 
   const [{ data: requests }, { data: interactions }] = await Promise.all([
