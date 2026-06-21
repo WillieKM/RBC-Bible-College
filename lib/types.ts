@@ -11,6 +11,7 @@ export interface Profile {
   avatar_url: string | null;
   payment_status: PaymentStatus;
   completed_at: string | null;
+  region: string | null;
   created_at: string;
 }
 
@@ -19,7 +20,8 @@ export interface Program {
   name: string;
   program_level: ProgramLevel;
   professor_id: string | null;
-  fee: number | null;
+  fee_international: number | null;
+  fee_usa: number | null;
   created_at: string;
 }
 
@@ -133,8 +135,12 @@ export type InvoiceStatus = "unpaid" | "partial" | "paid";
 export interface Invoice {
   id: string;
   student_id: string;
+  invoice_number: string | null;
   title: string;
+  description: string | null;
   total_amount: number;
+  due_date: string | null;
+  status: string | null;
   notes: string | null;
   created_at: string;
 }

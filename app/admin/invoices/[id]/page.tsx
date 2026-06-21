@@ -65,16 +65,16 @@ export default async function AdminInvoiceDetailPage({
         <div className="mt-5 grid grid-cols-3 gap-3">
           <div className="rounded-lg bg-slate-50 p-3 text-center">
             <p className="text-xs font-medium text-slate-500">Total</p>
-            <p className="mt-1 text-lg font-bold text-slate-900">K{invoice.total_amount.toFixed(2)}</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">KSh{invoice.total_amount.toFixed(2)}</p>
           </div>
           <div className="rounded-lg bg-green-50 p-3 text-center">
             <p className="text-xs font-medium text-green-600">Paid</p>
-            <p className="mt-1 text-lg font-bold text-green-700">K{amountPaid.toFixed(2)}</p>
+            <p className="mt-1 text-lg font-bold text-green-700">KSh{amountPaid.toFixed(2)}</p>
           </div>
           <div className={`rounded-lg p-3 text-center ${isPaid ? "bg-green-50" : "bg-red-50"}`}>
             <p className={`text-xs font-medium ${isPaid ? "text-green-600" : "text-red-500"}`}>Balance</p>
             <p className={`mt-1 text-lg font-bold ${isPaid ? "text-green-700" : "text-red-600"}`}>
-              K{Math.max(0, balance).toFixed(2)}
+              KSh{Math.max(0, balance).toFixed(2)}
             </p>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default async function AdminInvoiceDetailPage({
             {payments.map((p) => (
               <div key={p.id} className="flex items-center justify-between px-5 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">K{p.amount.toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-slate-900">KSh{p.amount.toFixed(2)}</p>
                   <p className="text-xs text-slate-500 capitalize">
                     {p.payment_date} · {p.method}{p.reference ? ` — ${p.reference}` : ""}
                   </p>

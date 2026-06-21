@@ -50,27 +50,60 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
       </form>
       <p className="mt-2 text-sm text-slate-500">The assigned professor is emailed whenever a new application comes in for this program.</p>
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Program Fee</h2>
-      <form action={updateProgramFee} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Program Fees</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Set separate fees for international (Kenya/Africa) and USA students. The correct fee is automatically invoiced when a student is approved, based on the region they applied from.
+      </p>
+      <form action={updateProgramFee} className="mt-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="id" value={(program as Program).id} />
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Total fee (K)</label>
-          <input
-            name="fee"
-            type="number"
-            step="0.01"
-            min="0"
-            defaultValue={(program as Program).fee ?? ""}
-            placeholder="e.g. 2000"
-            className="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              International / Kenya fee
+              <span className="ml-1 text-xs font-normal text-slate-400">(KSh — Kenyan Shilling)</span>
+            </label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">K</span>
+              <input
+                name="fee_international"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={(program as Program).fee_international ?? ""}
+                placeholder="e.g. 1500"
+                className="w-44 rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              USA fee
+              <span className="ml-1 text-xs font-normal text-slate-400">(USD $)</span>
+            </label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">$</span>
+              <input
+                name="fee_usa"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={(program as Program).fee_usa ?? ""}
+                placeholder="e.g. 500"
+                className="w-44 rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm"
+              />
+            </div>
+          </div>
+          <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Save Fees</button>
         </div>
-        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Save Fee</button>
-        {(program as Program).fee != null && (
-          <p className="text-sm text-slate-500">
-            Current fee: <span className="font-semibold text-slate-700">K{Number((program as Program).fee).toLocaleString()}</span>.
-            This amount is automatically invoiced when a student is approved into this program.
-          </p>
+        {((program as Program).fee_international != null || (program as Program).fee_usa != null) && (
+          <div className="mt-3 flex flex-wrap gap-4 rounded-lg bg-slate-50 px-4 py-3 text-sm">
+            {(program as Program).fee_international != null && (
+              <span>International: <strong>KSh{Number((program as Program).fee_international).toLocaleString()}</strong></span>
+            )}
+            {(program as Program).fee_usa != null && (
+              <span>USA: <strong>${Number((program as Program).fee_usa).toLocaleString()}</strong></span>
+            )}
+          </div>
         )}
       </form>
 

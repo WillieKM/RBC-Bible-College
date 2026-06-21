@@ -190,28 +190,36 @@ export async function reviewApplication(formData: FormData) {
       redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message)}`);
     }
 
+    const studentRegion = application.region ?? "international"; // "usa" | "international"
+
     let programId: string | null = null;
-    let programFee: number | null = null;
+    let programFeeIntl: number | null = null;
+    let programFeeUsa: number | null = null;
     if (application.program) {
       const { data: existingProgram } = await admin
         .from("programs")
-        .select("id, fee")
+        .select("id, fee_international, fee_usa")
         .eq("name", application.program)
         .maybeSingle();
 
       if (existingProgram) {
         programId = existingProgram.id;
-        programFee = existingProgram.fee ?? null;
+        programFeeIntl = existingProgram.fee_international ?? null;
+        programFeeUsa = existingProgram.fee_usa ?? null;
       } else {
         const { data: newProgram } = await admin
           .from("programs")
           .insert({ name: application.program, program_level: application.program_level })
-          .select("id, fee")
+          .select("id, fee_international, fee_usa")
           .single();
         programId = newProgram?.id ?? null;
-        programFee = newProgram?.fee ?? null;
+        programFeeIntl = newProgram?.fee_international ?? null;
+        programFeeUsa = newProgram?.fee_usa ?? null;
       }
     }
+
+    // Pick the right fee based on student's region
+    const programFee = studentRegion === "usa" ? programFeeUsa : programFeeIntl;
 
     const year = new Date().getFullYear();
     const { count: studentCount } = await admin
@@ -228,23 +236,25 @@ export async function reviewApplication(formData: FormData) {
       program_id: programId,
       student_number: studentNumber,
       avatar_url: application.photo_url ?? null,
+      region: studentRegion,
     });
 
     if (programId) {
       await enrollStudentInProgramModules(admin, invited.user.id, programId);
     }
 
-    // Auto-create fee invoice if the program has a fee set
+    // Auto-create fee invoice if the program has a fee set for this student's region
     if (programFee && programFee > 0) {
-      const year = new Date().getFullYear();
+      const invYear = new Date().getFullYear();
       const { count: invCount } = await admin
         .from("invoices")
         .select("id", { count: "exact", head: true });
-      const invoiceNumber = `INV-${year}-${String((invCount ?? 0) + 1).padStart(4, "0")}`;
+      const invoiceNumber = `INV-${invYear}-${String((invCount ?? 0) + 1).padStart(4, "0")}`;
+      const currency = studentRegion === "usa" ? "$" : "KSh";
       await admin.from("invoices").insert({
         student_id: invited.user.id,
         title: `${application.program} — Program Fees`,
-        description: `Tuition and program fees for ${application.program}`,
+        description: `Tuition and program fees for ${application.program} (${studentRegion === "usa" ? "USA" : "International"} rate: ${currency}${programFee.toLocaleString()})`,
         total_amount: programFee,
         invoice_number: invoiceNumber,
       });

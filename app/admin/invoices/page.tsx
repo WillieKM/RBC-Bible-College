@@ -89,9 +89,9 @@ export default async function AdminInvoicesPage() {
             </div>
             <div className="flex items-center gap-4 text-right">
               <div>
-                <p className="text-sm font-semibold text-slate-800">K{inv.total_amount.toFixed(2)}</p>
+                <p className="text-sm font-semibold text-slate-800">KSh{inv.total_amount.toFixed(2)}</p>
                 <p className="text-xs text-slate-500">
-                  Paid K{inv.paid.toFixed(2)} · Bal K{Math.max(0, inv.balance).toFixed(2)}
+                  Paid KSh{inv.paid.toFixed(2)} · Bal KSh{Math.max(0, inv.balance).toFixed(2)}
                 </p>
               </div>
               {statusBadge(inv.total_amount, inv.paid)}

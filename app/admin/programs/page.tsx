@@ -64,8 +64,12 @@ export default async function AdminProgramsPage() {
                 {" · "}
                 {program.professor_id ? `Lead: ${professorMap.get(program.professor_id) ?? "Unknown"}` : "No professor assigned"}
               </p>
-              {program.fee != null && (
-                <p className="text-xs font-medium text-green-700">Fee: K{Number(program.fee).toLocaleString()}</p>
+              {(program.fee_international != null || program.fee_usa != null) && (
+                <p className="text-xs font-medium text-green-700">
+                  {program.fee_international != null ? `Intl: KSh${Number(program.fee_international).toLocaleString()}` : ""}
+                  {program.fee_international != null && program.fee_usa != null ? "  ·  " : ""}
+                  {program.fee_usa != null ? `USA: $${Number(program.fee_usa).toLocaleString()}` : ""}
+                </p>
               )}
             </div>
             <form action={deleteProgram}>

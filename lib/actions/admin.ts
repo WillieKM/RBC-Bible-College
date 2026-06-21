@@ -80,10 +80,18 @@ export async function updateProgramFee(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = await createClient();
   const id = String(formData.get("id"));
-  const feeStr = String(formData.get("fee") || "").trim();
-  const fee = feeStr === "" ? null : parseFloat(feeStr);
 
-  await supabase.from("programs").update({ fee: isNaN(fee as number) ? null : fee }).eq("id", id);
+  function parseFee(key: string): number | null {
+    const s = String(formData.get(key) || "").trim();
+    if (s === "") return null;
+    const n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+
+  await supabase.from("programs").update({
+    fee_international: parseFee("fee_international"),
+    fee_usa: parseFee("fee_usa"),
+  }).eq("id", id);
   revalidatePath(`/admin/programs/${id}`);
   revalidatePath("/admin/programs");
 }

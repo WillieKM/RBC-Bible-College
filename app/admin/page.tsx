@@ -94,9 +94,9 @@ export default async function AdminHomePage() {
         </Link>
         <Link href="/admin/invoices" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
           <p className="text-sm font-medium text-slate-500">Revenue</p>
-          <p className="mt-1 text-2xl font-bold text-green-700">K{totalCollected.toLocaleString()}</p>
+          <p className="mt-1 text-2xl font-bold text-green-700">KSh{totalCollected.toLocaleString()}</p>
           {totalOutstanding > 0 && (
-            <p className="mt-0.5 text-xs text-red-500">K{totalOutstanding.toLocaleString()} outstanding</p>
+            <p className="mt-0.5 text-xs text-red-500">KSh{totalOutstanding.toLocaleString()} outstanding</p>
           )}
         </Link>
       </div>
