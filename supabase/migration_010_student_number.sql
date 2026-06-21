@@ -3,3 +3,7 @@
 
 alter table profiles
   add column if not exists student_number text unique;
+
+
+
+cHZNxfhC89n6u7kZyzOIlwLEn6BwikgOvEA2Jw+0oRY=
