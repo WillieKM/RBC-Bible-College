@@ -191,22 +191,25 @@ export async function reviewApplication(formData: FormData) {
     }
 
     let programId: string | null = null;
+    let programFee: number | null = null;
     if (application.program) {
       const { data: existingProgram } = await admin
         .from("programs")
-        .select("id")
+        .select("id, fee")
         .eq("name", application.program)
         .maybeSingle();
 
       if (existingProgram) {
         programId = existingProgram.id;
+        programFee = existingProgram.fee ?? null;
       } else {
         const { data: newProgram } = await admin
           .from("programs")
           .insert({ name: application.program, program_level: application.program_level })
-          .select("id")
+          .select("id, fee")
           .single();
         programId = newProgram?.id ?? null;
+        programFee = newProgram?.fee ?? null;
       }
     }
 
@@ -229,6 +232,22 @@ export async function reviewApplication(formData: FormData) {
 
     if (programId) {
       await enrollStudentInProgramModules(admin, invited.user.id, programId);
+    }
+
+    // Auto-create fee invoice if the program has a fee set
+    if (programFee && programFee > 0) {
+      const year = new Date().getFullYear();
+      const { count: invCount } = await admin
+        .from("invoices")
+        .select("id", { count: "exact", head: true });
+      const invoiceNumber = `INV-${year}-${String((invCount ?? 0) + 1).padStart(4, "0")}`;
+      await admin.from("invoices").insert({
+        student_id: invited.user.id,
+        title: `${application.program} — Program Fees`,
+        description: `Tuition and program fees for ${application.program}`,
+        total_amount: programFee,
+        invoice_number: invoiceNumber,
+      });
     }
 
     await supabase

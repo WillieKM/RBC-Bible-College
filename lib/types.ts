@@ -19,6 +19,7 @@ export interface Program {
   name: string;
   program_level: ProgramLevel;
   professor_id: string | null;
+  fee: number | null;
   created_at: string;
 }
 

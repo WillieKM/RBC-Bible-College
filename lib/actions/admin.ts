@@ -76,6 +76,18 @@ export async function assignProgramProfessor(formData: FormData) {
   revalidatePath(`/admin/programs/${id}`);
 }
 
+export async function updateProgramFee(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const feeStr = String(formData.get("fee") || "").trim();
+  const fee = feeStr === "" ? null : parseFloat(feeStr);
+
+  await supabase.from("programs").update({ fee: isNaN(fee as number) ? null : fee }).eq("id", id);
+  revalidatePath(`/admin/programs/${id}`);
+  revalidatePath("/admin/programs");
+}
+
 export async function updateStudentProgram(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = await createClient();

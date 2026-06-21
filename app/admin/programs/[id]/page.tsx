@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram } from "@/lib/actions/admin";
+import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
 import type { Cohort, Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,6 +49,30 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
         </button>
       </form>
       <p className="mt-2 text-sm text-slate-500">The assigned professor is emailed whenever a new application comes in for this program.</p>
+
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Program Fee</h2>
+      <form action={updateProgramFee} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <input type="hidden" name="id" value={(program as Program).id} />
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Total fee (K)</label>
+          <input
+            name="fee"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue={(program as Program).fee ?? ""}
+            placeholder="e.g. 2000"
+            className="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Save Fee</button>
+        {(program as Program).fee != null && (
+          <p className="text-sm text-slate-500">
+            Current fee: <span className="font-semibold text-slate-700">K{Number((program as Program).fee).toLocaleString()}</span>.
+            This amount is automatically invoiced when a student is approved into this program.
+          </p>
+        )}
+      </form>
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-800">Modules</h2>
