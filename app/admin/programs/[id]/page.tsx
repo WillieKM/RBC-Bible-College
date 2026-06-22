@@ -63,7 +63,7 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
               <span className="ml-1 text-xs font-normal text-slate-400">(KSh — Kenyan Shilling)</span>
             </label>
             <div className="relative mt-1">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">K</span>
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">KSh</span>
               <input
                 name="fee_international"
                 type="number"
@@ -71,7 +71,7 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
                 min="0"
                 defaultValue={(program as Program).fee_international ?? ""}
                 placeholder="e.g. 1500"
-                className="w-44 rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm"
+                className="w-44 rounded-lg border border-slate-300 py-2 pl-10 pr-3 text-sm"
               />
             </div>
           </div>
