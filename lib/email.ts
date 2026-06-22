@@ -218,7 +218,10 @@ export async function sendApplicationConfirmationEmail(opts: {
          <p style="margin:0;font-size:16px;font-weight:700;color:#1e293b;">${opts.program}</p>
          ${regionLabel ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${regionLabel}</p>` : ""}
        </div>
-       <p style="font-size:15px;color:#475569;">Our admissions team will review your application and contact you soon. Please keep an eye on your inbox.</p>
+       <p style="font-size:15px;color:#475569;">Our admissions team will review your application and be in touch with you by email. You will receive a further email once a decision has been made on your application.</p>
+       <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:16px 0;">
+         <p style="margin:0;font-size:13px;color:#854d0e;">📬 <strong>Please check your spam or junk folder</strong> if you do not see our emails in your inbox. Add <strong>${process.env.GMAIL_USER ?? "our address"}</strong> to your contacts to make sure future emails reach you.</p>
+       </div>
        <p style="font-size:14px;color:#94a3b8;">If you have any questions, reply to this email and we will be happy to help.</p>`
     ));
 }
