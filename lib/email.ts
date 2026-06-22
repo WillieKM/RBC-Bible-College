@@ -220,7 +220,7 @@ export async function sendApplicationConfirmationEmail(opts: {
        </div>
        <p style="font-size:15px;color:#475569;">Our admissions team will review your application and be in touch with you by email. You will receive a further email once a decision has been made on your application.</p>
        <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:16px 0;">
-         <p style="margin:0;font-size:13px;color:#854d0e;">📬 <strong>Please check your spam or junk folder</strong> if you do not see our emails in your inbox. Add <strong>${process.env.GMAIL_USER ?? "our address"}</strong> to your contacts to make sure future emails reach you.</p>
+         <p style="margin:0;font-size:13px;color:#854d0e;">📬 <strong>Please check your spam or junk folder</strong> if you do not see our emails in your inbox. Add <strong>admin.rbcus@gmail.com</strong> to your contacts to make sure future emails reach you.</p>
        </div>
        <p style="font-size:14px;color:#94a3b8;">If you have any questions, reply to this email and we will be happy to help.</p>`
     ));
