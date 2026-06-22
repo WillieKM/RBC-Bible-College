@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { sendGradedEmail } from "@/lib/email";
+import { sendGradedEmail, sendNewAssignmentEmail } from "@/lib/email";
 import { writeAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
@@ -20,16 +20,38 @@ export async function createAssignment(formData: FormData) {
   if (!title) return;
 
   // Confirm the course belongs to this professor
-  const { data: course } = await supabase.from("courses").select("id, professor_id").eq("id", courseId).single();
+  const { data: course } = await supabase.from("courses").select("id, title, professor_id").eq("id", courseId).single();
   if (!course || course.professor_id !== profile.id) return;
 
-  await supabase.from("assignments").insert({
-    course_id: courseId,
-    title,
-    description,
-    due_date: dueDate,
-    points_possible: pointsPossible,
-  });
+  const { data: newAssignment } = await supabase
+    .from("assignments")
+    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible })
+    .select("id")
+    .single();
+
+  // Notify enrolled students
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("profiles(full_name, email)")
+    .eq("course_id", courseId);
+
+  if (enrollments && newAssignment) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const portalUrl = `${baseUrl}/student/assignments/${newAssignment.id}`;
+    for (const enr of enrollments) {
+      const student = enr.profiles as unknown as { full_name: string; email: string } | null;
+      if (!student) continue;
+      void sendNewAssignmentEmail({
+        to: student.email,
+        studentName: student.full_name,
+        assignmentTitle: title,
+        courseTitle: course.title ?? "",
+        dueDate,
+        description,
+        portalUrl,
+      });
+    }
+  }
 
   revalidatePath(`/professor/courses/${courseId}`);
 }

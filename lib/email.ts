@@ -112,7 +112,9 @@ export async function sendApplicationDecisionEmail(opts: {
     await send(opts.to, `Update on your application to ${SCHOOL_NAME}`,
       wrap("Application Update",
         `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
-         <p style="font-size:15px;color:#475569;">Thank you for applying. After review, we are unable to offer admission at this time.</p>`
+         <p style="font-size:15px;color:#475569;">Thank you for the time and care you put into your application to <strong>${SCHOOL_NAME}</strong>. After prayerful consideration, we are unable to offer you a place in this intake.</p>
+         <p style="font-size:15px;color:#475569;">We encourage you to continue pursuing your calling and would welcome you to apply again in a future intake. If you would like feedback or have questions, please reply to this email — we are happy to speak with you.</p>
+         <p style="font-size:15px;color:#475569;">We wish you God's blessing on your journey.</p>`
       ));
   }
 }
@@ -423,6 +425,159 @@ export async function sendAssignmentDueEmail(opts: {
        <p style="margin:0 0 16px;font-size:15px;color:#334155;">You have ${count} assignment${count !== 1 ? "s" : ""} due tomorrow. Don&rsquo;t forget to submit!</p>
        <ul style="list-style:none;padding:0;margin:0 0 20px;">${items}</ul>
        <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">Go to My Courses</a>`
+    )
+  );
+}
+
+// ─── Payment receipt (to student) ────────────────────────────────────────────
+
+export async function sendPaymentReceiptEmail(opts: {
+  to: string;
+  studentName: string;
+  invoiceTitle: string;
+  amount: number;
+  currency: string;
+  balance: number;
+  method: string;
+  reference: string | null;
+  paymentDate: string;
+  portalUrl: string;
+}) {
+  const fmt = (n: number) => `${opts.currency}${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  await send(
+    opts.to,
+    `Payment received — ${fmt(opts.amount)} for ${opts.invoiceTitle}`,
+    wrap(
+      "Payment Received",
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">We have received your payment. Thank you!</p>
+       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:16px 0;">
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#475569;">Invoice</span>
+           <span style="font-size:14px;font-weight:600;color:#1e293b;">${opts.invoiceTitle}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#475569;">Amount Paid</span>
+           <span style="font-size:16px;font-weight:700;color:#16a34a;">${fmt(opts.amount)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#475569;">Date</span>
+           <span style="font-size:14px;color:#1e293b;">${opts.paymentDate}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#475569;">Method</span>
+           <span style="font-size:14px;color:#1e293b;text-transform:capitalize;">${opts.method}${opts.reference ? ` — ${opts.reference}` : ""}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;border-top:2px solid #dcfce7;padding-top:8px;margin-top:4px;">
+           <span style="font-size:14px;font-weight:700;color:#1e293b;">Remaining Balance</span>
+           <span style="font-size:15px;font-weight:700;color:${opts.balance <= 0 ? "#16a34a" : "#dc2626"};">${opts.balance <= 0 ? "PAID IN FULL" : fmt(Math.max(0, opts.balance))}</span>
+         </div>
+       </div>
+       ${opts.balance <= 0 ? '<p style="font-size:15px;color:#16a34a;font-weight:600;">Your account is fully paid up. Thank you!</p>' : '<p style="font-size:14px;color:#475569;">Please log in to view your invoice and make further payments.</p>'}
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View My Invoices →</a></div>`
+    )
+  );
+}
+
+// ─── New assignment posted (to enrolled students) ─────────────────────────────
+
+export async function sendNewAssignmentEmail(opts: {
+  to: string;
+  studentName: string;
+  assignmentTitle: string;
+  courseTitle: string;
+  dueDate: string | null;
+  description: string | null;
+  portalUrl: string;
+}) {
+  const dueLine = opts.dueDate
+    ? `<p style="font-size:15px;color:#475569;">Due: <strong>${new Date(opts.dueDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</strong></p>`
+    : "";
+  await send(
+    opts.to,
+    `New assignment: ${opts.assignmentTitle} — ${opts.courseTitle}`,
+    wrap(
+      "New Assignment Posted",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new assignment has been posted in <strong>${opts.courseTitle}</strong>.</p>
+       <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${opts.assignmentTitle}</p>
+         ${dueLine}
+         ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${opts.description}</p>` : ""}
+       </div>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Assignment →</a></div>`
+    )
+  );
+}
+
+// ─── Overdue assignment (missed deadline, to student) ─────────────────────────
+
+export async function sendOverdueAssignmentEmail(opts: {
+  to: string;
+  studentName: string;
+  assignments: { title: string; courseTitle: string; dueDate: string }[];
+  portalUrl: string;
+}) {
+  const count = opts.assignments.length;
+  const items = opts.assignments
+    .map(
+      (a) =>
+        `<li style="padding:8px 0;border-bottom:1px solid #fee2e2;font-size:14px;color:#1e293b;">
+           <strong>${a.title}</strong><br>
+           <span style="color:#64748b;font-size:13px;">${a.courseTitle} &mdash; was due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
+         </li>`
+    )
+    .join("");
+  await send(
+    opts.to,
+    `Missed deadline: ${count} assignment${count !== 1 ? "s" : ""} past due`,
+    wrap(
+      `Missed Assignment${count !== 1 ? "s" : ""}`,
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">You have ${count} assignment${count !== 1 ? "s" : ""} that ${count !== 1 ? "have" : "has"} passed the due date without a submission. Please log in and submit as soon as possible — late submissions may still be accepted at your professor's discretion.</p>
+       <ul style="list-style:none;padding:0;margin:0 0 20px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;overflow:hidden;">${items}</ul>
+       <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">Submit Now</a>`
+    )
+  );
+}
+
+// ─── Grading reminder (to professor) ─────────────────────────────────────────
+
+export async function sendGradingReminderEmail(opts: {
+  to: string;
+  professorName: string;
+  submissions: { studentName: string; assignmentTitle: string; courseTitle: string; submittedAt: string }[];
+  portalUrl: string;
+}) {
+  const count = opts.submissions.length;
+  const rows = opts.submissions
+    .map(
+      (s) =>
+        `<tr>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${s.studentName}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${s.assignmentTitle}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${s.courseTitle}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${new Date(s.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</td>
+         </tr>`
+    )
+    .join("");
+  await send(
+    opts.to,
+    `Grading reminder — ${count} submission${count !== 1 ? "s" : ""} awaiting review`,
+    wrap(
+      "Submissions Awaiting Grading",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">You have <strong>${count} submission${count !== 1 ? "s" : ""}</strong> that ${count !== 1 ? "have" : "has"} been waiting for grading for 3 or more days.</p>
+       <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+         <thead><tr style="background:#f8fafc;">
+           <th style="padding:8px 12px;font-size:12px;color:#94a3b8;text-align:left;">Student</th>
+           <th style="padding:8px 12px;font-size:12px;color:#94a3b8;text-align:left;">Assignment</th>
+           <th style="padding:8px 12px;font-size:12px;color:#94a3b8;text-align:left;">Course</th>
+           <th style="padding:8px 12px;font-size:12px;color:#94a3b8;text-align:left;">Submitted</th>
+         </tr></thead>
+         <tbody>${rows}</tbody>
+       </table>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Grade Submissions →</a></div>`
     )
   );
 }

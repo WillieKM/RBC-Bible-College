@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
-import { sendInvoiceEmail } from "@/lib/email";
+import { sendInvoiceEmail, sendPaymentReceiptEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -41,6 +41,34 @@ export async function addPayment(formData: FormData) {
   if (!invoiceId || isNaN(amount) || amount <= 0) return;
 
   await supabase.from("payments").insert({ invoice_id: invoiceId, amount, payment_date: paymentDate, method, reference, notes });
+
+  // Send receipt email to student
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("title, total_amount, student_id, profiles(full_name, email, region), payments(amount)")
+    .eq("id", invoiceId)
+    .single();
+
+  if (invoice?.profiles) {
+    const profile = invoice.profiles as unknown as { full_name: string; email: string; region: string | null };
+    const totalPaid = ((invoice.payments ?? []) as { amount: number }[]).reduce((s, p) => s + p.amount, 0);
+    const balance = invoice.total_amount - totalPaid;
+    const currency = profile.region === "usa" ? "$" : "KSh";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    void sendPaymentReceiptEmail({
+      to: profile.email,
+      studentName: profile.full_name,
+      invoiceTitle: invoice.title,
+      amount,
+      currency,
+      balance,
+      method,
+      reference,
+      paymentDate,
+      portalUrl: `${baseUrl}/student/invoices`,
+    });
+  }
+
   revalidatePath(`/admin/invoices/${invoiceId}`);
 }
 
