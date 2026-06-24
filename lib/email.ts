@@ -4,6 +4,18 @@ const SCHOOL_NAME = process.env.SCHOOL_NAME || "Revelation Bible College";
 const SCHOOL_COLOR = "#14110c";
 const SCHOOL_ACCENT = "#d4af37";
 
+// User- and staff-entered text (names, statements, feedback, etc.) is interpolated
+// directly into these HTML email bodies, so it must be escaped to avoid HTML/markup
+// injection into emails sent to applicants, students, professors, and admissions staff.
+function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function mailer() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return null;
   return nodemailer.createTransport({
@@ -50,7 +62,7 @@ export async function sendNewApplicationEmail(opts: {
     return;
   }
   const row = (label: string, value: string) =>
-    `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;width:100px;vertical-align:top;">${label}</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;font-weight:500;">${value}</td></tr>`;
+    `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;width:100px;vertical-align:top;">${label}</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;font-weight:500;">${esc(value)}</td></tr>`;
 
   await send(admissionsEmail, `New Application: ${opts.fullName}`,
     wrap("New Application Received",
@@ -60,7 +72,7 @@ export async function sendNewApplicationEmail(opts: {
          ${opts.phone ? row("Phone", opts.phone) : ""}
          ${row("Program", opts.program)}
        </table>
-       ${opts.statement ? `<p style="margin-top:16px;font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Statement</p><p style="font-size:14px;color:#475569;white-space:pre-wrap;">${opts.statement}</p>` : ""}`
+       ${opts.statement ? `<p style="margin-top:16px;font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Statement</p><p style="font-size:14px;color:#475569;white-space:pre-wrap;">${esc(opts.statement)}</p>` : ""}`
     ));
 }
 
@@ -75,12 +87,12 @@ export async function sendNewApplicationToProfessorEmail(opts: {
   program: string;
 }) {
   const row = (label: string, value: string) =>
-    `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;width:100px;vertical-align:top;">${label}</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;font-weight:500;">${value}</td></tr>`;
+    `<tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;width:100px;vertical-align:top;">${label}</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;font-weight:500;">${esc(value)}</td></tr>`;
 
   await send(opts.to, `New Application for ${opts.program}: ${opts.fullName}`,
     wrap("New Application In Your Program",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">A new application has been submitted for <strong>${opts.program}</strong>, which you're assigned to.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.professorName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new application has been submitted for <strong>${esc(opts.program)}</strong>, which you're assigned to.</p>
        <table style="width:100%;border-collapse:collapse;">
          ${row("Name", opts.fullName)}
          ${row("Email", opts.email)}
@@ -102,16 +114,16 @@ export async function sendApplicationDecisionEmail(opts: {
   if (opts.approved) {
     await send(opts.to, `Your application to ${SCHOOL_NAME} has been approved`,
       wrap("Application Approved",
-        `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
+        `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved and an account has been created for you.</p>
-         ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Your student ID is <strong>${opts.studentNumber}</strong>. Please keep this for your records.</p>` : ""}
+         ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Your student ID is <strong>${esc(opts.studentNumber)}</strong>. Please keep this for your records.</p>` : ""}
          <p style="font-size:15px;color:#475569;">Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
          ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>` : ""}`
       ));
   } else {
     await send(opts.to, `Update on your application to ${SCHOOL_NAME}`,
       wrap("Application Update",
-        `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
+        `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Thank you for the time and care you put into your application to <strong>${SCHOOL_NAME}</strong>. After prayerful consideration, we are unable to offer you a place in this intake.</p>
          <p style="font-size:15px;color:#475569;">We encourage you to continue pursuing your calling and would welcome you to apply again in a future intake. If you would like feedback or have questions, please reply to this email — we are happy to speak with you.</p>
          <p style="font-size:15px;color:#475569;">We wish you God's blessing on your journey.</p>`
@@ -131,8 +143,8 @@ export async function sendNewSubmissionEmail(opts: {
 }) {
   await send(opts.to, `New Submission: ${opts.assignmentTitle}`,
     wrap("New Assignment Submission",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;"><strong>${opts.studentName}</strong> submitted <strong>${opts.assignmentTitle}</strong> for <strong>${opts.courseTitle}</strong>.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.professorName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;"><strong>${esc(opts.studentName)}</strong> submitted <strong>${esc(opts.assignmentTitle)}</strong> for <strong>${esc(opts.courseTitle)}</strong>.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Review Submission →</a></div>`
     ));
 }
@@ -151,13 +163,13 @@ export async function sendGradedEmail(opts: {
 }) {
   await send(opts.to, `Grade Posted: ${opts.assignmentTitle}`,
     wrap("Assignment Graded",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">Your submission for <strong>${opts.assignmentTitle}</strong> (${opts.courseTitle}) has been graded.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Your submission for <strong>${esc(opts.assignmentTitle)}</strong> (${esc(opts.courseTitle)}) has been graded.</p>
        <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
          <p style="margin:0;font-size:13px;font-weight:600;color:#1d4ed8;">Grade</p>
          <p style="margin:6px 0 0;font-size:20px;color:#1e293b;font-weight:700;">${opts.grade}${opts.pointsPossible ? ` / ${opts.pointsPossible}` : ""}</p>
        </div>
-       ${opts.feedback ? `<p style="font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Feedback</p><p style="font-size:14px;color:#475569;white-space:pre-wrap;">${opts.feedback}</p>` : ""}
+       ${opts.feedback ? `<p style="font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Feedback</p><p style="font-size:14px;color:#475569;white-space:pre-wrap;">${esc(opts.feedback)}</p>` : ""}
        <div style="margin-top:24px;text-align:center;"><a href="${opts.reviewUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Submission →</a></div>`
     ));
 }
@@ -173,8 +185,8 @@ export async function sendAccreditationEmail(opts: {
 
   await send(opts.to, `Your application — accreditation information`,
     wrap("Accreditation Confirmation",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">Thank you for applying for <strong>${opts.program}</strong>.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Thank you for applying for <strong>${esc(opts.program)}</strong>.</p>
        <p style="font-size:15px;color:#475569;">This program is offered in partnership with Tabernacle Bible College and Seminary. We confirm that Tabernacle Bible College and Seminary is the accrediting institution for this program.</p>
        <div style="margin-top:16px;text-align:center;"><img src="${baseUrl}/tbcs-logo.png" alt="Tabernacle Bible College and Seminary" style="max-width:280px;width:100%;height:auto;border-radius:8px;" /></div>
        <p style="margin-top:16px;font-size:15px;color:#475569;">We'll be in touch with next steps regarding your application.</p>`
@@ -193,10 +205,10 @@ export async function sendModuleReleaseEmail(opts: {
 }) {
   await send(opts.to, `New module available: ${opts.moduleTitle}`,
     wrap("New Module Available",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">A new module is now available for you in your <strong>${opts.programName}</strong> program:</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new module is now available for you in your <strong>${esc(opts.programName)}</strong> program:</p>
        <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
-         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${opts.moduleTitle}${opts.moduleCode ? ` <span style="font-size:14px;font-weight:400;color:#64748b;">(${opts.moduleCode})</span>` : ""}</p>
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(opts.moduleTitle)}${opts.moduleCode ? ` <span style="font-size:14px;font-weight:400;color:#64748b;">(${esc(opts.moduleCode)})</span>` : ""}</p>
        </div>
        <p style="font-size:15px;color:#475569;">Log in to your student portal to access the module, view assignments, and submit your work.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Student Portal →</a></div>`
@@ -214,10 +226,10 @@ export async function sendApplicationConfirmationEmail(opts: {
   const regionLabel = opts.region === "usa" ? "USA Campus" : opts.region === "international" ? "Kenya / International" : null;
   await send(opts.to, `We received your application — ${SCHOOL_NAME}`,
     wrap("Application Received",
-      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.fullName}</strong>,</p>
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${esc(opts.fullName)}</strong>,</p>
        <p style="font-size:15px;color:#475569;">Thank you for applying to <strong>${SCHOOL_NAME}</strong>. We have successfully received your application for:</p>
        <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin:16px 0;">
-         <p style="margin:0;font-size:16px;font-weight:700;color:#1e293b;">${opts.program}</p>
+         <p style="margin:0;font-size:16px;font-weight:700;color:#1e293b;">${esc(opts.program)}</p>
          ${regionLabel ? `<p style="margin:6px 0 0;font-size:13px;color:#64748b;">${regionLabel}</p>` : ""}
        </div>
        <p style="font-size:15px;color:#475569;">Our admissions team will review your application and be in touch with you by email. You will receive a further email once a decision has been made on your application.</p>
@@ -249,16 +261,16 @@ export async function sendInvoiceEmail(opts: {
   const paymentRows = opts.payments.length > 0
     ? opts.payments.map((p) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;">${p.payment_date}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;text-transform:capitalize;">${p.method}${p.reference ? ` — ${p.reference}` : ""}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;">${esc(p.payment_date)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;text-transform:capitalize;">${esc(p.method)}${p.reference ? ` — ${esc(p.reference)}` : ""}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#16a34a;font-weight:600;text-align:right;">${fmt(p.amount)}</td>
         </tr>`
       ).join("")
     : `<tr><td colspan="3" style="padding:12px;font-size:13px;color:#94a3b8;text-align:center;">No payments recorded yet</td></tr>`;
 
   await send(opts.to, `Invoice: ${opts.invoiceTitle} — ${SCHOOL_NAME}`,
-    wrap(`Invoice — ${opts.invoiceTitle}`,
-      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
+    wrap(`Invoice — ${esc(opts.invoiceTitle)}`,
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${esc(opts.studentName)}</strong>,</p>
        <p style="font-size:15px;color:#475569;">Please find your invoice details below.</p>
 
        <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:20px 0;border:1px solid #e2e8f0;">
@@ -292,7 +304,7 @@ export async function sendInvoiceEmail(opts: {
          <tbody>${paymentRows}</tbody>
        </table>
 
-       ${opts.notes ? `<p style="margin-top:16px;font-size:13px;color:#64748b;font-style:italic;">${opts.notes}</p>` : ""}
+       ${opts.notes ? `<p style="margin-top:16px;font-size:13px;color:#64748b;font-style:italic;">${esc(opts.notes)}</p>` : ""}
 
        <div style="margin-top:24px;text-align:center;">
          <a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View in Student Portal →</a>
@@ -311,9 +323,9 @@ export async function sendCompletionEmail(opts: {
 }) {
   await send(opts.to, `Congratulations — You have completed ${opts.programName}`,
     wrap("Program Completed 🎓",
-      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">Congratulations! You have successfully completed all requirements for the <strong>${opts.programName}</strong> program.</p>
-       ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Student ID: <strong>${opts.studentNumber}</strong></p>` : ""}
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Congratulations! You have successfully completed all requirements for the <strong>${esc(opts.programName)}</strong> program.</p>
+       ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Student ID: <strong>${esc(opts.studentNumber)}</strong></p>` : ""}
        <p style="font-size:15px;color:#475569;">We are proud of your achievement and commitment. Your certificate will be prepared and you will be contacted with further details.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Your Portal →</a></div>`
     ));
@@ -332,7 +344,7 @@ export async function sendBulkAnnouncementEmail(opts: {
     return;
   }
   const from = `"${SCHOOL_NAME}" <${process.env.GMAIL_USER}>`;
-  const html = wrap(opts.title, `<p style="font-size:15px;color:#475569;white-space:pre-wrap;">${opts.body}</p>`);
+  const html = wrap(esc(opts.title), `<p style="font-size:15px;color:#475569;white-space:pre-wrap;">${esc(opts.body)}</p>`);
   // Send in small batches to respect Gmail rate limits
   for (const to of opts.to) {
     await t.sendMail({ from, to, subject: opts.title, html }).catch(() => null);
@@ -349,8 +361,8 @@ export async function sendAccountInviteEmail(opts: {
 }) {
   await send(opts.to, `Your ${SCHOOL_NAME} account is ready`,
     wrap("Welcome",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.fullName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${opts.role}</strong>. Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${esc(opts.role)}</strong>. Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>`
     ));
 }
@@ -368,7 +380,7 @@ export async function sendInvoiceReminderEmail(opts: {
   const rows = opts.invoices
     .map(
       (inv) =>
-        `<tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${inv.title}</td>
+        `<tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${esc(inv.title)}</td>
          <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;font-weight:600;color:#dc2626;text-align:right;">${inv.currency}${inv.balance.toFixed(2)}</td></tr>`
     )
     .join("");
@@ -378,7 +390,7 @@ export async function sendInvoiceReminderEmail(opts: {
     `Payment reminder — ${opts.currency}${opts.totalBalance.toFixed(2)} outstanding`,
     wrap(
       "Payment Reminder",
-      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${opts.studentName},</p>
+      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${esc(opts.studentName)},</p>
        <p style="margin:0 0 16px;font-size:15px;color:#334155;">This is a friendly reminder that you have outstanding fees on your account. Please log in to the student portal to view your invoices and make payment arrangements.</p>
        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
          <thead><tr>
@@ -409,8 +421,8 @@ export async function sendAssignmentDueEmail(opts: {
     .map(
       (a) =>
         `<li style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">
-           <strong>${a.title}</strong><br>
-           <span style="color:#64748b;font-size:13px;">${a.courseTitle} &mdash; due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
+           <strong>${esc(a.title)}</strong><br>
+           <span style="color:#64748b;font-size:13px;">${esc(a.courseTitle)} &mdash; due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
          </li>`
     )
     .join("");
@@ -421,7 +433,7 @@ export async function sendAssignmentDueEmail(opts: {
     `Reminder: ${count} assignment${count !== 1 ? "s" : ""} due tomorrow`,
     wrap(
       `Assignment${count !== 1 ? "s" : ""} Due Tomorrow`,
-      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${opts.studentName},</p>
+      `<p style="margin:0 0 16px;font-size:15px;color:#334155;">Dear ${esc(opts.studentName)},</p>
        <p style="margin:0 0 16px;font-size:15px;color:#334155;">You have ${count} assignment${count !== 1 ? "s" : ""} due tomorrow. Don&rsquo;t forget to submit!</p>
        <ul style="list-style:none;padding:0;margin:0 0 20px;">${items}</ul>
        <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">Go to My Courses</a>`
@@ -449,12 +461,12 @@ export async function sendPaymentReceiptEmail(opts: {
     `Payment received — ${fmt(opts.amount)} for ${opts.invoiceTitle}`,
     wrap(
       "Payment Received",
-      `<p style="font-size:15px;color:#475569;">Dear <strong>${opts.studentName}</strong>,</p>
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${esc(opts.studentName)}</strong>,</p>
        <p style="font-size:15px;color:#475569;">We have received your payment. Thank you!</p>
        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:16px 0;">
          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
            <span style="font-size:14px;color:#475569;">Invoice</span>
-           <span style="font-size:14px;font-weight:600;color:#1e293b;">${opts.invoiceTitle}</span>
+           <span style="font-size:14px;font-weight:600;color:#1e293b;">${esc(opts.invoiceTitle)}</span>
          </div>
          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
            <span style="font-size:14px;color:#475569;">Amount Paid</span>
@@ -462,11 +474,11 @@ export async function sendPaymentReceiptEmail(opts: {
          </div>
          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
            <span style="font-size:14px;color:#475569;">Date</span>
-           <span style="font-size:14px;color:#1e293b;">${opts.paymentDate}</span>
+           <span style="font-size:14px;color:#1e293b;">${esc(opts.paymentDate)}</span>
          </div>
          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
            <span style="font-size:14px;color:#475569;">Method</span>
-           <span style="font-size:14px;color:#1e293b;text-transform:capitalize;">${opts.method}${opts.reference ? ` — ${opts.reference}` : ""}</span>
+           <span style="font-size:14px;color:#1e293b;text-transform:capitalize;">${esc(opts.method)}${opts.reference ? ` — ${esc(opts.reference)}` : ""}</span>
          </div>
          <div style="display:flex;justify-content:space-between;border-top:2px solid #dcfce7;padding-top:8px;margin-top:4px;">
            <span style="font-size:14px;font-weight:700;color:#1e293b;">Remaining Balance</span>
@@ -498,12 +510,12 @@ export async function sendNewAssignmentEmail(opts: {
     `New assignment: ${opts.assignmentTitle} — ${opts.courseTitle}`,
     wrap(
       "New Assignment Posted",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">A new assignment has been posted in <strong>${opts.courseTitle}</strong>.</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new assignment has been posted in <strong>${esc(opts.courseTitle)}</strong>.</p>
        <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
-         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${opts.assignmentTitle}</p>
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(opts.assignmentTitle)}</p>
          ${dueLine}
-         ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${opts.description}</p>` : ""}
+         ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${esc(opts.description)}</p>` : ""}
        </div>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Assignment →</a></div>`
     )
@@ -523,8 +535,8 @@ export async function sendOverdueAssignmentEmail(opts: {
     .map(
       (a) =>
         `<li style="padding:8px 0;border-bottom:1px solid #fee2e2;font-size:14px;color:#1e293b;">
-           <strong>${a.title}</strong><br>
-           <span style="color:#64748b;font-size:13px;">${a.courseTitle} &mdash; was due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
+           <strong>${esc(a.title)}</strong><br>
+           <span style="color:#64748b;font-size:13px;">${esc(a.courseTitle)} &mdash; was due ${new Date(a.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</span>
          </li>`
     )
     .join("");
@@ -533,7 +545,7 @@ export async function sendOverdueAssignmentEmail(opts: {
     `Missed deadline: ${count} assignment${count !== 1 ? "s" : ""} past due`,
     wrap(
       `Missed Assignment${count !== 1 ? "s" : ""}`,
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.studentName}</strong>,</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
        <p style="font-size:15px;color:#475569;">You have ${count} assignment${count !== 1 ? "s" : ""} that ${count !== 1 ? "have" : "has"} passed the due date without a submission. Please log in and submit as soon as possible — late submissions may still be accepted at your professor's discretion.</p>
        <ul style="list-style:none;padding:0;margin:0 0 20px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;overflow:hidden;">${items}</ul>
        <a href="${opts.portalUrl}" style="display:inline-block;background:#d4af37;color:#14110c;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;font-size:14px;">Submit Now</a>`
@@ -554,9 +566,9 @@ export async function sendGradingReminderEmail(opts: {
     .map(
       (s) =>
         `<tr>
-           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${s.studentName}</td>
-           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${s.assignmentTitle}</td>
-           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${s.courseTitle}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${esc(s.studentName)}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">${esc(s.assignmentTitle)}</td>
+           <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${esc(s.courseTitle)}</td>
            <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${new Date(s.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</td>
          </tr>`
     )
@@ -566,7 +578,7 @@ export async function sendGradingReminderEmail(opts: {
     `Grading reminder — ${count} submission${count !== 1 ? "s" : ""} awaiting review`,
     wrap(
       "Submissions Awaiting Grading",
-      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.professorName}</strong>,</p>
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.professorName)}</strong>,</p>
        <p style="font-size:15px;color:#475569;">You have <strong>${count} submission${count !== 1 ? "s" : ""}</strong> that ${count !== 1 ? "have" : "has"} been waiting for grading for 3 or more days.</p>
        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
          <thead><tr style="background:#f8fafc;">

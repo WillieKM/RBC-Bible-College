@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { submitAssignment } from "@/lib/actions/student";
+import { resolveSignedFileUrl } from "@/lib/storage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -31,6 +32,8 @@ export default async function StudentAssignmentPage({
     .eq("assignment_id", id)
     .eq("student_id", profile.id)
     .single();
+
+  const fileUrl = await resolveSignedFileUrl(supabase, "submissions", submission?.file_url ?? null);
 
   return (
     <div>
@@ -70,8 +73,8 @@ export default async function StudentAssignmentPage({
         <div>
           <label className="block text-sm font-medium text-slate-700">Attach a file (optional)</label>
           <input name="file" type="file" className="mt-1 block text-sm" />
-          {submission?.file_url && (
-            <a href={submission.file_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-gold-dark hover:underline">
+          {fileUrl && (
+            <a href={fileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-gold-dark hover:underline">
               View current file →
             </a>
           )}

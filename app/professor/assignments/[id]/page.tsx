@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { gradeSubmission } from "@/lib/actions/professor";
+import { resolveSignedFileUrl } from "@/lib/storage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -27,7 +28,14 @@ export default async function ProfessorAssignmentPage({
     supabase.from("programs").select("id, name"),
   ]);
 
-  const submittedIds = new Set((submissions ?? []).map((s) => s.student_id));
+  const submissionsWithUrls = await Promise.all(
+    (submissions ?? []).map(async (s) => ({
+      ...s,
+      file_url: await resolveSignedFileUrl(supabase, "submissions", s.file_url),
+    }))
+  );
+
+  const submittedIds = new Set(submissionsWithUrls.map((s) => s.student_id));
   const notSubmitted = (enrollments ?? []).filter((e) => !submittedIds.has(e.student_id));
 
   const programNameById = new Map((programs ?? []).map((p: { id: string; name: string }) => [p.id, p.name]));
@@ -45,7 +53,7 @@ export default async function ProfessorAssignmentPage({
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
   }
 
-  const submissionsByProgram = groupByProgram(submissions ?? []);
+  const submissionsByProgram = groupByProgram(submissionsWithUrls);
   const notSubmittedByProgram = groupByProgram(notSubmitted);
 
   return (
@@ -60,7 +68,7 @@ export default async function ProfessorAssignmentPage({
         {assignment.points_possible ? ` · ${assignment.points_possible} pts` : ""}
       </p>
 
-      <h2 className="mt-6 text-lg font-semibold text-slate-800">Submissions ({(submissions ?? []).length})</h2>
+      <h2 className="mt-6 text-lg font-semibold text-slate-800">Submissions ({submissionsWithUrls.length})</h2>
       {submissionsByProgram.length === 0 && <p className="mt-3 text-sm text-slate-500">No submissions yet.</p>}
       {submissionsByProgram.map(([programName, programSubmissions]) => (
         <div key={programName} className="mt-4">

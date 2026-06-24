@@ -20,14 +20,11 @@ export async function submitAssignment(formData: FormData) {
     .single();
   if (!assignment) return;
 
-  let fileUrl: string | null = null;
+  let filePath: string | null = null;
   if (file && file.size > 0) {
     const path = `${profile.id}/${assignmentId}/${file.name}`;
     const { error: uploadError } = await supabase.storage.from("submissions").upload(path, file, { upsert: true });
-    if (!uploadError) {
-      const { data: signed } = await supabase.storage.from("submissions").createSignedUrl(path, 60 * 60 * 24 * 365);
-      fileUrl = signed?.signedUrl ?? null;
-    }
+    if (!uploadError) filePath = path;
   }
 
   await supabase.from("submissions").upsert(
@@ -35,7 +32,7 @@ export async function submitAssignment(formData: FormData) {
       assignment_id: assignmentId,
       student_id: profile.id,
       content,
-      file_url: fileUrl,
+      file_url: filePath,
       submitted_at: new Date().toISOString(),
     },
     { onConflict: "assignment_id,student_id" }
