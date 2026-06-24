@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail } from "@/lib/email";
-import { requireRole } from "@/lib/auth";
+import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
@@ -286,6 +286,18 @@ export async function updateUserRole(formData: FormData) {
   if (!["admin", "professor", "student"].includes(role)) return;
 
   await supabase.from("profiles").update({ role }).eq("id", id);
+  revalidatePath("/admin/users");
+}
+
+// Only an admin who already has finance_access can grant or revoke it for
+// others — otherwise any admin could self-escalate via this form.
+export async function updateFinanceAccess(formData: FormData) {
+  await requireFinanceAccess();
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const financeAccess = formData.get("finance_access") === "1";
+
+  await supabase.from("profiles").update({ finance_access: financeAccess }).eq("id", id);
   revalidatePath("/admin/users");
 }
 

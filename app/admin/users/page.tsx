@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { inviteUser, updateUserRole, updateStudentProgram, resendInvite } from "@/lib/actions/admin";
+import { getCurrentProfile } from "@/lib/auth";
+import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
-  const [{ data: profiles }, { data: programs }] = await Promise.all([
+  const [viewer, { data: profiles }, { data: programs }] = await Promise.all([
+    getCurrentProfile(),
     supabase.from("profiles").select("*").order("created_at", { ascending: false }),
     supabase.from("programs").select("*").order("name", { ascending: true }),
   ]);
@@ -59,6 +61,15 @@ export default async function AdminUsersPage() {
                   Save
                 </button>
               </form>
+              {p.role === "admin" && viewer?.finance_access && (
+                <form action={updateFinanceAccess} className="flex items-center gap-2">
+                  <input type="hidden" name="id" value={p.id} />
+                  <input type="hidden" name="finance_access" value={p.finance_access ? "0" : "1"} />
+                  <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                    {p.finance_access ? "Revoke finance access" : "Grant finance access"}
+                  </button>
+                </form>
+              )}
               {p.role === "student" && (
                 <form action={updateStudentProgram} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={p.id} />

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth";
+import { requireFinanceAccess } from "@/lib/auth";
 
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireFinanceAccess();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

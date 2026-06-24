@@ -22,3 +22,11 @@ export async function requireRole(roles: Role[]): Promise<Profile> {
   if (profile.role !== "admin" && !roles.includes(profile.role)) redirect("/login");
   return profile;
 }
+
+// Admin alone isn't enough for invoices/payments — finance_access must be
+// explicitly granted, since not every admin should see financial records.
+export async function requireFinanceAccess(): Promise<Profile> {
+  const profile = await requireRole(["admin"]);
+  if (!profile.finance_access) redirect("/admin");
+  return profile;
+}

@@ -6,6 +6,7 @@ export interface Profile {
   full_name: string;
   email: string;
   role: Role;
+  finance_access: boolean;
   program_id: string | null;
   student_number: string | null;
   avatar_url: string | null;

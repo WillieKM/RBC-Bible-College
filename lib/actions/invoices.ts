@@ -1,13 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth";
+import { requireFinanceAccess } from "@/lib/auth";
 import { sendInvoiceEmail, sendPaymentReceiptEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createInvoice(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
 
   const studentId = String(formData.get("student_id") || "").trim();
@@ -28,7 +28,7 @@ export async function createInvoice(formData: FormData) {
 }
 
 export async function addPayment(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
 
   const invoiceId = String(formData.get("invoice_id"));
@@ -73,7 +73,7 @@ export async function addPayment(formData: FormData) {
 }
 
 export async function deletePayment(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const invoiceId = String(formData.get("invoice_id"));
@@ -82,7 +82,7 @@ export async function deletePayment(formData: FormData) {
 }
 
 export async function deleteInvoice(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   await supabase.from("invoices").delete().eq("id", id);
@@ -91,7 +91,7 @@ export async function deleteInvoice(formData: FormData) {
 }
 
 export async function sendInvoice(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
   const invoiceId = String(formData.get("invoice_id"));
 
