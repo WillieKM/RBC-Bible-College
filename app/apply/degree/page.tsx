@@ -41,9 +41,9 @@ const ADVERTISING_OPTIONS = [
 export default async function ApplyDegreePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; region?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; region?: string }>;
 }) {
-  const { error, region } = await searchParams;
+  const { error, notice, region } = await searchParams;
   const presetRegion = region === "usa" || region === "international" ? region : null;
   const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
@@ -72,6 +72,12 @@ export default async function ApplyDegreePage({
         {error && (
           <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div className="mt-4 rounded-lg bg-blue-950 border border-blue-800 px-3 py-2 text-sm text-blue-200">
+            {notice}
           </div>
         )}
 

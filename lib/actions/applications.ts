@@ -71,6 +71,26 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=You+must+agree+to+the+declaration+to+apply`);
   }
 
+  // Applications RLS restricts reads to admins, so this existence check needs
+  // the service-role client even though the insert below uses the anon client.
+  const adminClient = createAdminClient();
+
+  const { data: existing } = await adminClient
+    .from("applications")
+    .select("status")
+    .eq("email", email)
+    .in("status", ["pending", "approved"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.status === "pending") {
+    redirect(`${returnTo}?notice=${encodeURIComponent("You already have an application under review with this email. We'll email you as soon as a decision is made — no need to apply again.")}`);
+  }
+  if (existing?.status === "approved") {
+    redirect(`${returnTo}?notice=${encodeURIComponent("An application with this email has already been approved. Check your inbox for login details, or contact admissions if you need help.")}`);
+  }
+
   const details: Record<string, unknown> = {};
   for (const key of new Set(formData.keys())) {
     if (TOP_LEVEL_FORM_KEYS.has(key)) continue;
@@ -81,28 +101,19 @@ export async function submitApplication(formData: FormData) {
   let photoUrl: string | null = null;
   const photo = formData.get("passport_photo");
   if (photo instanceof File && photo.size > 0) {
-    const admin = createAdminClient();
     const ext = photo.name.split(".").pop() || "jpg";
     const path = `${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await admin.storage
+    const { error: uploadError } = await adminClient.storage
       .from("application-photos")
       .upload(path, photo, { contentType: photo.type });
 
     if (!uploadError) {
-      const { data: publicUrl } = admin.storage.from("application-photos").getPublicUrl(path);
+      const { data: publicUrl } = adminClient.storage.from("application-photos").getPublicUrl(path);
       photoUrl = publicUrl.publicUrl;
     }
   }
 
   const supabase = await createClient();
-  const adminClient = createAdminClient();
-
-  // Delete any existing pending application from this email so we always keep the latest
-  await adminClient
-    .from("applications")
-    .delete()
-    .eq("email", email)
-    .eq("status", "pending");
 
   const { error } = await supabase.from("applications").insert({
     full_name: fullName,
