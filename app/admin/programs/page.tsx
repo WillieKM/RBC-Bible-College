@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createProgram, deleteProgram } from "@/lib/actions/admin";
+import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
 import type { Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
@@ -40,7 +41,9 @@ export default async function AdminProgramsPage() {
           <label className="block text-sm font-medium text-slate-700">Level</label>
           <select name="program_level" defaultValue="diploma" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <option value="diploma">Diploma / Certificate</option>
-            <option value="degree">Degree</option>
+            <option value="bachelors">Bachelor&apos;s</option>
+            <option value="masters">Master&apos;s</option>
+            <option value="doctorate">Doctorate</option>
           </select>
         </div>
         <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
@@ -56,7 +59,7 @@ export default async function AdminProgramsPage() {
                 {program.name}
               </Link>
               <p className="text-sm text-slate-500">
-                {program.program_level === "degree" ? "Degree" : "Diploma / Certificate"}
+                {PROGRAM_LEVEL_LABELS[program.program_level]}
                 {" · "}
                 {studentCounts.get(program.id) ?? 0} student{(studentCounts.get(program.id) ?? 0) === 1 ? "" : "s"}
                 {" · "}

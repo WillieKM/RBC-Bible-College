@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { reviewApplication } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
+import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
 import type { Application, Cohort } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
@@ -67,7 +68,7 @@ export default async function AdminApplicationsPage({
                   <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
                   <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
                   <p className="text-sm text-slate-500">
-                    {app.program_level === "degree" ? "TBCS (Bachelor's/Master's/Doctorate)" : "RBC Diploma"}
+                    {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level]})`}
                     {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
                   </p>
                   {app.statement && (

@@ -27,7 +27,7 @@ export interface Program {
 }
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
-export type ProgramLevel = "diploma" | "degree";
+export type ProgramLevel = "diploma" | "bachelors" | "masters" | "doctorate";
 export type ApplicationRegion = "usa" | "international";
 
 export interface Application {

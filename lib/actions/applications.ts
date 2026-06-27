@@ -13,6 +13,7 @@ import { requireRole } from "@/lib/auth";
 import { getCurrentProfile } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
+import { DEGREE_PROGRAM_LEVELS, feeForLevel } from "@/lib/fees";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -98,7 +99,7 @@ export async function submitApplication(formData: FormData) {
   if (!phone) phone = String(formData.get("mobile_number") || "").trim();
 
   const program = String(formData.get("program") || "").trim();
-  const programLevel = source === "tbcs" ? "degree" : "diploma";
+  const programLevel = source === "tbcs" ? (DEGREE_PROGRAM_LEVELS[program] ?? "bachelors") : "diploma";
   const statement = String(formData.get("statement") || "").trim() || null;
   const declarationAccepted = formData.get("declaration_accepted") === "on";
 
@@ -270,8 +271,11 @@ export async function reviewApplication(formData: FormData) {
       }
     }
 
-    // Pick the right fee based on student's region
-    const programFee = studentRegion === "usa" ? programFeeUsa : programFeeIntl;
+    // Use the program's manually-set fee if an admin configured one, otherwise
+    // fall back to the standard fee schedule for this program's tier.
+    const programFee =
+      (studentRegion === "usa" ? programFeeUsa : programFeeIntl) ??
+      feeForLevel(application.program_level, studentRegion === "usa" ? "usa" : "international");
 
     const year = new Date().getFullYear();
     const { count: studentCount } = await admin

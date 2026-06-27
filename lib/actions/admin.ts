@@ -51,7 +51,7 @@ export async function createProgram(formData: FormData) {
 
   const name = String(formData.get("name") || "").trim();
   const programLevel = String(formData.get("program_level") || "diploma");
-  if (!name || !["diploma", "degree"].includes(programLevel)) return;
+  if (!name || !["diploma", "bachelors", "masters", "doctorate"].includes(programLevel)) return;
 
   await supabase.from("programs").insert({ name, program_level: programLevel });
   revalidatePath("/admin/programs");

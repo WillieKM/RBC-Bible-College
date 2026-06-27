@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
+import { PROGRAM_LEVEL_LABELS, feeForLevel, formatFee } from "@/lib/fees";
 import type { Cohort, Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,7 +31,7 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
         <Link href="/admin/programs" className="text-gold-dark hover:underline">← Programs</Link>
       </p>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{(program as Program).name}</h1>
-      <p className="text-sm text-slate-500">{(program as Program).program_level === "degree" ? "Degree" : "Diploma / Certificate"}</p>
+      <p className="text-sm text-slate-500">{PROGRAM_LEVEL_LABELS[(program as Program).program_level]}</p>
 
       <h2 className="mt-8 text-lg font-semibold text-slate-800">Program Lead</h2>
       <form action={assignProgramProfessor} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -53,6 +54,8 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
       <h2 className="mt-8 text-lg font-semibold text-slate-800">Program Fees</h2>
       <p className="mt-1 text-sm text-slate-500">
         Set separate fees for international (Kenya/Africa) and USA students. The correct fee is automatically invoiced when a student is approved, based on the region they applied from.
+        Leave blank to use the standard {PROGRAM_LEVEL_LABELS[(program as Program).program_level]} rate
+        ({formatFee(feeForLevel((program as Program).program_level, "international"), "international")} / {formatFee(feeForLevel((program as Program).program_level, "usa"), "usa")}).
       </p>
       <form action={updateProgramFee} className="mt-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="id" value={(program as Program).id} />
