@@ -62,6 +62,14 @@ export default async function ApplyPage({
 
         <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
             <input type="hidden" name="source" value="rbc" />
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
 
             {presetRegion ? (
               <input type="hidden" name="region" value={presetRegion} />
@@ -129,7 +137,7 @@ export default async function ApplyPage({
               <input id="occupation" name="occupation" type="text" className={inputClass} />
             </div>
             <div>
-              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo *</label>
+              <label htmlFor="passport_photo" className={labelClass}>Passport-size photo * (max 5MB)</label>
               <input id="passport_photo" name="passport_photo" type="file" accept="image/*" required className={inputClass} />
             </div>
 

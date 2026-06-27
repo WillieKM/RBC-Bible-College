@@ -15,6 +15,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 const TOP_LEVEL_FORM_KEYS = new Set([
   "full_name",
@@ -32,12 +33,50 @@ const TOP_LEVEL_FORM_KEYS = new Set([
   "mobile_number",
   "email_personal",
   "passport_photo",
+  "website",
 ]);
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
+const RATE_LIMIT_WINDOW_MINUTES = 30;
+const RATE_LIMIT_MAX_ATTEMPTS = 8;
+
+async function getClientIp(): Promise<string> {
+  const headerList = await headers();
+  const forwardedFor = headerList.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return headerList.get("x-real-ip") || "unknown";
+}
 
 export async function submitApplication(formData: FormData) {
   const source = String(formData.get("source") || "").trim();
   const region = String(formData.get("region") || "").trim() || null;
   const returnTo = source === "tbcs" ? "/apply/degree" : "/apply";
+
+  // Honeypot: a real applicant never fills this hidden field. Pretend to
+  // succeed so bots don't learn to avoid it, but skip all real processing.
+  if (String(formData.get("website") || "").trim()) {
+    const params = new URLSearchParams({
+      name: String(formData.get("full_name") || ""),
+      email: String(formData.get("email") || ""),
+      program: String(formData.get("program") || ""),
+    });
+    redirect(`/apply/success?${params.toString()}`);
+  }
+
+  const ip = await getClientIp();
+  const adminClient = createAdminClient();
+
+  await adminClient.from("application_attempts").insert({ ip });
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const { count: recentAttempts } = await adminClient
+    .from("application_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", since);
+
+  if ((recentAttempts ?? 0) > RATE_LIMIT_MAX_ATTEMPTS) {
+    redirect(`${returnTo}?notice=${encodeURIComponent("Too many submissions detected from your network. Please wait a while before trying again, or email admissions directly.")}`);
+  }
 
   let fullName = String(formData.get("full_name") || "").trim();
   if (!fullName) {
@@ -71,10 +110,13 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=You+must+agree+to+the+declaration+to+apply`);
   }
 
+  const photo = formData.get("passport_photo");
+  if (photo instanceof File && photo.size > MAX_PHOTO_BYTES) {
+    redirect(`${returnTo}?error=Photo+must+be+smaller+than+5MB`);
+  }
+
   // Applications RLS restricts reads to admins, so this existence check needs
   // the service-role client even though the insert below uses the anon client.
-  const adminClient = createAdminClient();
-
   const { data: existing } = await adminClient
     .from("applications")
     .select("status")
@@ -99,7 +141,6 @@ export async function submitApplication(formData: FormData) {
   }
 
   let photoUrl: string | null = null;
-  const photo = formData.get("passport_photo");
   if (photo instanceof File && photo.size > 0) {
     const ext = photo.name.split(".").pop() || "jpg";
     const path = `${crypto.randomUUID()}.${ext}`;
