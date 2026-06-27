@@ -11,27 +11,6 @@ const inputClass =
 const labelClass = "block text-sm font-medium text-slate-300";
 const sectionClass = "rounded-lg bg-gold px-3 py-1.5 text-sm font-bold text-ink";
 
-const SUPPORT_OPTIONS = [
-  "Visual impairment",
-  "Hearing impairment",
-  "Disability affecting mobility",
-  "Profound complex disabilities",
-  "Social and emotional difficulty",
-  "Mental health difficulty",
-  "Moderate learning difficulty",
-  "Severe learning difficulty",
-  "Dyslexia",
-  "Dyscalculia",
-  "Autism spectrum disorder",
-  "Asperger's syndrome",
-  "Temporary disability after illness or accident",
-  "Other physical disability",
-  "Other specific learning difficulty",
-  "Other medical condition",
-  "Other disability",
-  "Prefer not to say",
-];
-
 const ADVERTISING_OPTIONS = [
   "Newspaper advert",
   "Radio advert",
@@ -205,8 +184,8 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
         <input id="home_address" name="home_address" type="text" required className={inputClass} />
       </div>
       <div>
-        <label htmlFor="home_postcode" className={labelClass}>Postcode</label>
-        <input id="home_postcode" name="home_postcode" type="text" className={inputClass} />
+        <label htmlFor="home_zip" className={labelClass}>Zip code</label>
+        <input id="home_zip" name="home_zip" type="text" className={inputClass} />
       </div>
       <div>
         <label htmlFor="telephone_home" className={labelClass}>Telephone (Home)</label>
@@ -225,8 +204,8 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
         <input id="term_time_address" name="term_time_address" type="text" className={inputClass} />
       </div>
       <div>
-        <label htmlFor="term_time_postcode" className={labelClass}>Postcode (Term Time Address)</label>
-        <input id="term_time_postcode" name="term_time_postcode" type="text" className={inputClass} />
+        <label htmlFor="term_time_zip" className={labelClass}>Zip code (Term Time Address)</label>
+        <input id="term_time_zip" name="term_time_zip" type="text" className={inputClass} />
       </div>
       <div>
         <label htmlFor="emergency_contact_name" className={labelClass}>Emergency Contact — Name *</label>
@@ -243,58 +222,6 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
       <div>
         <label htmlFor="emergency_contact_telephone" className={labelClass}>Emergency Contact — Telephone (Home)</label>
         <input id="emergency_contact_telephone" name="emergency_contact_telephone" type="tel" className={inputClass} />
-      </div>
-
-      <h2 className={sectionClass}>Section C: Residency</h2>
-
-      <div>
-        <label htmlFor="country_of_birth" className={labelClass}>What is your country of birth *</label>
-        <input id="country_of_birth" name="country_of_birth" type="text" required className={inputClass} />
-      </div>
-      <div>
-        <label htmlFor="nationality" className={labelClass}>What is your nationality *</label>
-        <input id="nationality" name="nationality" type="text" required className={inputClass} />
-      </div>
-      <div>
-        <label htmlFor="countries_lived_3_years" className={labelClass}>
-          Which country(s) have you been living in for the past three years from your first day of the course *
-        </label>
-        <input id="countries_lived_3_years" name="countries_lived_3_years" type="text" required className={inputClass} />
-      </div>
-
-      <h2 className={sectionClass}>Support Services</h2>
-      <p className="text-xs text-slate-400">
-        The information you provide here will be used to identify any extra support you may require.
-      </p>
-
-      <div>
-        <label htmlFor="has_disability" className={labelClass}>Do you have a disability or learning difficulty?</label>
-        <select id="has_disability" name="has_disability" defaultValue="" className={inputClass}>
-          <option value="" disabled>Select</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-      <div>
-        <label htmlFor="has_medical_condition" className={labelClass}>
-          Do you have a medical condition or health difficulty that may affect your attendance or participation?
-        </label>
-        <select id="has_medical_condition" name="has_medical_condition" defaultValue="" className={inputClass}>
-          <option value="" disabled>Select</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-      <div>
-        <p className={labelClass}>If you answered yes to any of the questions above, please tick all that apply</p>
-        <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {SUPPORT_OPTIONS.map((opt) => (
-            <label key={opt} className="flex items-start gap-2 text-sm text-slate-300">
-              <input type="checkbox" name="support_details" value={opt} className="mt-1 h-4 w-4 rounded border-slate-600 bg-ink text-gold focus:ring-gold" />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
       </div>
 
       <h2 className={sectionClass}>Education References</h2>
@@ -335,8 +262,8 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
         <input id="church_ministry_address" name="church_ministry_address" type="text" className={inputClass} />
       </div>
       <div>
-        <label htmlFor="church_ministry_postcode" className={labelClass}>Postcode</label>
-        <input id="church_ministry_postcode" name="church_ministry_postcode" type="text" className={inputClass} />
+        <label htmlFor="church_ministry_zip" className={labelClass}>Zip code</label>
+        <input id="church_ministry_zip" name="church_ministry_zip" type="text" className={inputClass} />
       </div>
       <div>
         <label htmlFor="church_ministry_contact_name" className={labelClass}>Contact Name *</label>
