@@ -21,6 +21,19 @@ export default async function AdminInvoiceDetailPage({
 
   if (!invoice) notFound();
 
+  // All of this student's invoices, so the admin can see their total position
+  // across every invoice, not just this one (a student may have several —
+  // e.g. a program fee invoice plus a separate term fee invoice).
+  const { data: allInvoicesRaw } = await supabase
+    .from("invoices")
+    .select("id, total_amount, payments(amount)")
+    .eq("student_id", invoice.student_id);
+
+  const allInvoices = (allInvoicesRaw ?? []) as { id: string; total_amount: number; payments: { amount: number }[] }[];
+  const studentTotalOwed = allInvoices.reduce((s, inv) => s + inv.total_amount, 0);
+  const studentTotalPaid = allInvoices.reduce((s, inv) => s + inv.payments.reduce((sum, p) => sum + p.amount, 0), 0);
+  const studentTotalBalance = Math.max(0, studentTotalOwed - studentTotalPaid);
+
   const studentProfile = invoice.profiles as {
     full_name: string; email: string; student_number: string | null; program_id: string | null; region: string | null;
   } | null;
@@ -113,6 +126,29 @@ export default async function AdminInvoiceDetailPage({
           </form>
         </div>
       </div>
+
+      {/* Student total across all invoices */}
+      {allInvoices.length > 1 && (
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-slate-800">{student?.full_name ?? "Student"}&apos;s Total — All Invoices ({allInvoices.length})</h2>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-slate-50 p-3 text-center">
+              <p className="text-xs font-medium text-slate-500">Total Owed</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{currency}{studentTotalOwed.toFixed(2)}</p>
+            </div>
+            <div className="rounded-lg bg-green-50 p-3 text-center">
+              <p className="text-xs font-medium text-green-600">Total Paid</p>
+              <p className="mt-1 text-lg font-bold text-green-700">{currency}{studentTotalPaid.toFixed(2)}</p>
+            </div>
+            <div className={`rounded-lg p-3 text-center ${studentTotalBalance <= 0 ? "bg-green-50" : "bg-red-50"}`}>
+              <p className={`text-xs font-medium ${studentTotalBalance <= 0 ? "text-green-600" : "text-red-500"}`}>Balance</p>
+              <p className={`mt-1 text-lg font-bold ${studentTotalBalance <= 0 ? "text-green-700" : "text-red-600"}`}>
+                {currency}{studentTotalBalance.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment history */}
       <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
