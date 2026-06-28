@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { addPayment, deletePayment, deleteInvoice, sendInvoice } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
+import { feeForLevel } from "@/lib/fees";
 import type { Payment } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -38,11 +39,20 @@ export default async function AdminInvoiceDetailPage({
     full_name: string; email: string; student_number: string | null; program_id: string | null; region: string | null;
   } | null;
 
-  const currency = studentProfile?.region === "usa" ? "$" : "KSh";
+  const region = studentProfile?.region === "usa" ? "usa" : "international";
+  const currency = region === "usa" ? "$" : "KSh";
 
   const { data: program } = studentProfile?.program_id
-    ? await supabase.from("programs").select("name").eq("id", studentProfile.program_id).single()
+    ? await supabase.from("programs").select("name, program_level, fee_international, fee_usa").eq("id", studentProfile.program_id).single()
     : { data: null };
+
+  // The standard tuition fee for this student's program tier/campus, regardless
+  // of how many invoices have actually been raised so far — lets the admin see
+  // at a glance whether what's been invoiced covers the full program fee.
+  const fullTuitionFee = program
+    ? (region === "usa" ? program.fee_usa : program.fee_international) ?? feeForLevel(program.program_level, region)
+    : null;
+  const remainingOfFullTuition = fullTuitionFee != null ? Math.max(0, fullTuitionFee - studentTotalPaid) : null;
 
   const payments = ((invoice.payments ?? []) as Payment[]).sort(
     (a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()
@@ -127,28 +137,34 @@ export default async function AdminInvoiceDetailPage({
         </div>
       </div>
 
-      {/* Student total across all invoices */}
-      {allInvoices.length > 1 && (
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">{student?.full_name ?? "Student"}&apos;s Total — All Invoices ({allInvoices.length})</h2>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+      {/* Tuition overview: standard full fee vs what's actually been invoiced/paid */}
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="font-semibold text-slate-800">{student?.full_name ?? "Student"}&apos;s Tuition Overview</h2>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {fullTuitionFee != null && (
             <div className="rounded-lg bg-slate-50 p-3 text-center">
-              <p className="text-xs font-medium text-slate-500">Total Owed</p>
-              <p className="mt-1 text-lg font-bold text-slate-900">{currency}{studentTotalOwed.toFixed(2)}</p>
+              <p className="text-xs font-medium text-slate-500">Full Tuition Fee</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{currency}{fullTuitionFee.toFixed(2)}</p>
             </div>
-            <div className="rounded-lg bg-green-50 p-3 text-center">
-              <p className="text-xs font-medium text-green-600">Total Paid</p>
-              <p className="mt-1 text-lg font-bold text-green-700">{currency}{studentTotalPaid.toFixed(2)}</p>
-            </div>
-            <div className={`rounded-lg p-3 text-center ${studentTotalBalance <= 0 ? "bg-green-50" : "bg-red-50"}`}>
-              <p className={`text-xs font-medium ${studentTotalBalance <= 0 ? "text-green-600" : "text-red-500"}`}>Balance</p>
-              <p className={`mt-1 text-lg font-bold ${studentTotalBalance <= 0 ? "text-green-700" : "text-red-600"}`}>
-                {currency}{studentTotalBalance.toFixed(2)}
-              </p>
-            </div>
+          )}
+          <div className="rounded-lg bg-slate-50 p-3 text-center">
+            <p className="text-xs font-medium text-slate-500">Invoiced So Far ({allInvoices.length})</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">{currency}{studentTotalOwed.toFixed(2)}</p>
+          </div>
+          <div className="rounded-lg bg-green-50 p-3 text-center">
+            <p className="text-xs font-medium text-green-600">Paid So Far</p>
+            <p className="mt-1 text-lg font-bold text-green-700">{currency}{studentTotalPaid.toFixed(2)}</p>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${(remainingOfFullTuition ?? studentTotalBalance) <= 0 ? "bg-green-50" : "bg-red-50"}`}>
+            <p className={`text-xs font-medium ${(remainingOfFullTuition ?? studentTotalBalance) <= 0 ? "text-green-600" : "text-red-500"}`}>
+              {fullTuitionFee != null ? "Remaining of Full Tuition" : "Balance"}
+            </p>
+            <p className={`mt-1 text-lg font-bold ${(remainingOfFullTuition ?? studentTotalBalance) <= 0 ? "text-green-700" : "text-red-600"}`}>
+              {currency}{(remainingOfFullTuition ?? studentTotalBalance).toFixed(2)}
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Payment history */}
       <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
