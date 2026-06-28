@@ -233,6 +233,19 @@ export async function reviewApplication(formData: FormData) {
     const admin = createAdminClient();
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
+    // Guard against approving a second (duplicate) application for an email
+    // that already has an account — without this, the account/invoice creation
+    // below silently half-fails but the application still gets marked approved.
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", application.email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      redirect(`/admin/applications?error=${encodeURIComponent(`${application.email} already has an account. This looks like a duplicate application — delete it instead of approving.`)}`);
+    }
+
     // generateLink creates the user and returns the link without sending Supabase's
     // own (heavily rate-limited) invite email — we deliver the link ourselves below.
     const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
