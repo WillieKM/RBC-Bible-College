@@ -3,7 +3,7 @@ import { reviewApplication } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
-import type { Application, Cohort } from "@/lib/types";
+import type { Application } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
   searchParams,
@@ -13,10 +13,7 @@ export default async function AdminApplicationsPage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: applications }, { data: cohorts }] = await Promise.all([
-    supabase.from("applications").select("*").order("created_at", { ascending: false }),
-    supabase.from("cohorts").select("*").order("start_date", { ascending: false }),
-  ]);
+  const { data: applications } = await supabase.from("applications").select("*").order("created_at", { ascending: false });
 
   const pending = (applications ?? []).filter((a: Application) => a.status === "pending");
   const reviewed = (applications ?? []).filter((a: Application) => a.status !== "pending");
@@ -91,16 +88,6 @@ export default async function AdminApplicationsPage({
               </div>
               <form action={reviewApplication} className="flex shrink-0 flex-col gap-2">
                 <input type="hidden" name="id" value={app.id} />
-                <select
-                  name="cohort_id"
-                  defaultValue=""
-                  className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
-                >
-                  <option value="">No cohort</option>
-                  {(cohorts ?? []).map((c: Cohort) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
                 <div className="flex gap-2">
                   <button
                     name="decision"

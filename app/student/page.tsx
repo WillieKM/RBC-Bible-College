@@ -10,7 +10,7 @@ export default async function StudentHomePage() {
   const [{ data: enrollments }, { data: program }, { data: programCourses }, { data: announcements }] = await Promise.all([
     supabase
       .from("enrollments")
-      .select("*, courses(*, cohorts(name))")
+      .select("*, courses(*)")
       .eq("student_id", profile.id),
     profile.program_id
       ? supabase.from("programs").select("*").eq("id", profile.program_id).single()
@@ -149,7 +149,6 @@ export default async function StudentHomePage() {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-500">{(e.courses as { cohorts?: { name: string } | null }).cohorts?.name ?? "No cohort"}</p>
             </Link>
           );
         })}

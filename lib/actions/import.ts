@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
+import { sendAccountInviteEmail } from "@/lib/email";
 import { redirect } from "next/navigation";
 
 type ImportRow = {
@@ -89,11 +90,14 @@ export async function bulkImportStudents(formData: FormData) {
         continue;
       }
 
-      // Invite user
-      const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
-        row.email,
-        { redirectTo: `${baseUrl}/login` }
-      );
+      // generateLink creates the user and returns the link without sending Supabase's
+      // own (heavily rate-limited) invite email — we deliver the link ourselves below,
+      // which matters here since this loop can invite many students at once.
+      const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
+        type: "invite",
+        email: row.email,
+        options: { redirectTo: `${baseUrl}/login` },
+      });
       if (inviteError || !invited?.user) {
         results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
         continue;
@@ -128,6 +132,13 @@ export async function bulkImportStudents(formData: FormData) {
       if (programId) {
         await enrollStudentInProgramModules(admin, invited.user.id, programId);
       }
+
+      await sendAccountInviteEmail({
+        to: row.email,
+        fullName: row.full_name,
+        role: "student",
+        loginUrl: invited.properties.action_link,
+      });
 
       // Auto-create invoice if program has a fee for this region
       if (prog) {

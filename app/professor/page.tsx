@@ -9,7 +9,7 @@ export default async function ProfessorHomePage() {
 
   const { data: courses } = await supabase
     .from("courses")
-    .select("*, cohorts(name), programs(name)")
+    .select("*, programs(name)")
     .eq("professor_id", profile.id)
     .order("created_at", { ascending: false });
 
@@ -59,7 +59,7 @@ export default async function ProfessorHomePage() {
 
       <h2 className="mt-6 text-lg font-semibold text-slate-800">Modules</h2>
       {(() => {
-        type CourseWithRelations = Course & { cohorts?: { name: string } | null; programs?: { name: string } | null };
+        type CourseWithRelations = Course & { programs?: { name: string } | null };
         const NO_PROGRAM = "No program assigned";
         const groups = new Map<string, CourseWithRelations[]>();
         for (const course of (courses ?? []) as CourseWithRelations[]) {
@@ -87,7 +87,6 @@ export default async function ProfessorHomePage() {
                   <p className="font-semibold text-slate-900">
                     {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
                   </p>
-                  <p className="text-sm text-slate-500">{course.cohorts?.name ?? "No cohort"}</p>
                 </Link>
               ))}
             </div>

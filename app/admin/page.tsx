@@ -132,14 +132,9 @@ export default async function AdminHomePage() {
           <p className="text-sm text-slate-500">Create diploma or degree programs. Each program has its own set of modules and a lead professor. Students apply to a specific program.</p>
         </Link>
 
-        <Link href="/admin/cohorts" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
-          <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Cohorts / Terms</p>
-          <p className="text-sm text-slate-500">Organise modules into intake terms (e.g. "Fall 2026"). Modules can be linked to a cohort for scheduling purposes.</p>
-        </Link>
-
         <Link href="/admin/students" className="group flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold hover:shadow-md">
           <p className="font-semibold text-slate-800 group-hover:text-gold-dark">Student Roster</p>
-          <p className="text-sm text-slate-500">View all students grouped by program, track credit completion, and monitor progress across cohorts.</p>
+          <p className="text-sm text-slate-500">View all students grouped by program and track credit completion.</p>
         </Link>
       </div>
 

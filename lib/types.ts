@@ -43,22 +43,12 @@ export interface Application {
   photo_url: string | null;
   details: Record<string, unknown>;
   status: ApplicationStatus;
-  cohort_id: string | null;
   created_at: string;
   reviewed_at: string | null;
 }
 
-export interface Cohort {
-  id: string;
-  name: string;
-  start_date: string | null;
-  end_date: string | null;
-  created_at: string;
-}
-
 export interface Course {
   id: string;
-  cohort_id: string | null;
   program_id: string | null;
   title: string;
   code: string | null;

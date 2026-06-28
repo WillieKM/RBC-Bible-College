@@ -117,8 +117,8 @@ export async function sendApplicationDecisionEmail(opts: {
         `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved and an account has been created for you.</p>
          ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Your student ID is <strong>${esc(opts.studentNumber)}</strong>. Please keep this for your records.</p>` : ""}
-         <p style="font-size:15px;color:#475569;">Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
-         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>` : ""}`
+         <p style="font-size:15px;color:#475569;">Click below to set your password and log in.</p>
+         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Your Password →</a></div>` : ""}`
       ));
   } else {
     await send(opts.to, `Update on your application to ${SCHOOL_NAME}`,
@@ -362,8 +362,8 @@ export async function sendAccountInviteEmail(opts: {
   await send(opts.to, `Your ${SCHOOL_NAME} account is ready`,
     wrap("Welcome",
       `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${esc(opts.role)}</strong>. Check your inbox for a separate email from Supabase to set your password, then log in below.</p>
-       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to Login →</a></div>`
+       <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${esc(opts.role)}</strong>. Click below to set your password and log in.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Your Password →</a></div>`
     ));
 }
 

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
 import { PROGRAM_LEVEL_LABELS, feeForLevel, formatFee } from "@/lib/fees";
-import type { Cohort, Course, Profile, Program } from "@/lib/types";
+import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -9,18 +9,16 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: program }, { data: modules }, { data: students }, { data: cohorts }, { data: professors }, { data: allStudents }] = await Promise.all([
+  const [{ data: program }, { data: modules }, { data: students }, { data: professors }, { data: allStudents }] = await Promise.all([
     supabase.from("programs").select("*").eq("id", id).single(),
     supabase.from("courses").select("*").eq("program_id", id).order("code", { ascending: true }),
     supabase.from("profiles").select("*").eq("role", "student").eq("program_id", id),
-    supabase.from("cohorts").select("*").order("start_date", { ascending: false }),
     supabase.from("profiles").select("*").eq("role", "professor"),
     supabase.from("profiles").select("*").eq("role", "student"),
   ]);
 
   if (!program) notFound();
 
-  const cohortMap = new Map((cohorts ?? []).map((c: Cohort) => [c.id, c.name]));
   const professorMap = new Map((professors ?? []).map((p: Profile) => [p.id, p.full_name]));
   const unassignedStudents = (allStudents ?? []).filter((s: Profile) => s.program_id !== (program as Program).id);
   const totalCredits = (modules ?? []).reduce((sum: number, c: Course) => sum + (c.credits ?? 0), 0);
@@ -140,15 +138,6 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
           <textarea name="description" rows={2} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Cohort</label>
-          <select name="cohort_id" defaultValue="" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">None</option>
-            {(cohorts ?? []).map((c: Cohort) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label className="block text-sm font-medium text-slate-700">Professor</label>
           <select name="professor_id" defaultValue="" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <option value="">Unassigned</option>
@@ -174,8 +163,6 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
               {course.credits ? <span className="ml-2 text-xs font-medium text-slate-400">{course.credits} credits</span> : null}
             </p>
             <p className="text-sm text-slate-500">
-              {course.cohort_id ? cohortMap.get(course.cohort_id) ?? "Unknown cohort" : "No cohort"}
-              {" · "}
               {course.professor_id ? professorMap.get(course.professor_id) ?? "Unknown professor" : "Unassigned"}
             </p>
             {course.description && <p className="mt-1 text-sm text-slate-600 line-clamp-2">{course.description}</p>}

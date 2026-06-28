@@ -20,29 +20,6 @@ export async function enrollStudentInProgramModules(supabase: SupabaseClient, st
     );
 }
 
-// ─── Cohorts ────────────────────────────────────────────────────────────
-
-export async function createCohort(formData: FormData) {
-  await requireRole(["admin"]);
-  const supabase = await createClient();
-
-  const name = String(formData.get("name") || "").trim();
-  const startDate = String(formData.get("start_date") || "") || null;
-  const endDate = String(formData.get("end_date") || "") || null;
-  if (!name) return;
-
-  await supabase.from("cohorts").insert({ name, start_date: startDate, end_date: endDate });
-  revalidatePath("/admin/cohorts");
-}
-
-export async function deleteCohort(formData: FormData) {
-  await requireRole(["admin"]);
-  const supabase = await createClient();
-  const id = String(formData.get("id"));
-  await supabase.from("cohorts").delete().eq("id", id);
-  revalidatePath("/admin/cohorts");
-}
-
 // ─── Programs ───────────────────────────────────────────────────────────
 
 export async function createProgram(formData: FormData) {
@@ -136,7 +113,6 @@ export async function createCourse(formData: FormData) {
   const code = String(formData.get("code") || "").trim() || null;
   const description = String(formData.get("description") || "").trim() || null;
   const credits = String(formData.get("credits") || "").trim();
-  const cohortId = String(formData.get("cohort_id") || "") || null;
   const programId = String(formData.get("program_id") || "") || null;
   const professorId = String(formData.get("professor_id") || "") || null;
   if (!title) return;
@@ -148,7 +124,6 @@ export async function createCourse(formData: FormData) {
       code,
       description,
       credits: credits ? Number(credits) : null,
-      cohort_id: cohortId,
       program_id: programId,
       professor_id: professorId,
     })
@@ -181,7 +156,6 @@ export async function updateCourse(formData: FormData) {
   const code = String(formData.get("code") || "").trim() || null;
   const description = String(formData.get("description") || "").trim() || null;
   const credits = String(formData.get("credits") || "").trim();
-  const cohortId = String(formData.get("cohort_id") || "") || null;
   const programId = String(formData.get("program_id") || "") || null;
   const professorId = String(formData.get("professor_id") || "") || null;
   const prerequisiteId = String(formData.get("prerequisite_id") || "") || null;
@@ -196,7 +170,6 @@ export async function updateCourse(formData: FormData) {
       code,
       description,
       credits: credits ? Number(credits) : null,
-      cohort_id: cohortId,
       program_id: programId,
       professor_id: professorId,
       prerequisite_id: prerequisiteId,
@@ -264,16 +237,20 @@ export async function inviteUser(formData: FormData) {
   const admin = createAdminClient();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${baseUrl}/login`,
+  // generateLink creates the user and returns the link without sending Supabase's
+  // own (heavily rate-limited) invite email — we deliver the link ourselves below.
+  const { data: invited, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo: `${baseUrl}/login` },
   });
-  if (error) {
+  if (error || !invited?.user) {
     revalidatePath("/admin/users");
     return;
   }
 
   await admin.from("profiles").insert({ id: invited.user.id, full_name: fullName, email, role });
-  await sendAccountInviteEmail({ to: email, fullName, role, loginUrl: `${baseUrl}/login` });
+  await sendAccountInviteEmail({ to: email, fullName, role, loginUrl: invited.properties.action_link });
 
   revalidatePath("/admin/users");
 }
@@ -316,7 +293,23 @@ export async function resendInvite(formData: FormData) {
 
   const admin = createAdminClient();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${baseUrl}/login` });
+
+  const { data: profile } = await admin.from("profiles").select("full_name, role").eq("email", email).maybeSingle();
+  const { data: invited, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo: `${baseUrl}/login` },
+  });
+
+  if (!error && invited?.properties.action_link) {
+    await sendAccountInviteEmail({
+      to: email,
+      fullName: profile?.full_name ?? email,
+      role: profile?.role ?? "user",
+      loginUrl: invited.properties.action_link,
+    });
+  }
+
   revalidatePath("/admin/users");
 }
 

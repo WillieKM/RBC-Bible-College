@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { enrollStudent, unenrollStudent, updateCourse } from "@/lib/actions/admin";
-import type { Cohort, Course, Profile, Program } from "@/lib/types";
+import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,10 +15,9 @@ export default async function AdminCourseDetailPage({
   const { data: course } = await supabase.from("courses").select("*").eq("id", id).single();
   if (!course) notFound();
 
-  const [{ data: enrollments }, { data: students }, { data: cohorts }, { data: programs }, { data: professors }, { data: otherModules }] = await Promise.all([
+  const [{ data: enrollments }, { data: students }, { data: programs }, { data: professors }, { data: otherModules }] = await Promise.all([
     supabase.from("enrollments").select("*, profiles(*)").eq("course_id", id),
     supabase.from("profiles").select("*").eq("role", "student"),
-    supabase.from("cohorts").select("*").order("start_date", { ascending: false }),
     supabase.from("programs").select("*").order("name", { ascending: true }),
     supabase.from("profiles").select("*").eq("role", "professor"),
     supabase.from("courses").select("*").neq("id", id).order("code", { ascending: true }),
@@ -63,15 +62,6 @@ export default async function AdminCourseDetailPage({
             <option value="">None</option>
             {(programs ?? []).map((p: Program) => (
               <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Cohort</label>
-          <select name="cohort_id" defaultValue={course.cohort_id ?? ""} className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">None</option>
-            {(cohorts ?? []).map((c: Cohort) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>

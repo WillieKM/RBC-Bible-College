@@ -219,7 +219,6 @@ export async function reviewApplication(formData: FormData) {
 
   const id = String(formData.get("id"));
   const decision = String(formData.get("decision")); // "approve" | "reject"
-  const cohortId = String(formData.get("cohort_id") || "") || null;
 
   const supabase = await createClient();
   const { data: application } = await supabase
@@ -234,13 +233,16 @@ export async function reviewApplication(formData: FormData) {
     const admin = createAdminClient();
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
-      application.email,
-      { redirectTo: `${baseUrl}/login` }
-    );
+    // generateLink creates the user and returns the link without sending Supabase's
+    // own (heavily rate-limited) invite email — we deliver the link ourselves below.
+    const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
+      type: "invite",
+      email: application.email,
+      options: { redirectTo: `${baseUrl}/login` },
+    });
 
-    if (inviteError) {
-      redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message)}`);
+    if (inviteError || !invited?.user) {
+      redirect(`/admin/applications?error=${encodeURIComponent(inviteError?.message ?? "Could not create account")}`);
     }
 
     const studentRegion = application.region ?? "international"; // "usa" | "international"
@@ -318,10 +320,10 @@ export async function reviewApplication(formData: FormData) {
 
     await supabase
       .from("applications")
-      .update({ status: "approved", reviewed_at: new Date().toISOString(), cohort_id: cohortId })
+      .update({ status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: `${baseUrl}/login`, studentNumber });
+    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: invited.properties.action_link, studentNumber });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
     await supabase
