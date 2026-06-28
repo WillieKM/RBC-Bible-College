@@ -13,7 +13,7 @@ export async function GET() {
   const [{ data: invoices }, { data: payments }] = await Promise.all([
     admin
       .from("invoices")
-      .select("id, invoice_number, description, total_amount, due_date, status, created_at, profiles(full_name, email, student_number)")
+      .select("id, invoice_number, description, total_amount, due_date, status, created_at, profiles(full_name, email, student_number, region)")
       .order("created_at", { ascending: false }),
     admin.from("payments").select("invoice_id, amount"),
   ]);
@@ -24,15 +24,17 @@ export async function GET() {
   }
 
   const rows = (invoices ?? []).map((inv) => {
-    const student = inv.profiles as unknown as { full_name: string; email: string; student_number: string } | null;
+    const student = inv.profiles as unknown as { full_name: string; email: string; student_number: string; region: string | null } | null;
     const paid = paymentTotals.get(inv.id) ?? 0;
     const outstanding = Math.max(0, (inv.total_amount ?? 0) - paid);
+    const currency = student?.region === "usa" ? "USD" : "KES";
     return [
       inv.invoice_number ?? "",
       student?.student_number ?? "",
       student?.full_name ?? "",
       student?.email ?? "",
       inv.description ?? "",
+      currency,
       inv.total_amount ?? 0,
       paid,
       outstanding,
@@ -42,7 +44,7 @@ export async function GET() {
     ];
   });
 
-  const headers = ["Invoice #", "Student #", "Student Name", "Email", "Description", "Total (K)", "Paid (K)", "Outstanding (K)", "Status", "Due Date", "Created"];
+  const headers = ["Invoice #", "Student #", "Student Name", "Email", "Description", "Currency", "Total", "Paid", "Outstanding", "Status", "Due Date", "Created"];
   const csv = [headers, ...rows]
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
     .join("\r\n");

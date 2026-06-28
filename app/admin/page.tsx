@@ -52,14 +52,32 @@ export default async function AdminHomePage() {
       .order("created_at", { ascending: false })
       .limit(6),
 
-    admin.from("invoices").select("total_amount"),
-    admin.from("payments").select("amount"),
+    admin.from("invoices").select("id, total_amount, profiles(region)"),
+    admin.from("payments").select("invoice_id, amount"),
     admin.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student").not("completed_at", "is", null),
   ]);
 
-  const totalBilled = (invoiceRows ?? []).reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
-  const totalCollected = (paymentRows ?? []).reduce((sum, r) => sum + (r.amount ?? 0), 0);
-  const totalOutstanding = Math.max(0, totalBilled - totalCollected);
+  // Invoices/payments are billed in different currencies depending on the
+  // student's campus (USD for USA, KSh for international) — they can't be
+  // summed together, so totals are tracked separately per currency.
+  const regionByInvoiceId = new Map(
+    (invoiceRows ?? []).map((r) => [r.id, (r.profiles as unknown as { region: string | null } | null)?.region])
+  );
+
+  let billedUsa = 0, billedIntl = 0;
+  for (const r of invoiceRows ?? []) {
+    if ((r.profiles as unknown as { region: string | null } | null)?.region === "usa") billedUsa += r.total_amount ?? 0;
+    else billedIntl += r.total_amount ?? 0;
+  }
+
+  let collectedUsa = 0, collectedIntl = 0;
+  for (const r of paymentRows ?? []) {
+    if (regionByInvoiceId.get(r.invoice_id) === "usa") collectedUsa += r.amount ?? 0;
+    else collectedIntl += r.amount ?? 0;
+  }
+
+  const outstandingUsa = Math.max(0, billedUsa - collectedUsa);
+  const outstandingIntl = Math.max(0, billedIntl - collectedIntl);
 
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -93,10 +111,14 @@ export default async function AdminHomePage() {
           <p className="mt-0.5 text-xs text-slate-400">{programCount ?? 0} programs · {professorCount ?? 0} professors</p>
         </Link>
         <Link href="/admin/invoices" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-gold">
-          <p className="text-sm font-medium text-slate-500">Revenue</p>
-          <p className="mt-1 text-2xl font-bold text-green-700">KSh{totalCollected.toLocaleString()}</p>
-          {totalOutstanding > 0 && (
-            <p className="mt-0.5 text-xs text-red-500">KSh{totalOutstanding.toLocaleString()} outstanding</p>
+          <p className="text-sm font-medium text-slate-500">Revenue Collected</p>
+          <p className="mt-1 text-lg font-bold text-green-700">
+            ${collectedUsa.toLocaleString()} <span className="text-slate-300">·</span> KSh{collectedIntl.toLocaleString()}
+          </p>
+          {(outstandingUsa > 0 || outstandingIntl > 0) && (
+            <p className="mt-0.5 text-xs text-red-500">
+              Outstanding: ${outstandingUsa.toLocaleString()} · KSh{outstandingIntl.toLocaleString()}
+            </p>
           )}
         </Link>
       </div>

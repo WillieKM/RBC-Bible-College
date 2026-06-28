@@ -14,7 +14,7 @@ export default async function AdminInvoicesPage() {
   const supabase = await createClient();
 
   const [{ data: invoicesRaw }, { data: students }, { data: programs }] = await Promise.all([
-    supabase.from("invoices").select("*, profiles(full_name, email), payments(amount)").order("created_at", { ascending: false }),
+    supabase.from("invoices").select("*, profiles(full_name, email, region), payments(amount)").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name, email, program_id").eq("role", "student").order("full_name"),
     supabase.from("programs").select("id, name"),
   ]);
@@ -22,11 +22,12 @@ export default async function AdminInvoicesPage() {
   const programMap = new Map((programs ?? []).map((p: Pick<Program, "id" | "name">) => [p.id, p.name]));
 
   const invoices = (invoicesRaw ?? []).map((inv: Invoice & {
-    profiles: { full_name: string; email: string } | null;
+    profiles: { full_name: string; email: string; region: string | null } | null;
     payments: { amount: number }[];
   }) => {
     const paid = (inv.payments ?? []).reduce((s, p) => s + p.amount, 0);
-    return { ...inv, paid, balance: inv.total_amount - paid };
+    const currency = inv.profiles?.region === "usa" ? "$" : "KSh";
+    return { ...inv, paid, balance: inv.total_amount - paid, currency };
   });
 
   return (
@@ -89,9 +90,9 @@ export default async function AdminInvoicesPage() {
             </div>
             <div className="flex items-center gap-4 text-right">
               <div>
-                <p className="text-sm font-semibold text-slate-800">KSh{inv.total_amount.toFixed(2)}</p>
+                <p className="text-sm font-semibold text-slate-800">{inv.currency}{inv.total_amount.toFixed(2)}</p>
                 <p className="text-xs text-slate-500">
-                  Paid KSh{inv.paid.toFixed(2)} · Bal KSh{Math.max(0, inv.balance).toFixed(2)}
+                  Paid {inv.currency}{inv.paid.toFixed(2)} · Bal {inv.currency}{Math.max(0, inv.balance).toFixed(2)}
                 </p>
               </div>
               {statusBadge(inv.total_amount, inv.paid)}
