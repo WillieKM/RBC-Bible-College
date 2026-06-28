@@ -223,3 +223,14 @@ export interface AuditLog {
   details: Record<string, unknown> | null;
   created_at: string;
 }
+
+export interface ErrorLog {
+  id: string;
+  message: string;
+  digest: string | null;
+  route_path: string | null;
+  route_type: string | null;
+  request_path: string | null;
+  request_method: string | null;
+  created_at: string;
+}

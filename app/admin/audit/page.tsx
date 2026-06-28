@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AuditLog } from "@/lib/types";
+import type { AuditLog, ErrorLog } from "@/lib/types";
 
 const ACTION_COLORS: Record<string, string> = {
   approve_application: "bg-green-100 text-green-700",
@@ -20,11 +20,18 @@ export default async function AdminAuditPage({
   const offset = (page - 1) * pageSize;
 
   const admin = createAdminClient();
-  const { data: logs, count } = await admin
-    .from("audit_logs")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+  const [{ data: logs, count }, { data: errors, count: errorCount }] = await Promise.all([
+    admin
+      .from("audit_logs")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1),
+    admin
+      .from("error_logs")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
 
   const totalPages = Math.ceil((count ?? 0) / pageSize);
 
@@ -103,6 +110,47 @@ export default async function AdminAuditPage({
           )}
         </div>
       )}
+
+      {/* Error log */}
+      <h2 className="mt-10 text-xl font-bold text-slate-900">System Errors</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        {(errorCount ?? 0).toLocaleString()} uncaught server error{(errorCount ?? 0) === 1 ? "" : "s"} recorded · showing most recent 20
+      </p>
+
+      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="border-b border-slate-100 bg-slate-50">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Time</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Message</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Route</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-600">Request</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(errors ?? []).length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">No errors recorded — good sign.</td>
+              </tr>
+            )}
+            {(errors ?? []).map((err: ErrorLog) => (
+              <tr key={err.id} className="border-b border-slate-50 hover:bg-slate-50">
+                <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{timeStr(err.created_at)}</td>
+                <td className="max-w-sm px-4 py-3 text-xs text-red-700">
+                  <span className="line-clamp-2">{err.message}</span>
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-500">
+                  {err.route_path && <span className="font-medium">{err.route_path}</span>}
+                  {err.route_type && <span className="ml-1 text-slate-400">({err.route_type})</span>}
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-500">
+                  {err.request_method} {err.request_path}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
