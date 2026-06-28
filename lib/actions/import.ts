@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { sendAccountInviteEmail } from "@/lib/email";
+import { feeForLevel } from "@/lib/fees";
+import { nextSequenceNumber } from "@/lib/sequences";
 import { redirect } from "next/navigation";
 
 type ImportRow = {
@@ -75,7 +77,7 @@ export async function bulkImportStudents(formData: FormData) {
   const year = new Date().getFullYear();
 
   // Pre-fetch all programs once
-  const { data: allPrograms } = await admin.from("programs").select("id, name, fee_international, fee_usa");
+  const { data: allPrograms } = await admin.from("programs").select("id, name, program_level, fee_international, fee_usa");
   const programMap = new Map((allPrograms ?? []).map((p) => [p.name.toLowerCase(), p]));
 
   for (const row of rows) {
@@ -110,11 +112,8 @@ export async function bulkImportStudents(formData: FormData) {
       // Generate student number if not provided
       let studentNumber = row.student_number;
       if (!studentNumber) {
-        const { count } = await admin
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .like("student_number", `RBC-${year}-%`);
-        studentNumber = `RBC-${year}-${String((count ?? 0) + 1).padStart(4, "0")}`;
+        const seq = await nextSequenceNumber(admin, `student_number_${year}`);
+        studentNumber = `RBC-${year}-${String(seq).padStart(4, "0")}`;
       }
 
       // Create profile
@@ -140,14 +139,13 @@ export async function bulkImportStudents(formData: FormData) {
         loginUrl: invited.properties.action_link,
       });
 
-      // Auto-create invoice if program has a fee for this region
+      // Auto-create invoice if program has a fee for this region — use the
+      // program's manual override if set, otherwise the standard fee schedule.
       if (prog) {
-        const fee = row.region === "usa" ? (prog.fee_usa ?? null) : (prog.fee_international ?? null);
+        const fee = (row.region === "usa" ? prog.fee_usa : prog.fee_international) ?? feeForLevel(prog.program_level, row.region === "usa" ? "usa" : "international");
         if (fee && fee > 0) {
-          const { count: invCount } = await admin
-            .from("invoices")
-            .select("id", { count: "exact", head: true });
-          const invoiceNumber = `INV-${year}-${String((invCount ?? 0) + 1).padStart(4, "0")}`;
+          const invSeq = await nextSequenceNumber(admin, `invoice_number_${year}`);
+          const invoiceNumber = `INV-${year}-${String(invSeq).padStart(4, "0")}`;
           const currency = row.region === "usa" ? "$" : "KSh";
           await admin.from("invoices").insert({
             student_id: invited.user.id,

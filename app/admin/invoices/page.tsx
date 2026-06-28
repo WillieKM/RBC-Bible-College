@@ -24,6 +24,14 @@ export default async function AdminInvoicesPage() {
     (programs ?? []).map((p: Pick<Program, "id" | "name" | "program_level" | "fee_international" | "fee_usa">) => [p.id, p])
   );
 
+  const existingByStudent = new Map<string, { count: number; total: number }>();
+  for (const inv of (invoicesRaw ?? []) as { student_id: string; total_amount: number }[]) {
+    const entry = existingByStudent.get(inv.student_id) ?? { count: 0, total: 0 };
+    entry.count += 1;
+    entry.total += inv.total_amount;
+    existingByStudent.set(inv.student_id, entry);
+  }
+
   const studentOptions: InvoiceStudentOption[] = (students ?? []).map(
     (s: Pick<Profile, "id" | "full_name" | "email" | "program_id" | "region">) => {
       const program = s.program_id ? programMap.get(s.program_id) : null;
@@ -32,11 +40,14 @@ export default async function AdminInvoicesPage() {
       const fee = program
         ? (region === "usa" ? program.fee_usa : program.fee_international) ?? feeForLevel(program.program_level, region)
         : null;
+      const existing = existingByStudent.get(s.id);
       return {
         id: s.id,
         label: `${s.full_name}${program ? ` — ${program.name}` : ""}`,
         fee,
         currency,
+        existingCount: existing?.count ?? 0,
+        existingTotal: existing?.total ?? 0,
       };
     }
   );

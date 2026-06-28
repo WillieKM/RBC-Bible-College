@@ -232,9 +232,11 @@ export default async function AdminInvoiceDetailPage({
               <input name="reference" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional" />
             </div>
             <div className="flex items-end">
-              <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
-                Save Payment
-              </button>
+              <DeleteButton
+                label="Save Payment"
+                pendingLabel="Saving…"
+                className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
+              />
             </div>
           </form>
         </div>

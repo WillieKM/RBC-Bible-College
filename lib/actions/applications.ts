@@ -14,6 +14,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { DEGREE_PROGRAM_LEVELS, feeForLevel } from "@/lib/fees";
+import { nextSequenceNumber } from "@/lib/sequences";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -293,11 +294,8 @@ export async function reviewApplication(formData: FormData) {
       feeForLevel(application.program_level, studentRegion === "usa" ? "usa" : "international");
 
     const year = new Date().getFullYear();
-    const { count: studentCount } = await admin
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .like("student_number", `RBC-${year}-%`);
-    const studentNumber = `RBC-${year}-${String((studentCount ?? 0) + 1).padStart(4, "0")}`;
+    const studentSeq = await nextSequenceNumber(admin, `student_number_${year}`);
+    const studentNumber = `RBC-${year}-${String(studentSeq).padStart(4, "0")}`;
 
     await admin.from("profiles").insert({
       id: invited.user.id,
@@ -317,10 +315,8 @@ export async function reviewApplication(formData: FormData) {
     // Auto-create fee invoice if the program has a fee set for this student's region
     if (programFee && programFee > 0) {
       const invYear = new Date().getFullYear();
-      const { count: invCount } = await admin
-        .from("invoices")
-        .select("id", { count: "exact", head: true });
-      const invoiceNumber = `INV-${invYear}-${String((invCount ?? 0) + 1).padStart(4, "0")}`;
+      const invSeq = await nextSequenceNumber(admin, `invoice_number_${invYear}`);
+      const invoiceNumber = `INV-${invYear}-${String(invSeq).padStart(4, "0")}`;
       const currency = studentRegion === "usa" ? "$" : "KSh";
       await admin.from("invoices").insert({
         student_id: invited.user.id,
