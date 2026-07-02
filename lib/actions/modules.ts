@@ -68,10 +68,22 @@ export async function updateModule(formData: FormData) {
   const id = String(formData.get("id") || "").trim();
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
+  const sendAtRaw = String(formData.get("send_at") || "").trim();
+  const sendAudience = String(formData.get("send_audience") || "").trim() || null;
 
   if (!id || !title) return;
 
-  await admin.from("module_files").update({ title, description }).eq("id", id);
+  // Clear schedule if date/time field is blank; otherwise parse as UTC
+  const sendAt = sendAtRaw ? new Date(sendAtRaw).toISOString() : null;
+
+  await admin.from("module_files").update({
+    title,
+    description,
+    send_at: sendAt,
+    send_audience: sendAt ? (sendAudience ?? "all") : null,
+    // Reset sent_at so a re-schedule is picked up again by the cron
+    ...(sendAt ? { sent_at: null } : {}),
+  }).eq("id", id);
 
   revalidatePath("/admin/modules");
   revalidatePath("/professor/modules");

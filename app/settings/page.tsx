@@ -90,6 +90,30 @@ export default async function SettingsPage({
             <p className="mt-0.5 text-xs text-slate-400">Email cannot be changed here. Contact an admin if needed.</p>
           </div>
 
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-slate-700">Phone number</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              defaultValue={profile.phone ?? ""}
+              placeholder="+254 700 000 000"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="address" className="block text-sm font-medium text-slate-700">Address</label>
+            <textarea
+              id="address"
+              name="address"
+              rows={2}
+              defaultValue={profile.address ?? ""}
+              placeholder="Street, city, country"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+            />
+          </div>
+
           {profile.student_number && (
             <div>
               <label className="block text-sm font-medium text-slate-700">Student ID</label>

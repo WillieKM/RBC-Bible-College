@@ -7,6 +7,8 @@ export interface Profile {
   email: string;
   role: Role;
   finance_access: boolean;
+  phone: string | null;
+  address: string | null;
   program_id: string | null;
   student_number: string | null;
   avatar_url: string | null;
@@ -231,6 +233,9 @@ export interface ModuleFile {
   file_url: string;
   file_name: string;
   uploaded_by: string | null;
+  send_at: string | null;
+  sent_at: string | null;
+  send_audience: string | null;
   created_at: string;
 }
 

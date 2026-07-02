@@ -61,6 +61,23 @@ export default async function AdminInvoicesPage() {
     return { ...inv, paid, balance: inv.total_amount - paid, currency };
   });
 
+  // Financial summary — split by currency since USD and KSh can't be summed
+  const usd = invoices.filter((inv) => inv.currency === "$");
+  const ksh = invoices.filter((inv) => inv.currency === "KSh");
+
+  const summary = {
+    usd: {
+      billed: usd.reduce((s, inv) => s + inv.total_amount, 0),
+      collected: usd.reduce((s, inv) => s + inv.paid, 0),
+      outstanding: usd.reduce((s, inv) => s + Math.max(0, inv.balance), 0),
+    },
+    ksh: {
+      billed: ksh.reduce((s, inv) => s + inv.total_amount, 0),
+      collected: ksh.reduce((s, inv) => s + inv.paid, 0),
+      outstanding: ksh.reduce((s, inv) => s + Math.max(0, inv.balance), 0),
+    },
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -69,6 +86,44 @@ export default async function AdminInvoicesPage() {
           Export CSV
         </a>
       </div>
+
+      {/* Financial summary */}
+      {(invoices.length > 0) && (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[
+            { label: "USD Campus", prefix: "$", ...summary.usd },
+            { label: "Kenya / International", prefix: "KSh", ...summary.ksh },
+          ].map(({ label, prefix, billed, collected, outstanding }) => (
+            <div key={label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-xs text-slate-500">Billed</p>
+                  <p className="mt-0.5 text-lg font-bold text-slate-900">{prefix}{billed.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-600">Collected</p>
+                  <p className="mt-0.5 text-lg font-bold text-green-700">{prefix}{collected.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className={`text-xs ${outstanding > 0 ? "text-red-500" : "text-green-600"}`}>Outstanding</p>
+                  <p className={`mt-0.5 text-lg font-bold ${outstanding > 0 ? "text-red-600" : "text-green-700"}`}>
+                    {prefix}{outstanding.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {billed > 0 && (
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-gold"
+                    style={{ width: `${Math.min(100, (collected / billed) * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Create invoice */}
       <CreateInvoiceForm students={studentOptions} />

@@ -101,6 +101,12 @@ export async function updateProfile(formData: FormData) {
   const fullName = String(formData.get("full_name") || "").trim();
   if (fullName && fullName !== profile.full_name) updates.full_name = fullName;
 
+  const phone = String(formData.get("phone") || "").trim() || null;
+  if (phone !== profile.phone) updates.phone = phone;
+
+  const address = String(formData.get("address") || "").trim() || null;
+  if (address !== profile.address) updates.address = address;
+
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     const admin = createAdminClient();

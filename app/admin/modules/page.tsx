@@ -93,23 +93,57 @@ export default async function AdminModulesPage({
               /* ── Inline edit form ── */
               <form action={updateModule} className="space-y-3 px-5 py-4">
                 <input type="hidden" name="id" value={m.id} />
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Title *</label>
-                  <input
-                    name="title"
-                    required
-                    defaultValue={m.title}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  />
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex-1 min-w-48">
+                    <label className="block text-sm font-medium text-slate-700">Title *</label>
+                    <input
+                      name="title"
+                      required
+                      defaultValue={m.title}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-48">
+                    <label className="block text-sm font-medium text-slate-700">Description</label>
+                    <textarea
+                      name="description"
+                      rows={2}
+                      defaultValue={m.description ?? ""}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Description</label>
-                  <textarea
-                    name="description"
-                    rows={2}
-                    defaultValue={m.description ?? ""}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  />
+                <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-3">
+                  <div className="flex-1 min-w-48">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Schedule send <span className="font-normal text-slate-400">(leave blank to send manually)</span>
+                    </label>
+                    <input
+                      name="send_at"
+                      type="datetime-local"
+                      defaultValue={m.send_at ? new Date(m.send_at).toISOString().slice(0, 16) : ""}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                    {m.sent_at && (
+                      <p className="mt-1 text-xs text-green-600">
+                        ✓ Sent {new Date(m.sent_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-48">
+                    <label className="block text-sm font-medium text-slate-700">Send to</label>
+                    <select
+                      name="send_audience"
+                      defaultValue={m.send_audience ?? "all"}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                      <option value="all">All students</option>
+                      <option value="diploma">Diploma / Certificate only</option>
+                      <option value="bachelors">Bachelor&apos;s only</option>
+                      <option value="masters">Master&apos;s only</option>
+                      <option value="doctorate">Doctorate only</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <DeleteButton
@@ -129,16 +163,16 @@ export default async function AdminModulesPage({
                 <div className="flex-1">
                   <p className="font-semibold text-slate-900">{m.title}</p>
                   {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
-                  <div className="mt-1 flex items-center gap-3">
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
                     <span className="text-xs text-slate-400">{m.file_name}</span>
                     <span className="text-xs text-slate-300">·</span>
                     <span className="text-xs text-slate-400">{new Date(m.created_at).toLocaleDateString()}</span>
-                    <a
-                      href={m.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-medium text-gold-dark hover:underline"
-                    >
+                    {m.sent_at ? (
+                      <span className="text-xs font-medium text-green-600">✓ Sent {new Date(m.sent_at).toLocaleDateString()}</span>
+                    ) : m.send_at ? (
+                      <span className="text-xs font-medium text-amber-600">⏱ Scheduled {new Date(m.send_at).toLocaleString()}</span>
+                    ) : null}
+                    <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gold-dark hover:underline">
                       Preview →
                     </a>
                   </div>
