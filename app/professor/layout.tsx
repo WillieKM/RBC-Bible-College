@@ -3,6 +3,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 
 const LINKS = [
   { href: "/professor", label: "My Courses" },
+  { href: "/professor/modules", label: "Modules" },
   { href: "/professor/announcements", label: "Notices" },
   { href: "/professor/prayers", label: "Prayer Board" },
   { href: "/professor/library", label: "Library" },

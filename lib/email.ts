@@ -593,3 +593,33 @@ export async function sendGradingReminderEmail(opts: {
     )
   );
 }
+
+// ─── Module file sent to students ─────────────────────────────────────────────
+
+export async function sendModuleFileEmail(opts: {
+  to: string;
+  studentName: string;
+  moduleTitle: string;
+  description: string | null;
+  fileUrl: string;
+  fileName: string;
+  senderName: string;
+}) {
+  await send(
+    opts.to,
+    `New module available: ${opts.moduleTitle}`,
+    wrap(
+      "New Module Available",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">A new module has been shared with you by <strong>${esc(opts.senderName)}</strong>.</p>
+       <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(opts.moduleTitle)}</p>
+         ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${esc(opts.description)}</p>` : ""}
+       </div>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.fileUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Download ${esc(opts.fileName)} →</a>
+       </div>
+       <p style="margin-top:16px;font-size:13px;color:#94a3b8;text-align:center;">Click the button above to download your module PDF.</p>`
+    )
+  );
+}

@@ -13,6 +13,7 @@ const BASE_LINKS = [
 const FINANCE_LINK = { href: "/admin/invoices", label: "Invoices" };
 
 const REST_LINKS = [
+  { href: "/admin/modules", label: "Modules" },
   { href: "/admin/announcements", label: "Notices" },
   { href: "/admin/library", label: "Library" },
   { href: "/admin/calendar", label: "Calendar" },

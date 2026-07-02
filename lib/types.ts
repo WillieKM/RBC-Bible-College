@@ -224,6 +224,16 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface ModuleFile {
+  id: string;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_name: string;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
 export interface ErrorLog {
   id: string;
   message: string;
