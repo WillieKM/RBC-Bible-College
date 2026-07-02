@@ -35,30 +35,43 @@ export default async function AdminModulesPage({
         encType="multipart/form-data"
         className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
       >
-        <h2 className="font-semibold text-slate-800">Upload New Module</h2>
+        <h2 className="font-semibold text-slate-800">Upload Modules</h2>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            PDF files * — select one or many at once (max 50 MB each)
+          </label>
+          <input
+            name="file"
+            type="file"
+            accept=".pdf,application/pdf"
+            multiple
+            required
+            className="mt-1 block text-sm"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Titles are auto-generated from filenames. Selecting a single file lets you set a custom title below.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">Module title *</label>
+            <label className="block text-sm font-medium text-slate-700">
+              Title <span className="font-normal text-slate-400">(single file only — leave blank to use filename)</span>
+            </label>
             <input
               name="title"
-              required
               placeholder="e.g. Week 3 — The Book of Acts"
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
           <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">PDF file * (max 50MB)</label>
-            <input name="file" type="file" accept=".pdf,application/pdf" required className="mt-1 block text-sm" />
+            <label className="block text-sm font-medium text-slate-700">Description (optional)</label>
+            <textarea
+              name="description"
+              rows={2}
+              placeholder="Brief summary — applies to all files in this upload"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
           </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Description (optional)</label>
-          <textarea
-            name="description"
-            rows={2}
-            placeholder="Brief summary of what this module covers"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
         </div>
         <DeleteButton
           label="Upload Module"

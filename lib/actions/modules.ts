@@ -9,42 +9,52 @@ import { redirect } from "next/navigation";
 
 export type ModuleAudience = "all" | "diploma" | "bachelors" | "masters" | "doctorate";
 
+function filenameToTitle(name: string): string {
+  return name
+    .replace(/\.pdf$/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
 export async function uploadModule(formData: FormData) {
   const profile = await requireRole(["admin"]);
   const admin = createAdminClient();
 
-  const title = String(formData.get("title") || "").trim();
+  const manualTitle = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
-  const file = formData.get("file") as File | null;
 
-  if (!title || !file || file.size === 0) return;
+  // getAll supports both single and multiple file selections
+  const files = (formData.getAll("file") as File[]).filter((f) => f instanceof File && f.size > 0);
 
-  const MAX_BYTES = 50 * 1024 * 1024; // 50MB
-  if (file.size > MAX_BYTES) {
-    redirect("/admin/modules?error=File+must+be+smaller+than+50MB");
+  if (files.length === 0) return;
+
+  const MAX_BYTES = 50 * 1024 * 1024; // 50MB per file
+  const oversized = files.find((f) => f.size > MAX_BYTES);
+  if (oversized) {
+    redirect(`/admin/modules?error=${encodeURIComponent(`"${oversized.name}" exceeds the 50 MB limit`)}`);
   }
 
-  const ext = file.name.split(".").pop() ?? "pdf";
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `${Date.now()}_${safeName}`;
+  const rows: { title: string; description: string | null; file_url: string; file_name: string; uploaded_by: string }[] = [];
 
-  const { error: uploadError } = await admin.storage
-    .from("module-files")
-    .upload(path, file, { contentType: "application/pdf", upsert: false });
+  for (const file of files) {
+    const title = files.length === 1 && manualTitle ? manualTitle : filenameToTitle(file.name);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2)}_${safeName}`;
 
-  if (uploadError) {
-    redirect(`/admin/modules?error=${encodeURIComponent(uploadError.message)}`);
+    const { error: uploadError } = await admin.storage
+      .from("module-files")
+      .upload(path, file, { contentType: "application/pdf", upsert: false });
+
+    if (uploadError) {
+      redirect(`/admin/modules?error=${encodeURIComponent(`Failed to upload "${file.name}": ${uploadError.message}`)}`);
+    }
+
+    const { data: publicUrl } = admin.storage.from("module-files").getPublicUrl(path);
+    rows.push({ title, description, file_url: publicUrl.publicUrl, file_name: file.name, uploaded_by: profile.id });
   }
 
-  const { data: publicUrl } = admin.storage.from("module-files").getPublicUrl(path);
-
-  await admin.from("module_files").insert({
-    title,
-    description,
-    file_url: publicUrl.publicUrl,
-    file_name: file.name,
-    uploaded_by: profile.id,
-  });
+  await admin.from("module_files").insert(rows);
 
   revalidatePath("/admin/modules");
   revalidatePath("/professor/modules");
