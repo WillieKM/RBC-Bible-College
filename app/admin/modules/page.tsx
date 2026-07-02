@@ -1,14 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { uploadModule, deleteModule } from "@/lib/actions/modules";
+import { uploadModule, updateModule, deleteModule } from "@/lib/actions/modules";
 import { DeleteButton } from "@/components/DeleteButton";
+import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
 
 export default async function AdminModulesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; edit?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, edit } = await searchParams;
   const admin = createAdminClient();
 
   const { data } = await admin
@@ -87,33 +88,80 @@ export default async function AdminModulesPage({
           <p className="text-sm text-slate-500">No modules uploaded yet.</p>
         )}
         {modules.map((m) => (
-          <div key={m.id} className="flex items-start justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-            <div className="flex-1">
-              <p className="font-semibold text-slate-900">{m.title}</p>
-              {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
-              <div className="mt-1 flex items-center gap-3">
-                <span className="text-xs text-slate-400">{m.file_name}</span>
-                <span className="text-xs text-slate-300">·</span>
-                <span className="text-xs text-slate-400">{new Date(m.created_at).toLocaleDateString()}</span>
-                <a
-                  href={m.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-gold-dark hover:underline"
-                >
-                  Preview →
-                </a>
+          <div key={m.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            {edit === m.id ? (
+              /* ── Inline edit form ── */
+              <form action={updateModule} className="space-y-3 px-5 py-4">
+                <input type="hidden" name="id" value={m.id} />
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Title *</label>
+                  <input
+                    name="title"
+                    required
+                    defaultValue={m.title}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Description</label>
+                  <textarea
+                    name="description"
+                    rows={2}
+                    defaultValue={m.description ?? ""}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <DeleteButton
+                    label="Save"
+                    pendingLabel="Saving…"
+                    className="rounded-lg bg-gold px-4 py-1.5 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
+                  />
+                  <Link href="/admin/modules" className="text-sm text-slate-500 hover:text-slate-700">
+                    Cancel
+                  </Link>
+                  <span className="ml-auto text-xs text-slate-400">{m.file_name}</span>
+                </div>
+              </form>
+            ) : (
+              /* ── Read-only row ── */
+              <div className="flex items-start justify-between px-5 py-4">
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">{m.title}</p>
+                  {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
+                  <div className="mt-1 flex items-center gap-3">
+                    <span className="text-xs text-slate-400">{m.file_name}</span>
+                    <span className="text-xs text-slate-300">·</span>
+                    <span className="text-xs text-slate-400">{new Date(m.created_at).toLocaleDateString()}</span>
+                    <a
+                      href={m.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-gold-dark hover:underline"
+                    >
+                      Preview →
+                    </a>
+                  </div>
+                </div>
+                <div className="ml-4 flex shrink-0 items-center gap-3">
+                  <Link
+                    href={`?edit=${m.id}`}
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    Edit
+                  </Link>
+                  <form action={deleteModule}>
+                    <input type="hidden" name="id" value={m.id} />
+                    <input type="hidden" name="file_url" value={m.file_url} />
+                    <DeleteButton
+                      label="Delete"
+                      pendingLabel="Deleting…"
+                      className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
+                    />
+                  </form>
+                </div>
               </div>
-            </div>
-            <form action={deleteModule} className="ml-4 shrink-0">
-              <input type="hidden" name="id" value={m.id} />
-              <input type="hidden" name="file_url" value={m.file_url} />
-              <DeleteButton
-                label="Delete"
-                pendingLabel="Deleting…"
-                className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
-              />
-            </form>
+            )}
           </div>
         ))}
       </div>

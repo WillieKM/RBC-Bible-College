@@ -61,6 +61,24 @@ export async function uploadModule(formData: FormData) {
   revalidatePath("/student/modules");
 }
 
+export async function updateModule(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+
+  const id = String(formData.get("id") || "").trim();
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim() || null;
+
+  if (!id || !title) return;
+
+  await admin.from("module_files").update({ title, description }).eq("id", id);
+
+  revalidatePath("/admin/modules");
+  revalidatePath("/professor/modules");
+  revalidatePath("/student/modules");
+  redirect("/admin/modules");
+}
+
 export async function deleteModule(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();
