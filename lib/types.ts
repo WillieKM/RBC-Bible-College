@@ -226,6 +226,21 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface ZoomSession {
+  id: string;
+  title: string;
+  zoom_url: string;
+  description: string | null;
+  program_id: string | null;
+  recurrence: "none" | "weekly" | "biweekly" | "monthly";
+  send_at: string | null;
+  day_of_week: number | null;
+  last_sent_at: string | null;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface ModuleFile {
   id: string;
   title: string;

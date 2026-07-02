@@ -594,6 +594,35 @@ export async function sendGradingReminderEmail(opts: {
   );
 }
 
+// ─── Zoom session link sent to students ───────────────────────────────────────
+
+export async function sendZoomLinkEmail(opts: {
+  to: string;
+  studentName: string;
+  sessionTitle: string;
+  description: string | null;
+  zoomUrl: string;
+  programName: string;
+}) {
+  await send(
+    opts.to,
+    `Class session: ${opts.sessionTitle}`,
+    wrap(
+      "Class Session",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Your upcoming class session for <strong>${esc(opts.programName)}</strong> is ready.</p>
+       <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(opts.sessionTitle)}</p>
+         ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${esc(opts.description)}</p>` : ""}
+       </div>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.zoomUrl}" style="display:inline-block;background:#2D8CFF;color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Join Zoom Session →</a>
+       </div>
+       <p style="margin-top:16px;font-size:13px;color:#94a3b8;text-align:center;">Click the button above to join your class. If the button doesn&apos;t work, copy this link: ${opts.zoomUrl}</p>`
+    )
+  );
+}
+
 // ─── Module file sent to students ─────────────────────────────────────────────
 
 export async function sendModuleFileEmail(opts: {
