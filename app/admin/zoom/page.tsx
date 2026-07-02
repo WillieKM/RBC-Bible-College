@@ -183,6 +183,7 @@ export default async function AdminZoomPage({
                   </div>
                 </div>
                 <div className="ml-4 flex shrink-0 items-center gap-3">
+                  <Link href={`/admin/zoom/${s.id}/attendance`} className="text-sm font-medium text-blue-600 hover:text-blue-800">Register</Link>
                   <Link href={`?edit=${s.id}`} className="text-sm font-medium text-slate-600 hover:text-slate-900">Edit</Link>
                   <form action={toggleZoomSession}>
                     <input type="hidden" name="id" value={s.id} />

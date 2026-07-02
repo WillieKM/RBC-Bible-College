@@ -86,3 +86,33 @@ export async function deleteZoomSession(formData: FormData) {
   await admin.from("zoom_sessions").delete().eq("id", id);
   revalidatePath("/admin/zoom");
 }
+
+export async function recordZoomAttendance(formData: FormData) {
+  const recorder = await requireRole(["admin", "professor"]);
+  const admin = createAdminClient();
+
+  const sessionId = String(formData.get("session_id") || "");
+  const sessionDate = String(formData.get("session_date") || new Date().toISOString().slice(0, 10));
+  const presentIds = new Set(formData.getAll("present").map(String));
+
+  // Fetch all student IDs for this session from the submitted hidden inputs
+  const allStudentIds = formData.getAll("student_id").map(String);
+  if (!sessionId || allStudentIds.length === 0) return;
+
+  const rows = allStudentIds.map((studentId) => ({
+    zoom_session_id: sessionId,
+    student_id: studentId,
+    session_date: sessionDate,
+    present: presentIds.has(studentId),
+    recorded_by: recorder.id,
+  }));
+
+  await admin.from("zoom_attendance").upsert(rows, {
+    onConflict: "zoom_session_id,student_id,session_date",
+  });
+
+  const returnPath = String(formData.get("return_path") || `/admin/zoom/${sessionId}/attendance`);
+  revalidatePath(`/admin/zoom/${sessionId}/attendance`);
+  revalidatePath(`/professor/zoom-attendance/${sessionId}`);
+  redirect(`${returnPath}?saved=1`);
+}

@@ -226,6 +226,16 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface ZoomAttendance {
+  id: string;
+  zoom_session_id: string;
+  student_id: string;
+  session_date: string;
+  present: boolean;
+  recorded_by: string | null;
+  created_at: string;
+}
+
 export interface ZoomSession {
   id: string;
   title: string;
