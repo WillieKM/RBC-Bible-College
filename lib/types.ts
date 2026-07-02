@@ -231,7 +231,7 @@ export interface ZoomSession {
   title: string;
   zoom_url: string;
   description: string | null;
-  program_id: string | null;
+  target_audience: string;
   recurrence: "none" | "weekly" | "biweekly" | "monthly";
   send_at: string | null;
   day_of_week: number | null;

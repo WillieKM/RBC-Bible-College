@@ -13,7 +13,7 @@ export async function createZoomSession(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
-  const programId = String(formData.get("program_id") || "") || null;
+  const targetAudience = String(formData.get("target_audience") || "all");
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
   const dayOfWeekRaw = String(formData.get("day_of_week") || "").trim();
@@ -27,7 +27,7 @@ export async function createZoomSession(formData: FormData) {
     title,
     zoom_url: zoomUrl,
     description,
-    program_id: programId,
+    target_audience: targetAudience,
     recurrence,
     send_at: sendAt,
     day_of_week: recurrence !== "none" ? dayOfWeek : null,
@@ -45,7 +45,7 @@ export async function updateZoomSession(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
-  const programId = String(formData.get("program_id") || "") || null;
+  const targetAudience = String(formData.get("target_audience") || "all");
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
   const dayOfWeekRaw = String(formData.get("day_of_week") || "").trim();
@@ -59,11 +59,10 @@ export async function updateZoomSession(formData: FormData) {
     title,
     zoom_url: zoomUrl,
     description,
-    program_id: programId,
+    target_audience: targetAudience,
     recurrence,
     send_at: sendAt,
     day_of_week: recurrence !== "none" ? dayOfWeek : null,
-    // Reset last_sent_at so cron picks it up again after a URL or schedule change
     last_sent_at: null,
   }).eq("id", id);
 

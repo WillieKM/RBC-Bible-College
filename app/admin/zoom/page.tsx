@@ -2,9 +2,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
-import type { Program, ZoomSession } from "@/lib/types";
+import type { ZoomSession } from "@/lib/types";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const AUDIENCE_OPTIONS = [
+  { value: "all", label: "All students" },
+  { value: "doctorate", label: "Doctorate" },
+  { value: "bachelors", label: "Bachelor's" },
+  { value: "masters", label: "Master's" },
+  { value: "diploma", label: "Diploma" },
+  { value: "certificate", label: "Certificate" },
+];
 
 const RECURRENCE_LABELS: Record<string, string> = {
   none: "One-off",
@@ -12,6 +21,10 @@ const RECURRENCE_LABELS: Record<string, string> = {
   biweekly: "Every 2 weeks",
   monthly: "Every month",
 };
+
+function audienceLabel(s: ZoomSession): string {
+  return AUDIENCE_OPTIONS.find((o) => o.value === s.target_audience)?.label ?? "All students";
+}
 
 function nextSendLabel(s: ZoomSession): string {
   if (!s.active) return "Paused";
@@ -26,6 +39,48 @@ function nextSendLabel(s: ZoomSession): string {
   return `${recLabel}${dayLabel}${lastLabel}`;
 }
 
+function AudienceSelect({ name, defaultValue }: { name: string; defaultValue?: string }) {
+  return (
+    <select name={name} defaultValue={defaultValue ?? "all"} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      {AUDIENCE_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function RecurrenceFields({ defaultRecurrence, defaultDay, defaultSendAt }: {
+  defaultRecurrence?: string;
+  defaultDay?: number | null;
+  defaultSendAt?: string | null;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      <div className="flex-1 min-w-48">
+        <label className="block text-sm font-medium text-slate-700">Recurrence</label>
+        <select name="recurrence" defaultValue={defaultRecurrence ?? "none"} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <option value="none">One-off (specific date)</option>
+          <option value="weekly">Every week</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Every month</option>
+        </select>
+      </div>
+      <div className="flex-1 min-w-48">
+        <label className="block text-sm font-medium text-slate-700">Send date / time</label>
+        <input name="send_at" type="datetime-local" defaultValue={defaultSendAt ? new Date(defaultSendAt).toISOString().slice(0, 16) : ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        <p className="mt-0.5 text-xs text-slate-400">For recurring: the cron fires at 07:00 on the matching day.</p>
+      </div>
+      <div className="flex-1 min-w-48">
+        <label className="block text-sm font-medium text-slate-700">Day of week <span className="font-normal text-slate-400">(weekly / biweekly)</span></label>
+        <select name="day_of_week" defaultValue={defaultDay ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+          <option value="">Select day…</option>
+          {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 export default async function AdminZoomPage({
   searchParams,
 }: {
@@ -34,19 +89,18 @@ export default async function AdminZoomPage({
   const { edit } = await searchParams;
   const admin = createAdminClient();
 
-  const [{ data: sessionsRaw }, { data: programs }] = await Promise.all([
-    admin.from("zoom_sessions").select("*").order("created_at", { ascending: false }),
-    admin.from("programs").select("id, name").order("name"),
-  ]);
+  const { data: sessionsRaw } = await admin
+    .from("zoom_sessions")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   const sessions = (sessionsRaw ?? []) as ZoomSession[];
-  const programMap = new Map((programs ?? []).map((p: Pick<Program, "id" | "name">) => [p.id, p.name]));
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Zoom Sessions</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Add class Zoom links per program. Set a one-off date or a recurring schedule — the link emails automatically.
+        Add class Zoom links, choose which students receive them, and set a one-off or recurring send schedule.
       </p>
 
       {/* Create form */}
@@ -64,42 +118,15 @@ export default async function AdminZoomPage({
         </div>
         <div className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">Program</label>
-            <select name="program_id" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="">All students</option>
-              {(programs ?? []).map((p: Pick<Program, "id" | "name">) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-slate-700">Send to</label>
+            <AudienceSelect name="target_audience" />
           </div>
           <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">Recurrence</label>
-            <select name="recurrence" defaultValue="none" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="none">One-off (specific date)</option>
-              <option value="weekly">Weekly (same day every week)</option>
-              <option value="biweekly">Every 2 weeks</option>
-              <option value="monthly">Monthly (same day each month)</option>
-            </select>
+            <label className="block text-sm font-medium text-slate-700">Description (optional)</label>
+            <textarea name="description" rows={2} placeholder="Topic or notes for students" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">Send date / time</label>
-            <input name="send_at" type="datetime-local" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <p className="mt-0.5 text-xs text-slate-400">For recurring: only the time of day matters — the cron fires at 07:00 on the matching day.</p>
-          </div>
-          <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-slate-700">Day of week <span className="font-normal text-slate-400">(for weekly / biweekly)</span></label>
-            <select name="day_of_week" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="">Select day…</option>
-              {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Description (optional)</label>
-          <textarea name="description" rows={2} placeholder="Topic, reading material, or any notes for students" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-        </div>
+        <RecurrenceFields />
         <DeleteButton label="Save Session" pendingLabel="Saving…" className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50" />
       </form>
 
@@ -125,41 +152,15 @@ export default async function AdminZoomPage({
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <div className="flex-1 min-w-48">
-                    <label className="block text-sm font-medium text-slate-700">Program</label>
-                    <select name="program_id" defaultValue={s.program_id ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                      <option value="">All students</option>
-                      {(programs ?? []).map((p: Pick<Program, "id" | "name">) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-medium text-slate-700">Send to</label>
+                    <AudienceSelect name="target_audience" defaultValue={s.target_audience} />
                   </div>
                   <div className="flex-1 min-w-48">
-                    <label className="block text-sm font-medium text-slate-700">Recurrence</label>
-                    <select name="recurrence" defaultValue={s.recurrence} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                      <option value="none">One-off</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Every 2 weeks</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
+                    <label className="block text-sm font-medium text-slate-700">Description</label>
+                    <textarea name="description" rows={2} defaultValue={s.description ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex-1 min-w-48">
-                    <label className="block text-sm font-medium text-slate-700">Send date / time</label>
-                    <input name="send_at" type="datetime-local" defaultValue={s.send_at ? new Date(s.send_at).toISOString().slice(0, 16) : ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                  </div>
-                  <div className="flex-1 min-w-48">
-                    <label className="block text-sm font-medium text-slate-700">Day of week</label>
-                    <select name="day_of_week" defaultValue={s.day_of_week ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                      <option value="">Select day…</option>
-                      {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Description</label>
-                  <textarea name="description" rows={2} defaultValue={s.description ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                </div>
+                <RecurrenceFields defaultRecurrence={s.recurrence} defaultDay={s.day_of_week} defaultSendAt={s.send_at} />
                 <div className="flex items-center gap-3">
                   <DeleteButton label="Save" pendingLabel="Saving…" className="rounded-lg bg-gold px-4 py-1.5 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50" />
                   <Link href="/admin/zoom" className="text-sm text-slate-500 hover:text-slate-700">Cancel</Link>
@@ -170,7 +171,7 @@ export default async function AdminZoomPage({
               <div className="flex items-start justify-between px-5 py-4">
                 <div className="flex-1">
                   <p className="font-semibold text-slate-900">{s.title}</p>
-                  <p className="text-sm text-slate-500">{s.program_id ? programMap.get(s.program_id) ?? "Unknown program" : "All students"}</p>
+                  <p className="text-sm text-slate-500">{audienceLabel(s)}</p>
                   {s.description && <p className="mt-0.5 text-xs text-slate-400">{s.description}</p>}
                   <div className="mt-1 flex flex-wrap items-center gap-3">
                     <span className={`text-xs font-medium ${s.active ? "text-blue-600" : "text-slate-400"}`}>
