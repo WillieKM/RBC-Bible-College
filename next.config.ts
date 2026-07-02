@@ -23,6 +23,13 @@ const cspHeader = `
 `.replace(/\s{2,}/g, " ").trim();
 
 const nextConfig: NextConfig = {
+  // Default Server Action body limit is 1MB — too small for passport photos
+  // on the application forms and PDF module uploads (up to 50MB).
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
+  },
   async headers() {
     return [
       {
