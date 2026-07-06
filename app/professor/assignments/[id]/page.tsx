@@ -110,8 +110,8 @@ export default async function ProfessorAssignmentPage({
                   )}
 
                   <div className="mt-4 border-t border-slate-100 pt-4">
-                    {/* Grade with AI button — only for text submissions */}
-                    {s.content && (
+                    {/* Grade with AI — works for text submissions and Google Docs links */}
+                    {(s.content || s.file_url?.startsWith("http")) && (
                       <form action={gradeWithAI} className="mb-3">
                         <input type="hidden" name="submission_id" value={s.id} />
                         <input type="hidden" name="assignment_id" value={assignment.id} />

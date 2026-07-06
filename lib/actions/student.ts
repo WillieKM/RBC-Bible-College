@@ -11,6 +11,7 @@ export async function submitAssignment(formData: FormData) {
 
   const assignmentId = String(formData.get("assignment_id"));
   const content = String(formData.get("content") || "").trim() || null;
+  const shareLink = String(formData.get("share_link") || "").trim() || null;
   const file = formData.get("file") as File | null;
 
   const { data: assignment } = await supabase
@@ -20,11 +21,12 @@ export async function submitAssignment(formData: FormData) {
     .single();
   if (!assignment) return;
 
-  let filePath: string | null = null;
-  if (file && file.size > 0) {
+  // Share link takes priority; fall back to file upload if no link given
+  let fileUrl: string | null = shareLink;
+  if (!shareLink && file && file.size > 0) {
     const path = `${profile.id}/${assignmentId}/${file.name}`;
     const { error: uploadError } = await supabase.storage.from("submissions").upload(path, file, { upsert: true });
-    if (!uploadError) filePath = path;
+    if (!uploadError) fileUrl = path;
   }
 
   await supabase.from("submissions").upsert(
@@ -32,7 +34,7 @@ export async function submitAssignment(formData: FormData) {
       assignment_id: assignmentId,
       student_id: profile.id,
       content,
-      file_url: filePath,
+      file_url: fileUrl,
       submitted_at: new Date().toISOString(),
     },
     { onConflict: "assignment_id,student_id" }

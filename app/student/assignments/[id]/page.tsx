@@ -71,9 +71,24 @@ export default async function StudentAssignmentPage({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Attach a file (optional)</label>
+          <label className="block text-sm font-medium text-slate-700">
+            Share link <span className="font-normal text-slate-400">(Google Drive, OneDrive, Dropbox, etc. — optional)</span>
+          </label>
+          <input
+            name="share_link"
+            type="url"
+            placeholder="https://docs.google.com/..."
+            defaultValue={submission?.file_url?.startsWith("http") ? submission.file_url : ""}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <p className="mt-0.5 text-xs text-slate-400">Set sharing to &ldquo;Anyone with the link&rdquo; so your professor can open it.</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Or attach a file <span className="font-normal text-slate-400">(optional — link above takes priority if both are filled)</span>
+          </label>
           <input name="file" type="file" className="mt-1 block text-sm" />
-          {fileUrl && (
+          {fileUrl && !submission?.file_url?.startsWith("http") && (
             <a href={fileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-gold-dark hover:underline">
               View current file →
             </a>
