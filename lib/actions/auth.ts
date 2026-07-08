@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
+import { sendPasswordResetEmail } from "@/lib/email";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -104,25 +105,42 @@ export async function sendPasswordReset(formData: FormData) {
     redirect("/login/reset?error=Too+many+requests+from+your+network.+Please+wait+15+minutes.");
   }
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
   // Only allow resets for emails that exist in our profiles table
-  const { data: profile } = await supabase
+  const { data: profile } = await admin
     .from("profiles")
-    .select("id")
+    .select("id, full_name")
     .eq("email", email)
     .maybeSingle();
 
   if (!profile) {
-    // Don't reveal whether the email is registered — record attempt to limit enumeration probing
+    // Don't reveal whether the email is registered
     void recordFailedAttempt(ip, email);
     redirect("/login/reset?sent=1");
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password`,
+  // Use generateLink so we send via our own Gmail (not Supabase's email service).
+  // Falls back through multiple env var names in case Vercel uses BASE_URL instead of NEXT_PUBLIC_BASE_URL.
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    "http://localhost:3000";
+
+  const { data: link } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
   });
+
+  if (link?.properties?.action_link) {
+    void sendPasswordResetEmail({
+      to: email,
+      fullName: profile.full_name,
+      resetUrl: link.properties.action_link,
+    });
+  }
+
   redirect("/login/reset?sent=1");
 }
 

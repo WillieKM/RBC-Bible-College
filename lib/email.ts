@@ -131,6 +131,24 @@ export async function sendApplicationDecisionEmail(opts: {
   }
 }
 
+// ─── Password reset (to user) ─────────────────────────────────────────────
+
+export async function sendPasswordResetEmail(opts: {
+  to: string;
+  fullName: string;
+  resetUrl: string;
+}) {
+  await send(opts.to, `Reset your password — ${SCHOOL_NAME}`,
+    wrap("Reset Your Password",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">We received a request to reset the password for your ${SCHOOL_NAME} account. Click below to choose a new password.</p>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.resetUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set New Password →</a>
+       </div>
+       <p style="margin-top:20px;font-size:13px;color:#94a3b8;text-align:center;">This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>`
+    ));
+}
+
 // ─── New assignment submission (to professor) ──────────────────────────────
 
 export async function sendNewSubmissionEmail(opts: {
