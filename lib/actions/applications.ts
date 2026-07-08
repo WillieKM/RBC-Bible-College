@@ -232,7 +232,10 @@ export async function reviewApplication(formData: FormData) {
 
   if (decision === "approve") {
     const admin = createAdminClient();
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      process.env.BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     // Guard against approving a second (duplicate) application for an email
     // that already has an account — without this, the account/invoice creation

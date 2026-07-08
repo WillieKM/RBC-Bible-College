@@ -125,7 +125,7 @@ export async function sendPasswordReset(formData: FormData) {
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ||
     process.env.BASE_URL ||
-    "http://localhost:3000";
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const { data: link } = await admin.auth.admin.generateLink({
     type: "recovery",
@@ -149,7 +149,16 @@ export async function updatePassword(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect(`/settings/new-password?error=${encodeURIComponent(error.message)}`);
-  redirect("/login?message=Password+updated.+Sign+in+with+your+new+password.");
+
+  // Session is already live at this point — send them straight to their portal
+  const { data: userData } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userData.user!.id)
+    .maybeSingle();
+
+  redirect(ROLE_HOME[profile?.role ?? ""] ?? "/");
 }
 
 export async function updateProfile(formData: FormData) {

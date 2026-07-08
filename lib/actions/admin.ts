@@ -235,14 +235,17 @@ export async function inviteUser(formData: FormData) {
   if (!fullName || !email || !["admin", "professor", "student"].includes(role)) return;
 
   const admin = createAdminClient();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   // generateLink creates the user and returns the link without sending Supabase's
   // own (heavily rate-limited) invite email — we deliver the link ourselves below.
   const { data: invited, error } = await admin.auth.admin.generateLink({
     type: "invite",
     email,
-    options: { redirectTo: `${baseUrl}/login` },
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
   });
   if (error || !invited?.user) {
     revalidatePath("/admin/users");
@@ -292,13 +295,19 @@ export async function resendInvite(formData: FormData) {
   if (!email) return;
 
   const admin = createAdminClient();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const { data: profile } = await admin.from("profiles").select("full_name, role").eq("email", email).maybeSingle();
+
+  // Use "recovery" for existing users — "invite" only works for brand-new accounts.
+  // Both produce the same set-password experience but recovery doesn't error on existing emails.
   const { data: invited, error } = await admin.auth.admin.generateLink({
-    type: "invite",
+    type: "recovery",
     email,
-    options: { redirectTo: `${baseUrl}/login` },
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
   });
 
   if (!error && invited?.properties.action_link) {
