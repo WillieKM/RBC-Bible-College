@@ -113,13 +113,12 @@ export async function deleteModule(formData: FormData) {
   revalidatePath("/student/modules");
 }
 
-export async function sendModulesToStudents(formData: FormData) {
-  const sender = await requireRole(["professor"]);
-  const supabase = await createClient();
+export async function sendModuleNow(formData: FormData) {
+  await requireRole(["admin"]);
   const admin = createAdminClient();
 
   const moduleId = String(formData.get("module_id") || "");
-  const audience = String(formData.get("audience") || "all") as ModuleAudience;
+  const audience = String(formData.get("send_audience") || "all") as ModuleAudience;
 
   if (!moduleId) return;
 
@@ -132,43 +131,52 @@ export async function sendModulesToStudents(formData: FormData) {
   if (!module) return;
 
   // Fetch matching students based on audience
-  let studentQuery = supabase
+  let studentQuery = admin
     .from("profiles")
     .select("full_name, email, program_id")
     .eq("role", "student");
 
   if (audience !== "all") {
-    const { data: matchingPrograms } = await supabase
+    const { data: matchingPrograms } = await admin
       .from("programs")
       .select("id")
       .eq("program_level", audience);
 
-    const programIds = (matchingPrograms ?? []).map((p) => p.id);
-    if (programIds.length === 0) {
-      redirect(`/professor/modules?sent=0`);
-    }
+    const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
     studentQuery = studentQuery.in("program_id", programIds);
   }
 
-  const { data: students } = await studentQuery;
-  if (!students || students.length === 0) {
-    redirect(`/professor/modules?sent=0`);
-  }
+  const [{ data: students }, { data: professors }] = await Promise.all([
+    studentQuery,
+    admin.from("profiles").select("full_name, email").eq("role", "professor"),
+  ]);
 
-  // Fire emails in parallel batches — allSettled so one failure doesn't stop the rest
+  const recipients = [
+    ...(students ?? []),
+    ...(professors ?? []),
+  ] as { full_name: string; email: string }[];
+
   await Promise.allSettled(
-    students.map((s) =>
+    recipients.map((r) =>
       sendModuleFileEmail({
-        to: s.email,
-        studentName: s.full_name,
+        to: r.email,
+        studentName: r.full_name,
         moduleTitle: module.title,
         description: module.description,
         fileUrl: module.file_url,
         fileName: module.file_name,
-        senderName: sender.full_name,
+        senderName: "Revelation Bible College",
       })
     )
   );
 
-  redirect(`/professor/modules?sent=${students.length}`);
+  await admin
+    .from("module_files")
+    .update({ sent_at: new Date().toISOString(), send_audience: audience })
+    .eq("id", moduleId);
+
+  revalidatePath("/admin/modules");
+  revalidatePath("/student/modules");
+  revalidatePath("/professor/modules");
+  redirect(`/admin/modules?sent=${recipients.length}`);
 }

@@ -4,46 +4,56 @@ import type { ModuleFile } from "@/lib/types";
 export default async function StudentModulesPage() {
   const supabase = await createClient();
 
+  // Only the most recently sent module is shown — once the next one arrives this one disappears
   const { data } = await supabase
     .from("module_files")
     .select("*")
-    .order("created_at", { ascending: false });
+    .not("sent_at", "is", null)
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  const modules = (data ?? []) as ModuleFile[];
+  const current = data as ModuleFile | null;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">Module Files</h1>
+      <h1 className="text-2xl font-bold text-slate-900">This Week&apos;s Module</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Download your weekly teaching modules here. New modules are added by your professor each week.
+        Your module for this week is sent by the college and updated automatically each week.
       </p>
 
-      {modules.length === 0 ? (
-        <p className="mt-8 text-sm text-slate-400">No modules have been uploaded yet. Check back after your next class.</p>
-      ) : (
-        <div className="mt-6 space-y-3">
-          {modules.map((m) => (
-            <div key={m.id} className="flex items-start justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <div className="flex-1">
-                <p className="font-semibold text-slate-900">{m.title}</p>
-                {m.description && <p className="mt-0.5 text-sm text-slate-600">{m.description}</p>}
-                <p className="mt-1 text-xs text-slate-400">
-                  {m.file_name} · Added {new Date(m.created_at).toLocaleDateString()}
-                </p>
-              </div>
+      <div className="mt-6">
+        {current ? (
+          <div className="rounded-xl border border-gold/30 bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Current Module</p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">{current.title}</h2>
+            {current.description && (
+              <p className="mt-2 text-sm text-slate-600">{current.description}</p>
+            )}
+            <p className="mt-3 text-xs text-slate-400">
+              Sent {new Date(current.sent_at!).toLocaleDateString("en-GB", {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              })}
+            </p>
+            <div className="mt-5">
               <a
-                href={m.file_url}
+                href={current.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 download
-                className="ml-4 shrink-0 rounded-lg bg-gold px-4 py-2 text-xs font-semibold text-ink hover:bg-gold-dark"
+                className="inline-block rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-ink hover:bg-gold-dark"
               >
-                Download PDF →
+                Download {current.file_name} →
               </a>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+            <p className="text-sm font-medium text-slate-500">No module has been sent yet this week.</p>
+            <p className="mt-1 text-xs text-slate-400">Check back after your next class — your module will appear here once it&apos;s released.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

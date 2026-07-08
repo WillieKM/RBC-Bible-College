@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { uploadModule, updateModule, deleteModule } from "@/lib/actions/modules";
+import { uploadModule, updateModule, deleteModule, sendModuleNow } from "@/lib/actions/modules";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
@@ -7,9 +7,9 @@ import type { ModuleFile } from "@/lib/types";
 export default async function AdminModulesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; edit?: string }>;
+  searchParams: Promise<{ error?: string; edit?: string; sent?: string }>;
 }) {
-  const { error, edit } = await searchParams;
+  const { error, edit, sent } = await searchParams;
   const admin = createAdminClient();
 
   const { data } = await admin
@@ -23,11 +23,16 @@ export default async function AdminModulesPage({
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Module Files</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Upload PDF modules here. Professors can then select any of these and email them directly to students by program tier.
+        Upload PDF modules and schedule or send them to students and professors. Only the most recently sent module is visible in student and professor portals.
       </p>
 
       {error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
+      {sent && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+          Module sent to {sent} recipients (students + professors).
+        </div>
       )}
 
       {/* Upload form */}
@@ -159,41 +164,60 @@ export default async function AdminModulesPage({
               </form>
             ) : (
               /* ── Read-only row ── */
-              <div className="flex items-start justify-between px-5 py-4">
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-900">{m.title}</p>
-                  {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    <span className="text-xs text-slate-400">{m.file_name}</span>
-                    <span className="text-xs text-slate-300">·</span>
-                    <span className="text-xs text-slate-400">{new Date(m.created_at).toLocaleDateString()}</span>
-                    {m.sent_at ? (
-                      <span className="text-xs font-medium text-green-600">✓ Sent {new Date(m.sent_at).toLocaleDateString()}</span>
-                    ) : m.send_at ? (
-                      <span className="text-xs font-medium text-amber-600">⏱ Scheduled {new Date(m.send_at).toLocaleString()}</span>
-                    ) : null}
-                    <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gold-dark hover:underline">
-                      Preview →
-                    </a>
+              <div className="px-5 py-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900">{m.title}</p>
+                    {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      <span className="text-xs text-slate-400">{m.file_name}</span>
+                      <span className="text-xs text-slate-300">·</span>
+                      <span className="text-xs text-slate-400">{new Date(m.created_at).toLocaleDateString()}</span>
+                      {m.sent_at ? (
+                        <span className="text-xs font-medium text-green-600">✓ Sent {new Date(m.sent_at).toLocaleDateString()}</span>
+                      ) : m.send_at ? (
+                        <span className="text-xs font-medium text-amber-600">⏱ Scheduled {new Date(m.send_at).toLocaleString()}</span>
+                      ) : null}
+                      <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gold-dark hover:underline">
+                        Preview →
+                      </a>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex shrink-0 items-center gap-3">
+                    <Link href={`?edit=${m.id}`} className="text-sm font-medium text-slate-600 hover:text-slate-900">
+                      Edit
+                    </Link>
+                    <form action={deleteModule}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <input type="hidden" name="file_url" value={m.file_url} />
+                      <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50" />
+                    </form>
                   </div>
                 </div>
-                <div className="ml-4 flex shrink-0 items-center gap-3">
-                  <Link
-                    href={`?edit=${m.id}`}
-                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    Edit
-                  </Link>
-                  <form action={deleteModule}>
-                    <input type="hidden" name="id" value={m.id} />
-                    <input type="hidden" name="file_url" value={m.file_url} />
-                    <DeleteButton
-                      label="Delete"
-                      pendingLabel="Deleting…"
-                      className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
-                    />
-                  </form>
-                </div>
+
+                {/* Send Now — admin sends directly to students + professors */}
+                <form action={sendModuleNow} className="mt-3 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
+                  <input type="hidden" name="module_id" value={m.id} />
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500">Send to</label>
+                    <select
+                      name="send_audience"
+                      defaultValue={m.send_audience ?? "all"}
+                      className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                    >
+                      <option value="all">All students + all professors</option>
+                      <option value="diploma">Diploma / Certificate students + all professors</option>
+                      <option value="bachelors">Bachelor&apos;s students + all professors</option>
+                      <option value="masters">Master&apos;s students + all professors</option>
+                      <option value="doctorate">Doctorate students + all professors</option>
+                    </select>
+                  </div>
+                  <DeleteButton
+                    label={m.sent_at ? "Resend Now" : "Send Now"}
+                    pendingLabel="Sending…"
+                    className="rounded-lg bg-gold px-3 py-1.5 text-xs font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
+                  />
+                </form>
               </div>
             )}
           </div>

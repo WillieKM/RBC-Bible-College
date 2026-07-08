@@ -5,9 +5,9 @@ import Link from "next/link";
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
-  const { sent } = await searchParams;
+  const { sent, error } = await searchParams;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
@@ -16,11 +16,15 @@ export default async function ResetPasswordPage({
           <Image src="/logo.jpg" alt="Revelation Bible College International" width={72} height={72} className="rounded-full" />
           <h1 className="mt-4 text-xl font-bold text-gold">Reset Password</h1>
           <p className="mt-1 text-sm text-slate-400">
-            {sent ? "Check your email for a reset link." : "Enter your email and we'll send you a reset link."}
+            {sent ? "Check your email for a reset link." : error ? "Request blocked." : "Enter your email and we'll send you a reset link."}
           </p>
         </div>
 
-        {sent ? (
+        {error ? (
+          <div className="mt-6 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
+            {decodeURIComponent(error)}
+          </div>
+        ) : sent ? (
           <div className="mt-6 rounded-lg bg-green-950 border border-green-800 px-3 py-3 text-sm text-green-300 text-center">
             Reset link sent. Check your inbox (and spam folder).
           </div>

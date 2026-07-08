@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -14,16 +15,51 @@ const ROLE_HOME: Record<string, string> = {
 
 const ALLOWED_RETURN = new Set(["/admin", "/professor", "/student"]);
 
+const LOGIN_RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOGIN_RATE_MAX = 10;                    // max failed attempts in that window
+const RESET_RATE_MAX = 5;                     // stricter limit for password reset
+
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return h.get("x-real-ip") || "unknown";
+}
+
+async function isRateLimited(ip: string, max: number): Promise<boolean> {
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - LOGIN_RATE_WINDOW_MS).toISOString();
+  const { count } = await admin
+    .from("login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", since);
+  return (count ?? 0) >= max;
+}
+
+async function recordFailedAttempt(ip: string, email: string) {
+  const admin = createAdminClient();
+  void admin.from("login_attempts").insert({ ip, email });
+}
+
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
   const returnTo = String(formData.get("returnTo") || "").trim();
 
+  const ip = await getClientIp();
+  if (await isRateLimited(ip, LOGIN_RATE_MAX)) {
+    const params = new URLSearchParams({ error: "Too many failed attempts — please wait 15 minutes before trying again." });
+    if (returnTo) params.set("returnTo", returnTo);
+    redirect(`/login?${params.toString()}`);
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // Use a generic message so attackers can't enumerate valid emails
+    void recordFailedAttempt(ip, email);
+    // Generic message so attackers can't enumerate valid emails
     const params = new URLSearchParams({ error: "Invalid email or password." });
     if (returnTo) params.set("returnTo", returnTo);
     redirect(`/login?${params.toString()}`);
@@ -62,6 +98,12 @@ export async function logout() {
 
 export async function sendPasswordReset(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
+
+  const ip = await getClientIp();
+  if (await isRateLimited(ip, RESET_RATE_MAX)) {
+    redirect("/login/reset?error=Too+many+requests+from+your+network.+Please+wait+15+minutes.");
+  }
+
   const supabase = await createClient();
 
   // Only allow resets for emails that exist in our profiles table
@@ -72,7 +114,8 @@ export async function sendPasswordReset(formData: FormData) {
     .maybeSingle();
 
   if (!profile) {
-    // Don't reveal whether the email is registered — just show the "sent" page
+    // Don't reveal whether the email is registered — record attempt to limit enumeration probing
+    void recordFailedAttempt(ip, email);
     redirect("/login/reset?sent=1");
   }
 
