@@ -52,7 +52,7 @@ export async function gradeWithAI(formData: FormData) {
     }
   }
 
-  if (!textContent) {
+  if (!textContent || !submission) {
     redirect(`/professor/assignments/${assignmentId}?ai_error=No+text+content+found+to+grade`);
   }
 

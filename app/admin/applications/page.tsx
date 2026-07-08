@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { reviewApplication } from "@/lib/actions/applications";
+import { reviewApplication, resendStudentInvite } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
@@ -8,12 +8,15 @@ import type { Application } from "@/lib/types";
 export default async function AdminApplicationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; resent?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, resent } = await searchParams;
   const supabase = await createClient();
 
   const { data: applications } = await supabase.from("applications").select("*").order("created_at", { ascending: false });
+  // Fetch student numbers so we can pre-fill the resend invite form
+  const { data: profiles } = await supabase.from("profiles").select("email, student_number, full_name");
+  const profileByEmail = new Map((profiles ?? []).map((p: { email: string; student_number: string | null; full_name: string }) => [p.email, p]));
 
   const pending = (applications ?? []).filter((a: Application) => a.status === "pending");
   const reviewed = (applications ?? []).filter((a: Application) => a.status !== "pending");
@@ -29,6 +32,11 @@ export default async function AdminApplicationsPage({
       {error && (
         <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {resent && (
+        <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+          New login link sent — student should receive the email shortly.
         </div>
       )}
 
@@ -113,21 +121,32 @@ export default async function AdminApplicationsPage({
       <h2 className="mt-8 text-lg font-semibold text-slate-800">Reviewed</h2>
       <div className="mt-3 space-y-2">
         {reviewed.length === 0 && <p className="text-sm text-slate-500">No reviewed applications yet.</p>}
-        {reviewed.map((app: Application) => (
-          <div key={app.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">
-            <span className="font-medium text-slate-800">{app.full_name}</span>
-            <span className="text-slate-500">{app.email}</span>
-            <div className="flex items-center gap-3">
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                {app.status}
-              </span>
-              <form action={deleteApplication}>
-                <input type="hidden" name="id" value={app.id} />
-                <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
-              </form>
+        {reviewed.map((app: Application) => {
+          const profile = profileByEmail.get(app.email);
+          return (
+            <div key={app.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">
+              <span className="font-medium text-slate-800">{app.full_name}</span>
+              <span className="text-slate-500">{app.email}</span>
+              <div className="flex items-center gap-3">
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                  {app.status}
+                </span>
+                {app.status === "approved" && (
+                  <form action={resendStudentInvite}>
+                    <input type="hidden" name="email" value={app.email} />
+                    <input type="hidden" name="full_name" value={app.full_name} />
+                    {profile?.student_number && <input type="hidden" name="student_number" value={profile.student_number} />}
+                    <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
+                  </form>
+                )}
+                <form action={deleteApplication}>
+                  <input type="hidden" name="id" value={app.id} />
+                  <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
+                </form>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

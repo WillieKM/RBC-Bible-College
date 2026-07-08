@@ -252,7 +252,7 @@ export async function reviewApplication(formData: FormData) {
     const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
       type: "invite",
       email: application.email,
-      options: { redirectTo: `${baseUrl}/login` },
+      options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
     });
 
     if (inviteError || !invited?.user) {
@@ -345,4 +345,40 @@ export async function reviewApplication(formData: FormData) {
   }
 
   revalidatePath("/admin/applications");
+}
+
+export async function resendStudentInvite(formData: FormData) {
+  await requireRole(["admin"]);
+
+  const email = String(formData.get("email") || "").trim();
+  const fullName = String(formData.get("full_name") || "").trim();
+  const studentNumber = String(formData.get("student_number") || "").trim() || undefined;
+
+  if (!email) redirect("/admin/applications?error=Missing+email");
+
+  const admin = createAdminClient();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  // Use recovery (not invite) because the student already has an auth account — the
+  // invite just hasn't been used before it expired. Recovery produces the same
+  // set-password experience without trying to create a duplicate user.
+  const { data: link, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
+  });
+
+  if (error || !link?.properties?.action_link) {
+    redirect(`/admin/applications?error=${encodeURIComponent(error?.message ?? "Could not generate new login link")}`);
+  }
+
+  void sendApplicationDecisionEmail({
+    to: email,
+    fullName,
+    approved: true,
+    loginUrl: link.properties.action_link,
+    studentNumber,
+  });
+
+  redirect("/admin/applications?resent=1");
 }
