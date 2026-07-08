@@ -113,6 +113,55 @@ export async function deleteModule(formData: FormData) {
   revalidatePath("/student/modules");
 }
 
+/** Returns the students and program-matched professors for a given audience. */
+async function resolveRecipients(
+  admin: ReturnType<typeof createAdminClient>,
+  audience: ModuleAudience
+): Promise<{ students: { full_name: string; email: string }[]; professors: { full_name: string; email: string }[] }> {
+  if (audience === "all") {
+    const [{ data: students }, { data: professors }] = await Promise.all([
+      admin.from("profiles").select("full_name, email").eq("role", "student"),
+      admin.from("profiles").select("full_name, email").eq("role", "professor"),
+    ]);
+    return { students: students ?? [], professors: professors ?? [] };
+  }
+
+  const { data: matchingPrograms } = await admin
+    .from("programs")
+    .select("id")
+    .eq("program_level", audience);
+
+  const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
+  const noMatch = ["00000000-0000-0000-0000-000000000000"];
+
+  const [{ data: students }, { data: programCourses }] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("role", "student")
+      .in("program_id", programIds.length > 0 ? programIds : noMatch),
+    programIds.length > 0
+      ? admin
+          .from("courses")
+          .select("professor_id, profiles!professor_id(full_name, email)")
+          .in("program_id", programIds)
+          .not("professor_id", "is", null)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+
+  // Deduplicate — a professor teaching multiple courses in the same program appears once
+  const seen = new Set<string>();
+  const professors: { full_name: string; email: string }[] = [];
+  for (const course of (programCourses ?? []) as unknown as { professor_id: string; profiles: { full_name: string; email: string } | null }[]) {
+    if (course.professor_id && !seen.has(course.professor_id) && course.profiles) {
+      seen.add(course.professor_id);
+      professors.push(course.profiles);
+    }
+  }
+
+  return { students: students ?? [], professors };
+}
+
 export async function sendModuleNow(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();
@@ -130,30 +179,11 @@ export async function sendModuleNow(formData: FormData) {
 
   if (!module) return;
 
-  // Fetch matching students based on audience
-  let studentQuery = admin
-    .from("profiles")
-    .select("full_name, email, program_id")
-    .eq("role", "student");
-
-  if (audience !== "all") {
-    const { data: matchingPrograms } = await admin
-      .from("programs")
-      .select("id")
-      .eq("program_level", audience);
-
-    const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
-    studentQuery = studentQuery.in("program_id", programIds);
-  }
-
-  const [{ data: students }, { data: professors }] = await Promise.all([
-    studentQuery,
-    admin.from("profiles").select("full_name, email").eq("role", "professor"),
-  ]);
+  const { students, professors } = await resolveRecipients(admin, audience);
 
   const recipients = [
-    ...(students ?? []),
-    ...(professors ?? []),
+    ...students,
+    ...professors,
   ] as { full_name: string; email: string }[];
 
   await Promise.allSettled(

@@ -36,6 +36,9 @@ export async function GET(request: Request) {
       .select("full_name, email, program_id")
       .eq("role", "student");
 
+    const noMatch = ["00000000-0000-0000-0000-000000000000"];
+    let professorEmails: { full_name: string; email: string }[] = [];
+
     if (audience !== "all") {
       const { data: matchingPrograms } = await admin
         .from("programs")
@@ -43,18 +46,38 @@ export async function GET(request: Request) {
         .eq("program_level", audience);
 
       const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
-      // If no programs match this level, use a sentinel that matches nothing
-      studentQuery = studentQuery.in("program_id", programIds.length > 0 ? programIds : ["00000000-0000-0000-0000-000000000000"]);
+      studentQuery = studentQuery.in("program_id", programIds.length > 0 ? programIds : noMatch);
+
+      // Only professors who teach courses in matching programs
+      if (programIds.length > 0) {
+        const { data: programCourses } = await admin
+          .from("courses")
+          .select("professor_id, profiles!professor_id(full_name, email)")
+          .in("program_id", programIds)
+          .not("professor_id", "is", null);
+
+        const seen = new Set<string>();
+        for (const course of (programCourses ?? []) as unknown as { professor_id: string; profiles: { full_name: string; email: string } | null }[]) {
+          if (course.professor_id && !seen.has(course.professor_id) && course.profiles) {
+            seen.add(course.professor_id);
+            professorEmails.push(course.profiles);
+          }
+        }
+      }
+    } else {
+      // "all" audience → all professors
+      const { data: allProfessors } = await admin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("role", "professor");
+      professorEmails = allProfessors ?? [];
     }
 
-    const [{ data: students }, { data: professors }] = await Promise.all([
-      studentQuery,
-      admin.from("profiles").select("full_name, email").eq("role", "professor"),
-    ]);
+    const [{ data: students }] = await Promise.all([studentQuery]);
 
     const recipients = [
       ...(students ?? []),
-      ...(professors ?? []),
+      ...professorEmails,
     ] as { full_name: string; email: string }[];
 
     if (recipients.length === 0) {
