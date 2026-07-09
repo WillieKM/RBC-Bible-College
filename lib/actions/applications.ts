@@ -108,6 +108,10 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=Please+fill+in+all+required+fields`);
   }
 
+  if (!phone) {
+    redirect(`${returnTo}?error=A+phone+number+is+required`);
+  }
+
   if (!declarationAccepted) {
     redirect(`${returnTo}?error=You+must+agree+to+the+declaration+to+apply`);
   }
