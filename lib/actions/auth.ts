@@ -134,7 +134,7 @@ export async function sendPasswordReset(formData: FormData) {
   });
 
   if (link?.properties?.action_link) {
-    void sendPasswordResetEmail({
+    await sendPasswordResetEmail({
       to: email,
       fullName: profile.full_name,
       resetUrl: link.properties.action_link,

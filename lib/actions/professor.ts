@@ -36,21 +36,23 @@ export async function createAssignment(formData: FormData) {
     .eq("course_id", courseId);
 
   if (enrollments && newAssignment) {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const portalUrl = `${baseUrl}/student/assignments/${newAssignment.id}`;
-    for (const enr of enrollments) {
-      const student = enr.profiles as unknown as { full_name: string; email: string } | null;
-      if (!student) continue;
-      void sendNewAssignmentEmail({
-        to: student.email,
-        studentName: student.full_name,
-        assignmentTitle: title,
-        courseTitle: course.title ?? "",
-        dueDate,
-        description,
-        portalUrl,
-      });
-    }
+    await Promise.allSettled(
+      enrollments.map((enr) => {
+        const student = enr.profiles as unknown as { full_name: string; email: string } | null;
+        if (!student) return Promise.resolve();
+        return sendNewAssignmentEmail({
+          to: student.email,
+          studentName: student.full_name,
+          assignmentTitle: title,
+          courseTitle: course.title ?? "",
+          dueDate,
+          description,
+          portalUrl,
+        });
+      })
+    );
   }
 
   revalidatePath(`/professor/courses/${courseId}`);
@@ -81,7 +83,7 @@ export async function gradeSubmission(formData: FormData) {
   if (submission?.profiles && submission?.assignments) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const reviewUrl = `${baseUrl}/student/assignments/${assignmentId}`;
-    void sendGradedEmail({
+    await sendGradedEmail({
       to: submission.profiles.email,
       studentName: submission.profiles.full_name,
       assignmentTitle: submission.assignments.title,

@@ -398,7 +398,7 @@ export async function markProgramComplete(formData: FormData) {
     if (student) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       const programName = (student as unknown as { programs?: { name: string } }).programs?.name ?? "your program";
-      void sendCompletionEmail({
+      await sendCompletionEmail({
         to: student.email,
         studentName: student.full_name,
         programName,
@@ -427,6 +427,6 @@ export async function sendBulkEmail(formData: FormData) {
   const { data: recipients } = await query;
   if (!recipients || recipients.length === 0) return;
 
-  void sendBulkAnnouncementEmail({ to: recipients.map((r) => r.email), title, body });
+  await sendBulkAnnouncementEmail({ to: recipients.map((r) => r.email), title, body });
   revalidatePath("/admin/announcements");
 }

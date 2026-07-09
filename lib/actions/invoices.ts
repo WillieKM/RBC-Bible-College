@@ -103,7 +103,7 @@ export async function addPayment(formData: FormData) {
     const balance = invoice.total_amount - totalPaid;
     const currency = profile.region === "usa" ? "$" : "KSh";
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    void sendPaymentReceiptEmail({
+    await sendPaymentReceiptEmail({
       to: profile.email,
       studentName: profile.full_name,
       invoiceTitle: invoice.title,

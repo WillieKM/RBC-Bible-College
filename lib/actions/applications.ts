@@ -335,7 +335,7 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: invited.properties.action_link, studentNumber });
+    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: invited.properties.action_link, studentNumber });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
     await supabase
@@ -343,7 +343,7 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "rejected", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    void sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: false });
+    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: false });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "reject_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email } });
   }
 
@@ -375,7 +375,7 @@ export async function resendStudentInvite(formData: FormData) {
     redirect(`/admin/applications?error=${encodeURIComponent(error?.message ?? "Could not generate new login link")}`);
   }
 
-  void sendApplicationDecisionEmail({
+  await sendApplicationDecisionEmail({
     to: email,
     fullName,
     approved: true,
