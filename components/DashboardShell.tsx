@@ -89,22 +89,24 @@ export async function DashboardShell({
           </div>
           <div className="flex items-center gap-3">
             {showBell && <NotificationBell notifications={notifications} />}
-            {profile.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="h-8 w-8 rounded-full object-cover ring-2 ring-gold/40"
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-xs font-bold text-gold">
-                {profile.full_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="hidden text-sm text-slate-400 sm:block">
-              {profile.full_name.split(" ")[0]}{" "}
-              <span className="text-slate-500">({profile.role})</span>
-            </span>
+            <Link href="/settings" className="flex items-center gap-2 group" title="Settings">
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.full_name}
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-gold/40 group-hover:ring-gold"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-xs font-bold text-gold group-hover:bg-gold/30">
+                  {profile.full_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="hidden text-sm text-slate-400 group-hover:text-gold sm:block">
+                {profile.full_name.split(" ")[0]}{" "}
+                <span className="text-slate-500">({profile.role})</span>
+              </span>
+            </Link>
             <form action={logout}>
               <button className="text-sm font-medium text-slate-400 hover:text-red-400">
                 Sign out
