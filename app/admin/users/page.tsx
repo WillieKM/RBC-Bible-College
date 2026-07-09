@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
-import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess } from "@/lib/actions/admin";
+import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Profile, Program } from "@/lib/types";
 
@@ -62,6 +62,17 @@ export default async function AdminUsersPage() {
                 <form action={revokeAccess}>
                   <input type="hidden" name="id" value={p.id} />
                   <DeleteButton label="Revoke access" pendingLabel="Revoking…" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50" />
+                </form>
+              )}
+              {p.id !== viewer?.id && (
+                <form action={deleteUser}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <DeleteButton
+                    label="Delete"
+                    pendingLabel="Deleting…"
+                    confirmMessage={`Permanently delete ${p.full_name}? This removes their account, enrolments, submissions, and all records. This cannot be undone.`}
+                    className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                  />
                 </form>
               )}
               <form action={updateUserRole} className="flex items-center gap-2">

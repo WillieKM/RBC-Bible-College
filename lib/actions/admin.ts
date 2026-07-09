@@ -348,6 +348,19 @@ export async function restoreAccess(formData: FormData) {
   revalidatePath("/admin/users");
 }
 
+export async function deleteUser(formData: FormData) {
+  const caller = await requireRole(["admin"]);
+  const id = String(formData.get("id"));
+  if (!id) return;
+  if (caller.id === id) return; // Admins cannot delete themselves
+
+  const admin = createAdminClient();
+  // Deleting the auth user cascades through profiles → enrollments, submissions,
+  // attendance, invoices, and all other related records via ON DELETE CASCADE.
+  await admin.auth.admin.deleteUser(id);
+  revalidatePath("/admin/users");
+}
+
 export async function updateStudentProfile(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();
