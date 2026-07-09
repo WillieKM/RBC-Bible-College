@@ -322,6 +322,32 @@ export async function resendInvite(formData: FormData) {
   revalidatePath("/admin/users");
 }
 
+export async function revokeAccess(formData: FormData) {
+  await requireRole(["admin"]);
+  const id = String(formData.get("id"));
+  if (!id) return;
+
+  const admin = createAdminClient();
+  await Promise.all([
+    admin.auth.admin.updateUserById(id, { ban_duration: "87600h" }),
+    admin.from("profiles").update({ banned: true }).eq("id", id),
+  ]);
+  revalidatePath("/admin/users");
+}
+
+export async function restoreAccess(formData: FormData) {
+  await requireRole(["admin"]);
+  const id = String(formData.get("id"));
+  if (!id) return;
+
+  const admin = createAdminClient();
+  await Promise.all([
+    admin.auth.admin.updateUserById(id, { ban_duration: "none" }),
+    admin.from("profiles").update({ banned: false }).eq("id", id),
+  ]);
+  revalidatePath("/admin/users");
+}
+
 export async function updateStudentProfile(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();

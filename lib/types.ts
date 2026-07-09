@@ -15,6 +15,7 @@ export interface Profile {
   payment_status: PaymentStatus;
   completed_at: string | null;
   region: string | null;
+  banned: boolean;
   created_at: string;
 }
 

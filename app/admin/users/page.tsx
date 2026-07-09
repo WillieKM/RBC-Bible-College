@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
-import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite } from "@/lib/actions/admin";
+import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Profile, Program } from "@/lib/types";
 
@@ -40,9 +40,12 @@ export default async function AdminUsersPage() {
 
       <div className="mt-6 space-y-2">
         {(profiles ?? []).map((p: Profile) => (
-          <div key={p.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <div key={p.id} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${p.banned ? "border-red-200 bg-red-50" : "border-slate-200 bg-white"}`}>
             <div>
-              <p className="font-semibold text-slate-900">{p.full_name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-slate-900">{p.full_name}</p>
+                {p.banned && <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Access revoked</span>}
+              </div>
               <p className="text-sm text-slate-500">{p.email}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -50,6 +53,17 @@ export default async function AdminUsersPage() {
                 <input type="hidden" name="email" value={p.email} />
                 <DeleteButton label="Resend invite" pendingLabel="Sending…" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50" />
               </form>
+              {p.banned ? (
+                <form action={restoreAccess}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <DeleteButton label="Restore access" pendingLabel="Restoring…" className="rounded-lg border border-green-300 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 disabled:opacity-50" />
+                </form>
+              ) : (
+                <form action={revokeAccess}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <DeleteButton label="Revoke access" pendingLabel="Revoking…" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50" />
+                </form>
+              )}
               <form action={updateUserRole} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={p.id} />
                 <select name="role" defaultValue={p.role} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">
