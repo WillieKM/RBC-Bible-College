@@ -130,7 +130,7 @@ export async function sendPasswordReset(formData: FormData) {
   const { data: link } = await admin.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
+    options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
   if (link?.properties?.action_link) {

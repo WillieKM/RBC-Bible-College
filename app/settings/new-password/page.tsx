@@ -1,5 +1,7 @@
-import { updatePassword } from "@/lib/actions/auth";
+import { Suspense } from "react";
 import Image from "next/image";
+import { updatePassword } from "@/lib/actions/auth";
+import { AuthCodeHandler } from "./AuthCodeHandler";
 
 export default async function NewPasswordPage({
   searchParams,
@@ -16,6 +18,11 @@ export default async function NewPasswordPage({
           <h1 className="mt-4 text-xl font-bold text-gold">Set New Password</h1>
           <p className="mt-1 text-sm text-slate-400">Choose a strong password for your account.</p>
         </div>
+
+        {/* Handles code/token_hash from the email link client-side */}
+        <Suspense>
+          <AuthCodeHandler />
+        </Suspense>
 
         {error && (
           <div className="mt-4 rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
