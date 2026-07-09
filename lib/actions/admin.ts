@@ -349,10 +349,11 @@ export async function restoreAccess(formData: FormData) {
 }
 
 export async function deleteUser(formData: FormData) {
-  const caller = await requireRole(["admin"]);
+  // Restricted to admins who have finance access — a higher privilege tier
+  const caller = await requireFinanceAccess();
   const id = String(formData.get("id"));
   if (!id) return;
-  if (caller.id === id) return; // Admins cannot delete themselves
+  if (caller.id === id) return; // Cannot delete yourself
 
   const admin = createAdminClient();
   // Deleting the auth user cascades through profiles → enrollments, submissions,

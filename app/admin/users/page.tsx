@@ -64,7 +64,7 @@ export default async function AdminUsersPage() {
                   <DeleteButton label="Revoke access" pendingLabel="Revoking…" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50" />
                 </form>
               )}
-              {p.id !== viewer?.id && (
+              {viewer?.finance_access && p.id !== viewer?.id && (
                 <form action={deleteUser}>
                   <input type="hidden" name="id" value={p.id} />
                   <DeleteButton
