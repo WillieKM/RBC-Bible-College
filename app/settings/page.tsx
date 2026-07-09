@@ -1,8 +1,7 @@
 import { getCurrentProfile } from "@/lib/auth";
-import { updateProfile } from "@/lib/actions/auth";
+import { updateProfile, updatePassword } from "@/lib/actions/auth";
 import { DashboardShell } from "@/components/DashboardShell";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -13,11 +12,11 @@ const ROLE_HOME: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; pw_saved?: string; error?: string }>;
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  const { saved } = await searchParams;
+  const { saved, pw_saved, error } = await searchParams;
 
   const backHref = ROLE_HOME[profile.role] ?? "/";
 
@@ -132,18 +131,46 @@ export default async function SettingsPage({
         </form>
 
         {/* Change password */}
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="font-semibold text-slate-800">Password</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            To change your password, we'll send a reset link to <strong>{profile.email}</strong>.
-          </p>
-          <Link
-            href="/login/reset"
-            className="mt-4 inline-block rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-gold hover:text-gold-dark"
+        <form
+          action={updatePassword}
+          className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4"
+        >
+          <div>
+            <h2 className="font-semibold text-slate-800">Change Password</h2>
+            <p className="mt-1 text-sm text-slate-500">You're already signed in — no email needed.</p>
+          </div>
+
+          {pw_saved && (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              Password updated successfully.
+            </div>
+          )}
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700">New password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              placeholder="Minimum 8 characters"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="rounded-lg bg-gold px-5 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"
           >
-            Send password reset email
-          </Link>
-        </div>
+            Update password
+          </button>
+        </form>
       </div>
     </DashboardShell>
   );

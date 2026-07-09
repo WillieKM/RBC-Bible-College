@@ -148,17 +148,8 @@ export async function updatePassword(formData: FormData) {
   const password = String(formData.get("password") || "");
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect(`/settings/new-password?error=${encodeURIComponent(error.message)}`);
-
-  // Session is already live at this point — send them straight to their portal
-  const { data: userData } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userData.user!.id)
-    .maybeSingle();
-
-  redirect(ROLE_HOME[profile?.role ?? ""] ?? "/");
+  if (error) redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  redirect("/settings?pw_saved=1");
 }
 
 export async function updateProfile(formData: FormData) {
