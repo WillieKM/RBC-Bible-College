@@ -12,12 +12,13 @@ export default async function AdminModulesPage({
   const { error, edit, sent } = await searchParams;
   const admin = createAdminClient();
 
-  const { data } = await admin
-    .from("module_files")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data }, { data: professors }] = await Promise.all([
+    admin.from("module_files").select("*").order("created_at", { ascending: false }),
+    admin.from("profiles").select("id, full_name").eq("role", "professor").order("full_name"),
+  ]);
 
   const modules = (data ?? []) as ModuleFile[];
+  const profList = (professors ?? []) as { id: string; full_name: string }[];
 
   return (
     <div>
@@ -142,11 +143,20 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                     >
-                      <option value="all">All students</option>
-                      <option value="diploma">Diploma / Certificate only</option>
-                      <option value="bachelors">Bachelor&apos;s only</option>
-                      <option value="masters">Master&apos;s only</option>
-                      <option value="doctorate">Doctorate only</option>
+                      <optgroup label="Groups">
+                        <option value="all">All students</option>
+                        <option value="diploma">Diploma / Certificate only</option>
+                        <option value="bachelors">Bachelor&apos;s only</option>
+                        <option value="masters">Master&apos;s only</option>
+                        <option value="doctorate">Doctorate only</option>
+                      </optgroup>
+                      {profList.length > 0 && (
+                        <optgroup label="Specific Professor">
+                          {profList.map((p) => (
+                            <option key={p.id} value={`prof:${p.id}`}>{p.full_name}</option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -205,11 +215,20 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
                     >
-                      <option value="all">All students + all professors</option>
-                      <option value="diploma">Diploma / Certificate students + all professors</option>
-                      <option value="bachelors">Bachelor&apos;s students + all professors</option>
-                      <option value="masters">Master&apos;s students + all professors</option>
-                      <option value="doctorate">Doctorate students + all professors</option>
+                      <optgroup label="Groups">
+                        <option value="all">All students + all professors</option>
+                        <option value="diploma">Diploma / Certificate students + all professors</option>
+                        <option value="bachelors">Bachelor&apos;s students + all professors</option>
+                        <option value="masters">Master&apos;s students + all professors</option>
+                        <option value="doctorate">Doctorate students + all professors</option>
+                      </optgroup>
+                      {profList.length > 0 && (
+                        <optgroup label="Specific Professor">
+                          {profList.map((p) => (
+                            <option key={p.id} value={`prof:${p.id}`}>{p.full_name}</option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                   </div>
                   <DeleteButton

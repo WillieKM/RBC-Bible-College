@@ -441,6 +441,7 @@ export async function sendBulkEmail(formData: FormData) {
   let query = supabase.from("profiles").select("email");
   if (target === "students") query = query.eq("role", "student");
   else if (target === "professors") query = query.eq("role", "professor");
+  else if (target.startsWith("prof:")) query = query.eq("id", target.slice(5));
   else query = query.in("role", ["student", "professor"]);
 
   const { data: recipients } = await query;

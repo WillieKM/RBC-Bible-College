@@ -7,7 +7,7 @@ import { sendModuleFileEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-export type ModuleAudience = "all" | "diploma" | "bachelors" | "masters" | "doctorate";
+export type ModuleAudience = "all" | "diploma" | "bachelors" | "masters" | "doctorate" | string;
 
 function filenameToTitle(name: string): string {
   return name
@@ -118,6 +118,12 @@ async function resolveRecipients(
   admin: ReturnType<typeof createAdminClient>,
   audience: ModuleAudience
 ): Promise<{ students: { full_name: string; email: string }[]; professors: { full_name: string; email: string }[] }> {
+  if (audience.startsWith("prof:")) {
+    const profId = audience.slice(5);
+    const { data: prof } = await admin.from("profiles").select("full_name, email").eq("id", profId).maybeSingle();
+    return { students: [], professors: prof ? [prof] : [] };
+  }
+
   if (audience === "all") {
     const [{ data: students }, { data: professors }] = await Promise.all([
       admin.from("profiles").select("full_name, email").eq("role", "student"),

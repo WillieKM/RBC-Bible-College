@@ -6,10 +6,10 @@ import type { Announcement } from "@/lib/types";
 
 export default async function AdminAnnouncementsPage() {
   const supabase = await createClient();
-  const { data: announcements } = await supabase
-    .from("announcements")
-    .select("*, profiles(full_name)")
-    .order("created_at", { ascending: false });
+  const [{ data: announcements }, { data: professors }] = await Promise.all([
+    supabase.from("announcements").select("*, profiles(full_name)").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, full_name").eq("role", "professor").order("full_name"),
+  ]);
 
   return (
     <div>
@@ -57,9 +57,18 @@ export default async function AdminAnnouncementsPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700">Send to</label>
             <select name="target" defaultValue="students" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="students">All students</option>
-              <option value="professors">All professors</option>
-              <option value="all">Everyone</option>
+              <optgroup label="Groups">
+                <option value="students">All students</option>
+                <option value="professors">All professors</option>
+                <option value="all">Everyone</option>
+              </optgroup>
+              {(professors ?? []).length > 0 && (
+                <optgroup label="Specific Professor">
+                  {(professors ?? []).map((p: { id: string; full_name: string }) => (
+                    <option key={p.id} value={`prof:${p.id}`}>{p.full_name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
           <DeleteButton label="Send Emails" pendingLabel="Sending…" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" />
