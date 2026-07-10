@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { getBaseUrl } from "@/lib/site-url";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -120,12 +121,7 @@ export async function sendPasswordReset(formData: FormData) {
     redirect("/login/reset?sent=1");
   }
 
-  // Use generateLink so we send via our own Gmail (not Supabase's email service).
-  // Falls back through multiple env var names in case Vercel uses BASE_URL instead of NEXT_PUBLIC_BASE_URL.
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.BASE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const baseUrl = await getBaseUrl();
 
   const { data: link } = await admin.auth.admin.generateLink({
     type: "recovery",

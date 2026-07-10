@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
+import { getBaseUrl } from "@/lib/site-url";
 import { revalidatePath } from "next/cache";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
@@ -235,10 +236,7 @@ export async function inviteUser(formData: FormData) {
   if (!fullName || !email || !["admin", "professor", "student"].includes(role)) return;
 
   const admin = createAdminClient();
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.BASE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const baseUrl = await getBaseUrl();
 
   // Step 1: create the auth user (email_confirm skips Supabase's own email)
   const { data: created, error: createError } = await admin.auth.admin.createUser({
@@ -305,10 +303,7 @@ export async function resendInvite(formData: FormData) {
   if (!email) return;
 
   const admin = createAdminClient();
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.BASE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const baseUrl = await getBaseUrl();
 
   const { data: profile } = await admin.from("profiles").select("full_name, role").eq("email", email).maybeSingle();
 

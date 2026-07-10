@@ -11,6 +11,7 @@ import {
 } from "@/lib/email";
 import { requireRole } from "@/lib/auth";
 import { getCurrentProfile } from "@/lib/auth";
+import { getBaseUrl } from "@/lib/site-url";
 import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { DEGREE_PROGRAM_LEVELS, feeForLevel } from "@/lib/fees";
@@ -236,10 +237,7 @@ export async function reviewApplication(formData: FormData) {
 
   if (decision === "approve") {
     const admin = createAdminClient();
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    const baseUrl = await getBaseUrl();
 
     // Guard against approving a second (duplicate) application for an email
     // that already has an account — without this, the account/invoice creation
@@ -364,7 +362,7 @@ export async function resendStudentInvite(formData: FormData) {
   if (!email) redirect("/admin/applications?error=Missing+email");
 
   const admin = createAdminClient();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = await getBaseUrl();
 
   // Use recovery (not invite) because the student already has an auth account — the
   // invite just hasn't been used before it expired. Recovery produces the same

@@ -7,6 +7,7 @@ import { sendAccountInviteEmail } from "@/lib/email";
 import { feeForLevel } from "@/lib/fees";
 import { nextSequenceNumber } from "@/lib/sequences";
 import { redirect } from "next/navigation";
+import { getBaseUrl } from "@/lib/site-url";
 
 type ImportRow = {
   full_name: string;
@@ -73,7 +74,7 @@ export async function bulkImportStudents(formData: FormData) {
   }
 
   const results: RowResult[] = [];
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = await getBaseUrl();
   const year = new Date().getFullYear();
 
   // Pre-fetch all programs once
@@ -98,7 +99,7 @@ export async function bulkImportStudents(formData: FormData) {
       const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
         type: "invite",
         email: row.email,
-        options: { redirectTo: `${baseUrl}/login` },
+        options: { redirectTo: `${baseUrl}/settings/new-password` },
       });
       if (inviteError || !invited?.user) {
         results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
