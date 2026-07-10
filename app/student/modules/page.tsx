@@ -35,15 +35,25 @@ export default async function StudentModulesPage() {
                 weekday: "long", day: "numeric", month: "long", year: "numeric",
               })}
             </p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-3">
+              {!current.restrict_download && (
+                <a
+                  href={current.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="inline-block rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-ink hover:bg-gold-dark"
+                >
+                  Download {current.file_name} →
+                </a>
+              )}
               <a
                 href={current.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                download
-                className="inline-block rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-ink hover:bg-gold-dark"
+                className="inline-block rounded-lg border border-slate-200 px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
-                Download {current.file_name} →
+                {current.restrict_download ? `Open ${current.file_name} →` : "Preview PDF →"}
               </a>
             </div>
           </div>

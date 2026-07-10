@@ -38,22 +38,24 @@ export default async function ProfessorModulesPage() {
               })}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <a
-                href={current.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="inline-block rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-ink hover:bg-gold-dark"
-              >
-                Download {current.file_name} →
-              </a>
+              {!current.restrict_download && (
+                <a
+                  href={current.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="inline-block rounded-lg bg-gold px-6 py-3 text-sm font-semibold text-ink hover:bg-gold-dark"
+                >
+                  Download {current.file_name} →
+                </a>
+              )}
               <a
                 href={current.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block rounded-lg border border-slate-200 px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
-                Preview PDF →
+                {current.restrict_download ? `Open ${current.file_name} →` : "Preview PDF →"}
               </a>
             </div>
           </div>

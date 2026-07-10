@@ -80,6 +80,10 @@ export default async function AdminModulesPage({
             />
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <input type="checkbox" name="restrict_download" id="restrict_upload" value="1" className="rounded" />
+          <label htmlFor="restrict_upload" className="text-sm text-slate-600">Restrict downloads (preview only)</label>
+        </div>
         <DeleteButton
           label="Upload Module"
           pendingLabel="Uploading…"
@@ -169,7 +173,10 @@ export default async function AdminModulesPage({
                   <Link href="/admin/modules" className="text-sm text-slate-500 hover:text-slate-700">
                     Cancel
                   </Link>
-                  <span className="ml-auto text-xs text-slate-400">{m.file_name}</span>
+                  <label className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
+                    <input type="checkbox" name="restrict_download" value="1" defaultChecked={m.restrict_download} className="rounded" />
+                    Restrict downloads
+                  </label>
                 </div>
               </form>
             ) : (
@@ -188,6 +195,9 @@ export default async function AdminModulesPage({
                       ) : m.send_at ? (
                         <span className="text-xs font-medium text-amber-600">⏱ Scheduled {new Date(m.send_at).toLocaleString()}</span>
                       ) : null}
+                      {m.restrict_download && (
+                        <span className="text-xs font-medium text-amber-600">⊘ Download restricted</span>
+                      )}
                       <a href={m.file_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-gold-dark hover:underline">
                         Preview →
                       </a>

@@ -23,6 +23,7 @@ export async function uploadModule(formData: FormData) {
 
   const manualTitle = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
+  const restrictDownload = formData.get("restrict_download") === "1";
 
   // getAll supports both single and multiple file selections
   const files = (formData.getAll("file") as File[]).filter((f) => f instanceof File && f.size > 0);
@@ -51,7 +52,7 @@ export async function uploadModule(formData: FormData) {
     }
 
     const { data: publicUrl } = admin.storage.from("module-files").getPublicUrl(path);
-    rows.push({ title, description, file_url: publicUrl.publicUrl, file_name: file.name, uploaded_by: profile.id });
+    rows.push({ title, description, file_url: publicUrl.publicUrl, file_name: file.name, uploaded_by: profile.id, restrict_download: restrictDownload });
   }
 
   await admin.from("module_files").insert(rows);
@@ -70,6 +71,7 @@ export async function updateModule(formData: FormData) {
   const description = String(formData.get("description") || "").trim() || null;
   const sendAtRaw = String(formData.get("send_at") || "").trim();
   const sendAudience = String(formData.get("send_audience") || "").trim() || null;
+  const restrictDownload = formData.get("restrict_download") === "1";
 
   if (!id || !title) return;
 
@@ -81,6 +83,7 @@ export async function updateModule(formData: FormData) {
     description,
     send_at: sendAt,
     send_audience: sendAt ? (sendAudience ?? "all") : null,
+    restrict_download: restrictDownload,
     // Reset sent_at so a re-schedule is picked up again by the cron
     ...(sendAt ? { sent_at: null } : {}),
   }).eq("id", id);

@@ -262,6 +262,7 @@ export interface ModuleFile {
   send_at: string | null;
   sent_at: string | null;
   send_audience: string | null;
+  restrict_download: boolean;
   created_at: string;
 }
 
