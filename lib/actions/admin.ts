@@ -240,20 +240,30 @@ export async function inviteUser(formData: FormData) {
     process.env.BASE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-  // generateLink creates the user and returns the link without sending Supabase's
-  // own (heavily rate-limited) invite email — we deliver the link ourselves below.
-  const { data: invited, error } = await admin.auth.admin.generateLink({
-    type: "invite",
+  // Step 1: create the auth user (email_confirm skips Supabase's own email)
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
+    email_confirm: true,
   });
-  if (error || !invited?.user) {
+  if (createError || !created?.user) {
     revalidatePath("/admin/users");
     return;
   }
 
-  await admin.from("profiles").insert({ id: invited.user.id, full_name: fullName, email, role });
-  await sendAccountInviteEmail({ to: email, fullName, role, loginUrl: invited.properties.action_link });
+  // Step 2: create the profile row
+  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role });
+
+  // Step 3: generate a recovery link — same flow as password reset, avoids
+  // the inconsistent redirect behaviour of Supabase's invite link type.
+  const { data: link } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${baseUrl}/settings/new-password` },
+  });
+
+  if (link?.properties?.action_link) {
+    await sendAccountInviteEmail({ to: email, fullName, role, loginUrl: link.properties.action_link });
+  }
 
   revalidatePath("/admin/users");
 }
