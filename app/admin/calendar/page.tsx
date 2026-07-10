@@ -6,7 +6,7 @@ import type { CalendarEvent } from "@/lib/types";
 const TYPE_COLORS: Record<string, string> = {
   holiday: "bg-red-100 text-red-700",
   exam: "bg-purple-100 text-purple-700",
-  deadline: "bg-amber-100 text-amber-700",
+  assignment: "bg-amber-100 text-amber-700",
   class: "bg-blue-100 text-blue-700",
   other: "bg-slate-100 text-slate-700",
 };
@@ -55,7 +55,7 @@ export default async function AdminCalendarPage() {
             <select name="type" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold">
               <option value="class">Class / Lecture</option>
               <option value="exam">Exam / Test</option>
-              <option value="deadline">Assignment Deadline</option>
+              <option value="assignment">Assignment Deadline</option>
               <option value="holiday">Holiday</option>
               <option value="other">Other</option>
             </select>

@@ -94,7 +94,7 @@ export async function GET(request: Request) {
           description: module.description,
           fileUrl: module.file_url,
           fileName: module.file_name,
-          senderName: "Revelation Bible College",
+          senderName: process.env.SCHOOL_NAME ?? "Revelation Bible College",
         })
       )
     );

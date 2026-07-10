@@ -62,65 +62,49 @@ export async function gradeWithAI(formData: FormData) {
     points_possible: number | null;
   };
 
-  const client = new Anthropic();
   const maxPoints = assignment.points_possible ?? 100;
-
-  const response = await client.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 1024,
-    output_config: {
-      format: {
-        type: "json_schema",
-        schema: {
-          type: "object",
-          properties: {
-            grade: {
-              type: "number",
-              description: `Score from 0 to ${maxPoints}`,
-            },
-            feedback: {
-              type: "string",
-              description: "Constructive 2–3 sentence feedback for the student",
-            },
-          },
-          required: ["grade", "feedback"],
-          additionalProperties: false,
-        },
-      },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `You are grading a student assignment. Be fair, clear, and constructive.
-
-Assignment: ${assignment.title}${assignment.description ? `\nDescription: ${assignment.description}` : ""}
-Points possible: ${maxPoints}
-
-Student's submission:
-${textContent}
-
-Return a grade (0–${maxPoints}) and brief feedback.`,
-      },
-    ],
-  });
-
-  const text =
-    response.content[0]?.type === "text" ? response.content[0].text : "";
 
   let grade: number;
   let feedback: string;
 
   try {
+    const client = new Anthropic();
+    const response = await client.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: 1024,
+      system: `You are grading a student assignment. Respond ONLY with a valid JSON object with exactly two keys:
+- "grade": a number from 0 to ${maxPoints}
+- "feedback": a 2-3 sentence constructive comment for the student
+
+No explanation, no markdown, no code fences — raw JSON only.`,
+      messages: [
+        {
+          role: "user",
+          content: `Assignment: ${assignment.title}${assignment.description ? `\nDescription: ${assignment.description}` : ""}
+Points possible: ${maxPoints}
+
+Student's submission:
+${textContent}
+
+Grade this submission.`,
+        },
+      ],
+    });
+
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
+
     const parsed = JSON.parse(text);
     grade = Math.min(maxPoints, Math.max(0, Number(parsed.grade)));
     feedback = String(parsed.feedback || "");
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
     redirect(
-      `/professor/assignments/${assignmentId}?ai_error=AI+response+could+not+be+parsed`
+      `/professor/assignments/${assignmentId}?ai_error=${encodeURIComponent(`AI grading failed: ${msg}`)}`
     );
   }
 
   redirect(
-    `/professor/assignments/${assignmentId}?ai_grade=${grade}&ai_feedback=${encodeURIComponent(feedback)}&ai_for=${submissionId}`
+    `/professor/assignments/${assignmentId}?ai_grade=${grade!}&ai_feedback=${encodeURIComponent(feedback!)}&ai_for=${submissionId}`
   );
 }

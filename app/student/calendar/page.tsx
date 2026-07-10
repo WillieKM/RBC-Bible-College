@@ -4,7 +4,7 @@ import type { CalendarEvent } from "@/lib/types";
 const TYPE_COLORS: Record<string, string> = {
   holiday: "bg-red-100 text-red-700",
   exam: "bg-purple-100 text-purple-700",
-  deadline: "bg-amber-100 text-amber-700",
+  assignment: "bg-amber-100 text-amber-700",
   class: "bg-blue-100 text-blue-700",
   other: "bg-slate-100 text-slate-700",
 };

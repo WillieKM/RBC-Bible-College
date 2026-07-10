@@ -26,11 +26,11 @@ async function getStudentsForAudience(admin: ReturnType<typeof createAdminClient
     return query.in("program_id", ids);
   }
 
-  // Named programs: diploma, certificate — target by exact program name
-  const name = audience === "diploma" ? "Diploma" : "Certificate";
-  const { data: prog } = await admin.from("programs").select("id").eq("name", name).maybeSingle();
-  if (!prog) return { data: [] };
-  return query.eq("program_id", prog.id);
+  // diploma / certificate — target by program_level so all matching programs are included
+  const { data: programs } = await admin.from("programs").select("id").eq("program_level", audience);
+  const ids = (programs ?? []).map((p: { id: string }) => p.id);
+  if (ids.length === 0) return { data: [] };
+  return query.in("program_id", ids);
 }
 
 export async function GET(request: Request) {

@@ -18,8 +18,14 @@ export default async function StudentCertificatePage() {
     year: "numeric", month: "long", day: "numeric",
   });
 
+  const LEVEL_PREFIX: Record<string, string> = {
+    diploma: "Diploma in",
+    bachelors: "Bachelor of Theology in",
+    masters: "Master of Theology in",
+    doctorate: "Doctor of Theology in",
+  };
   const programLabel = program
-    ? `${program.program_level === "degree" ? "Bachelor of Theology" : "Diploma in"} ${program.name}`
+    ? `${LEVEL_PREFIX[program.program_level] ?? "Diploma in"} ${program.name}`
     : "Biblical Studies";
 
   return (
