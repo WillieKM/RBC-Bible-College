@@ -5,65 +5,70 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updatePassword } from "@/lib/actions/auth";
 
+type Status = "detecting" | "processing" | "ready" | "authenticated" | "error";
+
 export function AuthCodeHandler() {
-  const [status, setStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
+  const [status, setStatus] = useState<Status>("detecting");
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const hasAuthParams =
-    searchParams.has("code") ||
-    (searchParams.has("token_hash") && searchParams.has("type"));
-
   useEffect(() => {
+    const supabase = createClient();
+
+    // Query-string params (PKCE code or OTP token_hash)
     const code = searchParams.get("code");
     const token_hash = searchParams.get("token_hash");
     const type = searchParams.get("type");
 
-    // Also check hash fragment — some Supabase flows use #access_token=...
+    // Hash-fragment params (implicit flow: #access_token=...&refresh_token=...)
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const accessToken = hashParams.get("access_token");
     const refreshToken = hashParams.get("refresh_token");
 
-    if (!code && !token_hash && !accessToken) {
-      setStatus("idle");
+    const hasAuthParam = !!(code || token_hash || accessToken);
+
+    if (!hasAuthParam) {
+      // No incoming auth params — check whether user is already signed in
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        setStatus(user ? "authenticated" : "error");
+      });
       return;
     }
 
     setStatus("processing");
-    const supabase = createClient();
 
     (async () => {
-      let error: unknown = null;
+      let authError: unknown = null;
 
-      if (code) {
-        ({ error } = await supabase.auth.exchangeCodeForSession(code));
-      } else if (token_hash && type) {
-        ({ error } = await supabase.auth.verifyOtp({
-          type: type as "recovery" | "invite" | "signup" | "email",
-          token_hash,
-        }));
-      } else if (accessToken && refreshToken) {
-        ({ error } = await supabase.auth.setSession({
+      if (accessToken && refreshToken) {
+        // Implicit flow: tokens are in the URL hash fragment
+        ({ error: authError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         }));
+      } else if (token_hash && type) {
+        // OTP hash flow: verifyOtp doesn't need a PKCE verifier
+        ({ error: authError } = await supabase.auth.verifyOtp({
+          type: type as "recovery" | "invite" | "signup" | "email",
+          token_hash,
+        }));
+      } else if (code) {
+        // PKCE code flow (usually OAuth; may fail for server-generated links)
+        ({ error: authError } = await supabase.auth.exchangeCodeForSession(code));
       }
 
-      if (error) {
+      if (authError) {
         setStatus("error");
         return;
       }
 
       setStatus("ready");
-      // Strip auth params so a page refresh doesn't re-run the exchange
+      // Remove auth params from the URL so a refresh doesn't re-run the exchange
       router.replace("/settings/new-password");
     })();
   }, [searchParams, router]);
 
-  // No auth params in URL — page was loaded normally (already authenticated)
-  if (!hasAuthParams && status === "idle") return null;
-
-  if (status === "processing") {
+  if (status === "detecting" || status === "processing") {
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
@@ -72,24 +77,7 @@ export function AuthCodeHandler() {
     );
   }
 
-  if (status === "error") {
-    return (
-      <div className="space-y-3 py-4">
-        <div className="rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
-          This link has expired or already been used.
-        </div>
-        <a
-          href="/login/reset"
-          className="block w-full rounded-lg border border-gold/30 px-4 py-2 text-center text-sm font-medium text-gold hover:bg-gold/10"
-        >
-          Request a new link →
-        </a>
-      </div>
-    );
-  }
-
-  // status === "ready" — session established, show the form
-  if (status === "ready") {
+  if (status === "ready" || status === "authenticated") {
     return (
       <form action={updatePassword} className="mt-6 space-y-4">
         <div>
@@ -117,5 +105,24 @@ export function AuthCodeHandler() {
     );
   }
 
-  return null;
+  // status === "error"
+  return (
+    <div className="mt-6 space-y-3">
+      <div className="rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
+        This link has expired or already been used.
+      </div>
+      <a
+        href="/login/reset"
+        className="block w-full rounded-lg border border-gold/30 px-4 py-2 text-center text-sm font-medium text-gold hover:bg-gold/10"
+      >
+        Request a new link →
+      </a>
+      <a
+        href="/login"
+        className="block text-center text-xs text-slate-500 hover:text-slate-400"
+      >
+        Sign in instead
+      </a>
+    </div>
+  );
 }

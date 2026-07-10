@@ -257,7 +257,7 @@ export async function reviewApplication(formData: FormData) {
     const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
       type: "invite",
       email: application.email,
-      options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
+      options: { redirectTo: `${baseUrl}/settings/new-password` },
     });
 
     if (inviteError || !invited?.user) {
@@ -370,7 +370,7 @@ export async function resendStudentInvite(formData: FormData) {
   const { data: link, error } = await admin.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
+    options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
   if (error || !link?.properties?.action_link) {
