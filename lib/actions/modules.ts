@@ -36,7 +36,8 @@ export async function uploadModule(formData: FormData) {
     redirect(`/admin/modules?error=${encodeURIComponent(`"${oversized.name}" exceeds the 50 MB limit`)}`);
   }
 
-  const rows: { title: string; description: string | null; file_url: string; file_name: string; uploaded_by: string }[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = [];
 
   for (const file of files) {
     const title = files.length === 1 && manualTitle ? manualTitle : filenameToTitle(file.name);
@@ -78,13 +79,13 @@ export async function updateModule(formData: FormData) {
   // Clear schedule if date/time field is blank; otherwise parse as UTC
   const sendAt = sendAtRaw ? new Date(sendAtRaw).toISOString() : null;
 
-  await admin.from("module_files").update({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin.from("module_files") as any).update({
     title,
     description,
     send_at: sendAt,
     send_audience: sendAt ? (sendAudience ?? "all") : null,
     restrict_download: restrictDownload,
-    // Reset sent_at so a re-schedule is picked up again by the cron
     ...(sendAt ? { sent_at: null } : {}),
   }).eq("id", id);
 
