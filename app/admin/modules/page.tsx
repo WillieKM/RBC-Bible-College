@@ -143,7 +143,7 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                     >
-                      <optgroup label="Groups">
+                      <optgroup label="Students">
                         <option value="all">All students</option>
                         <option value="diploma">Diploma / Certificate only</option>
                         <option value="bachelors">Bachelor&apos;s only</option>
@@ -215,12 +215,12 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
                     >
-                      <optgroup label="Groups">
-                        <option value="all">All students + all professors</option>
-                        <option value="diploma">Diploma / Certificate students + all professors</option>
-                        <option value="bachelors">Bachelor&apos;s students + all professors</option>
-                        <option value="masters">Master&apos;s students + all professors</option>
-                        <option value="doctorate">Doctorate students + all professors</option>
+                      <optgroup label="Students">
+                        <option value="all">All students</option>
+                        <option value="diploma">Diploma / Certificate students</option>
+                        <option value="bachelors">Bachelor&apos;s students</option>
+                        <option value="masters">Master&apos;s students</option>
+                        <option value="doctorate">Doctorate students</option>
                       </optgroup>
                       {profList.length > 0 && (
                         <optgroup label="Specific Professor">

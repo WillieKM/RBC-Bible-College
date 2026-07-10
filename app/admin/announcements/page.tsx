@@ -57,9 +57,8 @@ export default async function AdminAnnouncementsPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700">Send to</label>
             <select name="target" defaultValue="students" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <optgroup label="Groups">
+              <optgroup label="Students">
                 <option value="students">All students</option>
-                <option value="professors">All professors</option>
                 <option value="all">Everyone</option>
               </optgroup>
               {(professors ?? []).length > 0 && (

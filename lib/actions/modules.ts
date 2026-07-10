@@ -125,11 +125,8 @@ async function resolveRecipients(
   }
 
   if (audience === "all") {
-    const [{ data: students }, { data: professors }] = await Promise.all([
-      admin.from("profiles").select("full_name, email").eq("role", "student"),
-      admin.from("profiles").select("full_name, email").eq("role", "professor"),
-    ]);
-    return { students: students ?? [], professors: professors ?? [] };
+    const { data: students } = await admin.from("profiles").select("full_name, email").eq("role", "student");
+    return { students: students ?? [], professors: [] };
   }
 
   const { data: matchingPrograms } = await admin
@@ -140,32 +137,13 @@ async function resolveRecipients(
   const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
   const noMatch = ["00000000-0000-0000-0000-000000000000"];
 
-  const [{ data: students }, { data: programCourses }] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("role", "student")
-      .in("program_id", programIds.length > 0 ? programIds : noMatch),
-    programIds.length > 0
-      ? admin
-          .from("courses")
-          .select("professor_id, profiles!professor_id(full_name, email)")
-          .in("program_id", programIds)
-          .not("professor_id", "is", null)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
+  const { data: students } = await admin
+    .from("profiles")
+    .select("full_name, email")
+    .eq("role", "student")
+    .in("program_id", programIds.length > 0 ? programIds : noMatch);
 
-  // Deduplicate — a professor teaching multiple courses in the same program appears once
-  const seen = new Set<string>();
-  const professors: { full_name: string; email: string }[] = [];
-  for (const course of (programCourses ?? []) as unknown as { professor_id: string; profiles: { full_name: string; email: string } | null }[]) {
-    if (course.professor_id && !seen.has(course.professor_id) && course.profiles) {
-      seen.add(course.professor_id);
-      professors.push(course.profiles);
-    }
-  }
-
-  return { students: students ?? [], professors };
+  return { students: students ?? [], professors: [] };
 }
 
 export async function sendModuleNow(formData: FormData) {
