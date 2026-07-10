@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { updatePassword } from "@/lib/actions/auth";
+import { createClient } from "@/lib/supabase/server";
 import { AuthCodeHandler } from "./AuthCodeHandler";
 
 export default async function NewPasswordPage({
@@ -10,6 +12,15 @@ export default async function NewPasswordPage({
 }) {
   const params = await searchParams;
   const hasAuthParams = !!(params.code || params.token_hash);
+
+  // When there are no auth params, check if user has an existing session.
+  // If not, show a "request new link" prompt instead of a form that will fail.
+  let isAuthenticated = false;
+  if (!hasAuthParams) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticated = !!user;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
@@ -26,7 +37,7 @@ export default async function NewPasswordPage({
           </div>
         )}
 
-        {/* When the page has auth params, the client component takes over completely */}
+        {/* Auth params present: client component handles the token exchange */}
         {hasAuthParams ? (
           <Suspense fallback={
             <div className="flex flex-col items-center gap-3 py-8">
@@ -36,8 +47,8 @@ export default async function NewPasswordPage({
           }>
             <AuthCodeHandler />
           </Suspense>
-        ) : (
-          // Already authenticated (e.g. changing password from settings)
+        ) : isAuthenticated ? (
+          // Already signed in — let them change their password directly
           <form action={updatePassword} className="mt-6 space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-slate-300">New password</label>
@@ -59,6 +70,25 @@ export default async function NewPasswordPage({
               Update password
             </button>
           </form>
+        ) : (
+          // No auth params and no session — link is missing or expired
+          <div className="mt-6 space-y-3">
+            <div className="rounded-lg bg-amber-950 border border-amber-700 px-3 py-2 text-sm text-amber-300">
+              This link has expired or is no longer valid.
+            </div>
+            <Link
+              href="/login/reset"
+              className="block w-full rounded-lg border border-gold/30 px-4 py-2 text-center text-sm font-medium text-gold hover:bg-gold/10"
+            >
+              Request a new link →
+            </Link>
+            <Link
+              href="/login"
+              className="block text-center text-xs text-slate-500 hover:text-slate-400"
+            >
+              Sign in instead
+            </Link>
+          </div>
         )}
       </div>
     </div>

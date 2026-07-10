@@ -19,7 +19,12 @@ export function AuthCodeHandler() {
     const token_hash = searchParams.get("token_hash");
     const type = searchParams.get("type");
 
-    if (!code && !token_hash) {
+    // Also check hash fragment — some Supabase flows use #access_token=...
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+
+    if (!code && !token_hash && !accessToken) {
       setStatus("idle");
       return;
     }
@@ -36,6 +41,11 @@ export function AuthCodeHandler() {
         ({ error } = await supabase.auth.verifyOtp({
           type: type as "recovery" | "invite" | "signup" | "email",
           token_hash,
+        }));
+      } else if (accessToken && refreshToken) {
+        ({ error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
         }));
       }
 
