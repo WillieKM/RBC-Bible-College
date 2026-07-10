@@ -256,7 +256,7 @@ export async function inviteUser(formData: FormData) {
   const { data: link } = await admin.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
   });
 
   if (link?.properties?.action_link) {
@@ -312,7 +312,7 @@ export async function resendInvite(formData: FormData) {
   const { data: invited, error } = await admin.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
+    options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
   });
 
   if (!error && invited?.properties.action_link) {

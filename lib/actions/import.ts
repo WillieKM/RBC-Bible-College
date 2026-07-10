@@ -99,7 +99,7 @@ export async function bulkImportStudents(formData: FormData) {
       const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
         type: "invite",
         email: row.email,
-        options: { redirectTo: `${baseUrl}/settings/new-password` },
+        options: { redirectTo: `${baseUrl}/auth/callback?next=/settings/new-password` },
       });
       if (inviteError || !invited?.user) {
         results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
