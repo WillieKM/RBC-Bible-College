@@ -514,6 +514,54 @@ export async function sendPaymentReceiptEmail(opts: {
   );
 }
 
+// ─── Student payment proof notification (to admin) ───────────────────────────
+
+export async function sendPaymentProofNotification(opts: {
+  studentName: string;
+  studentEmail: string;
+  invoiceTitle: string;
+  invoiceId: string;
+  amount: number;
+  currency: string;
+  reference: string;
+  paymentDate: string;
+  screenshotUrl: string | null;
+  adminPortalUrl: string;
+}) {
+  const to = process.env.GMAIL_USER || "";
+  if (!to) return;
+  const fmt = (n: number) => `${opts.currency}${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  await send(
+    to,
+    `Payment proof submitted — ${esc(opts.studentName)} · ${fmt(opts.amount)}`,
+    wrap(
+      "Payment Proof Submitted",
+      `<p style="font-size:15px;color:#475569;"><strong>${esc(opts.studentName)}</strong> (<a href="mailto:${esc(opts.studentEmail)}" style="color:${SCHOOL_ACCENT};">${esc(opts.studentEmail)}</a>) has submitted proof of payment.</p>
+       <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:16px 0;border:1px solid #e2e8f0;">
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#64748b;">Invoice</span>
+           <span style="font-size:14px;font-weight:600;color:#1e293b;">${esc(opts.invoiceTitle)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#64748b;">Amount Claimed</span>
+           <span style="font-size:16px;font-weight:700;color:#1e293b;">${fmt(opts.amount)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+           <span style="font-size:14px;color:#64748b;">M-Pesa / Reference</span>
+           <span style="font-size:14px;font-family:monospace;font-weight:600;color:#1e293b;">${esc(opts.reference)}</span>
+         </div>
+         <div style="display:flex;justify-content:space-between;">
+           <span style="font-size:14px;color:#64748b;">Date</span>
+           <span style="font-size:14px;color:#1e293b;">${esc(opts.paymentDate)}</span>
+         </div>
+       </div>
+       ${opts.screenshotUrl ? `<p style="font-size:14px;color:#475569;">Screenshot: <a href="${opts.screenshotUrl}" style="color:${SCHOOL_ACCENT};">View attached screenshot →</a></p>` : ""}
+       <p style="font-size:14px;color:#475569;margin-top:12px;">Please verify the payment and record it in the admin portal.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.adminPortalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Record Payment →</a></div>`
+    )
+  );
+}
+
 // ─── New assignment posted (to enrolled students) ─────────────────────────────
 
 export async function sendNewAssignmentEmail(opts: {

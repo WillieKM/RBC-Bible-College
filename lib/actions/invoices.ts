@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireFinanceAccess } from "@/lib/auth";
-import { sendInvoiceEmail, sendPaymentReceiptEmail } from "@/lib/email";
+import { requireFinanceAccess, requireRole } from "@/lib/auth";
+import { sendInvoiceEmail, sendPaymentReceiptEmail, sendPaymentProofNotification } from "@/lib/email";
 import { nextSequenceNumber } from "@/lib/sequences";
 import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
@@ -160,6 +160,66 @@ export async function deleteInvoice(formData: FormData) {
 
   revalidatePath("/admin/invoices");
   redirect("/admin/invoices");
+}
+
+export async function submitPaymentProof(formData: FormData) {
+  const profile = await requireRole(["student"]);
+  const supabase = await createClient();
+
+  const invoiceId = String(formData.get("invoice_id") || "").trim();
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+  const reference = String(formData.get("reference") || "").trim();
+  const paymentDate = String(formData.get("payment_date") || new Date().toISOString().slice(0, 10));
+
+  if (!invoiceId || isNaN(amount) || amount <= 0 || !reference) {
+    redirect(`/student/invoices?proof_error=${encodeURIComponent("Please fill in the amount, date, and M-Pesa transaction code.")}`);
+  }
+
+  // Verify the invoice belongs to this student
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("id, title, student_id, profiles(full_name, email, region)")
+    .eq("id", invoiceId)
+    .eq("student_id", profile.id)
+    .single();
+
+  if (!invoice) redirect("/student/invoices?proof_error=Invoice+not+found.");
+
+  const studentProfile = invoice.profiles as unknown as { full_name: string; email: string; region: string | null } | null;
+  const currency = studentProfile?.region === "usa" ? "$" : "KSh";
+
+  // Upload screenshot if provided
+  let screenshotUrl: string | null = null;
+  const screenshot = formData.get("screenshot");
+  if (screenshot instanceof File && screenshot.size > 0) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const ext = screenshot.name.split(".").pop() || "jpg";
+    const path = `payment-proofs/${invoiceId}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await admin.storage
+      .from("application-photos")
+      .upload(path, screenshot, { contentType: screenshot.type });
+    if (!uploadError) {
+      const { data: urlData } = admin.storage.from("application-photos").getPublicUrl(path);
+      screenshotUrl = urlData.publicUrl;
+    }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  void sendPaymentProofNotification({
+    studentName: studentProfile?.full_name ?? profile.full_name,
+    studentEmail: studentProfile?.email ?? profile.email ?? "",
+    invoiceTitle: invoice.title,
+    invoiceId: invoice.id,
+    amount,
+    currency,
+    reference,
+    paymentDate,
+    screenshotUrl,
+    adminPortalUrl: `${baseUrl}/admin/invoices/${invoice.id}`,
+  });
+
+  redirect("/student/invoices?proof_sent=1");
 }
 
 export async function sendInvoice(formData: FormData) {

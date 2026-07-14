@@ -4,7 +4,12 @@ import { DeleteButton } from "@/components/DeleteButton";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
-export default async function AdminStudentsPage() {
+export default async function AdminStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }] = await Promise.all([
@@ -58,9 +63,18 @@ export default async function AdminStudentsPage() {
     return credits;
   }
 
+  const query = (q ?? "").toLowerCase().trim();
+  const filteredStudents = query
+    ? (students ?? []).filter((s: Profile) =>
+        s.full_name.toLowerCase().includes(query) ||
+        s.email.toLowerCase().includes(query) ||
+        (s.student_number ?? "").toLowerCase().includes(query)
+      )
+    : (students ?? []);
+
   const NO_PROGRAM = "No program assigned";
   const studentGroups = new Map<string, Profile[]>();
-  for (const student of (students ?? []) as Profile[]) {
+  for (const student of filteredStudents as Profile[]) {
     const programName = student.program_id ? programMap.get(student.program_id)?.name ?? NO_PROGRAM : NO_PROGRAM;
     const list = studentGroups.get(programName) ?? [];
     list.push(student);
@@ -86,7 +100,24 @@ export default async function AdminStudentsPage() {
         </div>
       </div>
 
-      {sortedGroups.length === 0 && <p className="mt-6 text-sm text-slate-500">No students yet.</p>}
+      {/* Search */}
+      <form method="GET" className="mt-4">
+        <input
+          name="q"
+          type="search"
+          defaultValue={q ?? ""}
+          placeholder="Search by name, email, or student ID…"
+          className="w-full max-w-md rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+        />
+      </form>
+      {query && (
+        <p className="mt-2 text-sm text-slate-500">
+          {filteredStudents.length} result{filteredStudents.length !== 1 ? "s" : ""} for &ldquo;{q}&rdquo; —{" "}
+          <a href="/admin/students" className="text-gold-dark hover:underline">clear</a>
+        </p>
+      )}
+
+      {sortedGroups.length === 0 && <p className="mt-6 text-sm text-slate-500">{query ? "No students match that search." : "No students yet."}</p>}
 
       {sortedGroups.map(([programName, programStudents]) => (
         <div key={programName} className="mt-6">

@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { submitPaymentProof } from "@/lib/actions/invoices";
+import { DeleteButton } from "@/components/DeleteButton";
 import type { Invoice, Payment } from "@/lib/types";
 
-export default async function StudentInvoicesPage() {
+export default async function StudentInvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ proof_sent?: string; proof_error?: string }>;
+}) {
+  const { proof_sent, proof_error } = await searchParams;
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
@@ -31,6 +38,17 @@ export default async function StudentInvoicesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">My Invoices</h1>
+
+      {proof_sent && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          Payment proof submitted — the admin will verify and update your balance shortly.
+        </div>
+      )}
+      {proof_error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {decodeURIComponent(proof_error)}
+        </div>
+      )}
 
       {invoices.length === 0 ? (
         <p className="mt-6 text-sm text-slate-500">No invoices have been issued yet.</p>
@@ -97,6 +115,66 @@ export default async function StudentInvoicesPage() {
 
                   {inv.notes && (
                     <p className="mx-5 mb-3 rounded bg-amber-50 px-3 py-1.5 text-xs text-amber-700">{inv.notes}</p>
+                  )}
+
+                  {/* Submit payment proof */}
+                  {!isPaid && (
+                    <details className="border-t border-slate-100">
+                      <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gold-dark hover:text-gold list-none flex items-center gap-2">
+                        <span>+</span> I&apos;ve paid — submit proof
+                      </summary>
+                      <form action={submitPaymentProof} encType="multipart/form-data" className="px-5 pb-5 pt-2 space-y-3">
+                        <input type="hidden" name="invoice_id" value={inv.id} />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Amount paid ({currency})</label>
+                            <input
+                              name="amount"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              required
+                              defaultValue={Math.max(0, inv.balance).toFixed(2)}
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Date paid</label>
+                            <input
+                              name="payment_date"
+                              type="date"
+                              required
+                              defaultValue={new Date().toISOString().slice(0, 10)}
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 mb-1">M-Pesa transaction code</label>
+                          <input
+                            name="reference"
+                            type="text"
+                            required
+                            placeholder="e.g. QHX2KXXXXX"
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-600 mb-1">Screenshot (optional)</label>
+                          <input
+                            name="screenshot"
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gold/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gold-dark"
+                          />
+                        </div>
+                        <DeleteButton
+                          label="Submit Proof"
+                          pendingLabel="Submitting…"
+                          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
+                        />
+                      </form>
+                    </details>
                   )}
 
                   {/* Payment history */}
