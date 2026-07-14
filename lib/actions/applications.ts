@@ -12,6 +12,7 @@ import {
 import { requireRole } from "@/lib/auth";
 import { getCurrentProfile } from "@/lib/auth";
 import { getBaseUrl } from "@/lib/site-url";
+import { createInviteLink } from "@/lib/actions/invite";
 import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
 import { DEGREE_PROGRAM_LEVELS, feeForLevel } from "@/lib/fees";
@@ -337,9 +338,7 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    const inviteUrl = invited.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=invite`
-      : invited.properties.action_link;
+    const inviteUrl = await createInviteLink(application.email, application.full_name, "student");
     await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: inviteUrl, studentNumber });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
@@ -364,26 +363,7 @@ export async function resendStudentInvite(formData: FormData) {
 
   if (!email) redirect("/admin/applications?error=Missing+email");
 
-  const admin = createAdminClient();
-  const baseUrl = await getBaseUrl();
-
-  // Use recovery (not invite) because the student already has an auth account — the
-  // invite just hasn't been used before it expired. Recovery produces the same
-  // set-password experience without trying to create a duplicate user.
-  const { data: link, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
-  });
-
-  if (error || !link?.properties) {
-    redirect(`/admin/applications?error=${encodeURIComponent(error?.message ?? "Could not generate new login link")}`);
-  }
-
-  const resendUrl = link.properties.hashed_token
-    ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=recovery`
-    : link.properties.action_link;
-
+  const resendUrl = await createInviteLink(email, fullName, "student");
   await sendApplicationDecisionEmail({
     to: email,
     fullName,

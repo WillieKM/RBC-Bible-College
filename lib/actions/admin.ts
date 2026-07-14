@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
-import { getBaseUrl } from "@/lib/site-url";
+import { createInviteLink } from "@/lib/actions/invite";
 import { revalidatePath } from "next/cache";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
@@ -236,7 +236,6 @@ export async function inviteUser(formData: FormData) {
   if (!fullName || !email || !["admin", "professor", "student"].includes(role)) return;
 
   const admin = createAdminClient();
-  const baseUrl = await getBaseUrl();
 
   // Step 1: create the auth user (email_confirm skips Supabase's own email)
   const { data: created, error: createError } = await admin.auth.admin.createUser({
@@ -251,20 +250,9 @@ export async function inviteUser(formData: FormData) {
   // Step 2: create the profile row
   await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role });
 
-  // Step 3: generate a recovery link — same flow as password reset, avoids
-  // the inconsistent redirect behaviour of Supabase's invite link type.
-  const { data: link } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
-  });
-
-  if (link?.properties) {
-    const loginUrl = link.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=recovery`
-      : link.properties.action_link;
-    await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
-  }
+  // Step 3: create a permanent invite link (no Supabase token pre-generated)
+  const loginUrl = await createInviteLink(email, fullName, role);
+  await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
 
   revalidatePath("/admin/users");
 }
@@ -306,29 +294,16 @@ export async function resendInvite(formData: FormData) {
   if (!email) return;
 
   const admin = createAdminClient();
-  const baseUrl = await getBaseUrl();
 
   const { data: profile } = await admin.from("profiles").select("full_name, role").eq("email", email).maybeSingle();
 
-  // Use "recovery" for existing users — "invite" only works for brand-new accounts.
-  // Both produce the same set-password experience but recovery doesn't error on existing emails.
-  const { data: invited, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${baseUrl}/settings/new-password` },
+  const loginUrl = await createInviteLink(email, profile?.full_name ?? email, profile?.role ?? "user");
+  await sendAccountInviteEmail({
+    to: email,
+    fullName: profile?.full_name ?? email,
+    role: profile?.role ?? "user",
+    loginUrl,
   });
-
-  if (!error && invited?.properties) {
-    const loginUrl = invited.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=recovery`
-      : invited.properties.action_link;
-    await sendAccountInviteEmail({
-      to: email,
-      fullName: profile?.full_name ?? email,
-      role: profile?.role ?? "user",
-      loginUrl,
-    });
-  }
 
   revalidatePath("/admin/users");
 }

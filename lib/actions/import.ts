@@ -7,7 +7,7 @@ import { sendAccountInviteEmail } from "@/lib/email";
 import { feeForLevel } from "@/lib/fees";
 import { nextSequenceNumber } from "@/lib/sequences";
 import { redirect } from "next/navigation";
-import { getBaseUrl } from "@/lib/site-url";
+import { createInviteLink } from "@/lib/actions/invite";
 
 type ImportRow = {
   full_name: string;
@@ -74,7 +74,6 @@ export async function bulkImportStudents(formData: FormData) {
   }
 
   const results: RowResult[] = [];
-  const baseUrl = await getBaseUrl();
   const year = new Date().getFullYear();
 
   // Pre-fetch all programs once
@@ -93,13 +92,10 @@ export async function bulkImportStudents(formData: FormData) {
         continue;
       }
 
-      // generateLink creates the user and returns the link without sending Supabase's
-      // own (heavily rate-limited) invite email — we deliver the link ourselves below,
-      // which matters here since this loop can invite many students at once.
-      const { data: invited, error: inviteError } = await admin.auth.admin.generateLink({
-        type: "invite",
+      // createUser creates the auth account; we send our own permanent invite link below.
+      const { data: invited, error: inviteError } = await admin.auth.admin.createUser({
         email: row.email,
-        options: { redirectTo: `${baseUrl}/settings/new-password` },
+        email_confirm: true,
       });
       if (inviteError || !invited?.user) {
         results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
@@ -133,9 +129,7 @@ export async function bulkImportStudents(formData: FormData) {
         await enrollStudentInProgramModules(admin, invited.user.id, programId);
       }
 
-      const inviteUrl = invited.properties.hashed_token
-        ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=invite`
-        : invited.properties.action_link;
+      const inviteUrl = await createInviteLink(row.email, row.full_name, "student");
       await sendAccountInviteEmail({
         to: row.email,
         fullName: row.full_name,
