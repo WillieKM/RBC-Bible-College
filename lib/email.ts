@@ -5,12 +5,9 @@ const SCHOOL_COLOR = "#14110c";
 const SCHOOL_ACCENT = "#d4af37";
 
 // ─── Payment constants — update these when details change ─────────────────
-const ZELLE_CASHAPP = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
-const BANK_NAME     = process.env.BANK_NAME            || "I&M Bank";
-const BANK_ACCOUNT_NAME   = process.env.BANK_ACCOUNT_NAME   || "Revelation Bible College International";
-const BANK_ACCOUNT_NUMBER = process.env.BANK_ACCOUNT_NUMBER || "PLEASE_SET_BANK_ACCOUNT_NUMBER";
-const BANK_BRANCH         = process.env.BANK_BRANCH         || "PLEASE_SET_BANK_BRANCH";
-const BANK_SWIFT          = process.env.BANK_SWIFT          || "";
+const ZELLE_CASHAPP    = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
+const MPESA_PAYBILL    = process.env.MPESA_PAYBILL         || "542542";
+const MPESA_ACCOUNT    = process.env.MPESA_ACCOUNT         || "03009422856350";
 
 // User- and staff-entered text (names, statements, feedback, etc.) is interpolated
 // directly into these HTML email bodies, so it must be escaped to avoid HTML/markup
@@ -721,12 +718,10 @@ export async function sendStudentWelcomeEmail(opts: {
          <p style="margin:0;font-size:14px;color:#1e293b;"><strong>Cash App:</strong> ${esc(ZELLE_CASHAPP)}</p>
        </div>`
     : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
-         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (International / Kenya)</p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Bank:</strong> ${esc(BANK_NAME)}</p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Name:</strong> ${esc(BANK_ACCOUNT_NAME)}</p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Number:</strong> ${esc(BANK_ACCOUNT_NUMBER)}</p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Branch:</strong> ${esc(BANK_BRANCH)}</p>
-         ${BANK_SWIFT ? `<p style="margin:0;font-size:14px;color:#1e293b;"><strong>SWIFT / BIC:</strong> ${esc(BANK_SWIFT)}</p>` : ""}
+         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (Kenya / International — M-Pesa)</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Paybill Number:</strong> <span style="font-family:monospace;font-size:16px;">${esc(MPESA_PAYBILL)}</span></p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Number:</strong> <span style="font-family:monospace;font-size:16px;">${esc(MPESA_ACCOUNT)}</span></p>
+         <p style="margin:8px 0 0;font-size:12px;color:#64748b;">Go to M-Pesa → Lipa na M-Pesa → Pay Bill. Enter Paybill, then Account Number, then amount.</p>
        </div>`;
 
   await send(

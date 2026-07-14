@@ -3,13 +3,10 @@ import { requireRole } from "@/lib/auth";
 import type { Announcement, Assignment, Course } from "@/lib/types";
 import Link from "next/link";
 
-// Payment details — set matching env vars in Vercel for production values
-const ZELLE_CASHAPP      = process.env.PAYMENT_ZELLE_CASHAPP      || "253-275-8494";
-const BANK_NAME          = process.env.BANK_NAME                  || "I&M Bank";
-const BANK_ACCOUNT_NAME  = process.env.BANK_ACCOUNT_NAME          || "Revelation Bible College International";
-const BANK_ACCOUNT_NUMBER = process.env.BANK_ACCOUNT_NUMBER       || "";
-const BANK_BRANCH        = process.env.BANK_BRANCH                || "";
-const BANK_SWIFT         = process.env.BANK_SWIFT                 || "";
+// Payment details — set matching env vars in Vercel to override
+const ZELLE_CASHAPP = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
+const MPESA_PAYBILL = process.env.MPESA_PAYBILL         || "542542";
+const MPESA_ACCOUNT = process.env.MPESA_ACCOUNT         || "03009422856350";
 
 export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
@@ -117,13 +114,17 @@ export default async function StudentHomePage() {
                     <p className="text-slate-500 text-xs">Include your name and student ID in the memo/note.</p>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-amber-100 bg-white px-4 py-3 text-sm space-y-1">
-                    <p className="font-semibold text-slate-800">{BANK_NAME} — Bank Transfer</p>
-                    <p className="text-slate-600">Account name: <span className="font-semibold text-slate-800">{BANK_ACCOUNT_NAME}</span></p>
-                    {BANK_ACCOUNT_NUMBER && <p className="text-slate-600">Account number: <span className="font-mono font-semibold text-slate-800">{BANK_ACCOUNT_NUMBER}</span></p>}
-                    {BANK_BRANCH && <p className="text-slate-600">Branch: <span className="font-semibold text-slate-800">{BANK_BRANCH}</span></p>}
-                    {BANK_SWIFT && <p className="text-slate-600">SWIFT/BIC: <span className="font-mono font-semibold text-slate-800">{BANK_SWIFT}</span></p>}
-                    <p className="text-slate-500 text-xs">Include your name and student ID as the payment reference.</p>
+                  <div className="rounded-lg border border-amber-100 bg-white px-4 py-3 text-sm space-y-2">
+                    <p className="font-semibold text-slate-800">M-Pesa — Lipa na M-Pesa → Pay Bill</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-600 w-32">Paybill Number:</span>
+                      <span className="font-mono font-bold text-lg text-slate-900">{MPESA_PAYBILL}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-600 w-32">Account Number:</span>
+                      <span className="font-mono font-bold text-lg text-slate-900">{MPESA_ACCOUNT}</span>
+                    </div>
+                    <p className="text-slate-500 text-xs pt-1">Use your name and student ID as your payment reference note.</p>
                   </div>
                 )}
               </div>
