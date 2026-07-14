@@ -4,6 +4,14 @@ const SCHOOL_NAME = process.env.SCHOOL_NAME || "Revelation Bible College";
 const SCHOOL_COLOR = "#14110c";
 const SCHOOL_ACCENT = "#d4af37";
 
+// ─── Payment constants — update these when details change ─────────────────
+const ZELLE_CASHAPP = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
+const BANK_NAME     = process.env.BANK_NAME            || "I&M Bank";
+const BANK_ACCOUNT_NAME   = process.env.BANK_ACCOUNT_NAME   || "Revelation Bible College International";
+const BANK_ACCOUNT_NUMBER = process.env.BANK_ACCOUNT_NUMBER || "PLEASE_SET_BANK_ACCOUNT_NUMBER";
+const BANK_BRANCH         = process.env.BANK_BRANCH         || "PLEASE_SET_BANK_BRANCH";
+const BANK_SWIFT          = process.env.BANK_SWIFT          || "";
+
 // User- and staff-entered text (names, statements, feedback, etc.) is interpolated
 // directly into these HTML email bodies, so it must be escaped to avoid HTML/markup
 // injection into emails sent to applicants, students, professors, and admissions staff.
@@ -667,6 +675,101 @@ export async function sendModuleFileEmail(opts: {
          <a href="${opts.fileUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Download ${esc(opts.fileName)} →</a>
        </div>
        <p style="margin-top:16px;font-size:13px;color:#94a3b8;text-align:center;">Click the button above to download your module PDF.</p>`
+    )
+  );
+}
+
+// ─── Student welcome email (sent on first account setup) ─────────────────────
+
+const LEVEL_LABELS: Record<string, string> = {
+  diploma: "Diploma Program",
+  bachelors: "Bachelor's Degree Program",
+  masters: "Master's Degree Program",
+  doctorate: "Doctorate Program",
+};
+
+export async function sendStudentWelcomeEmail(opts: {
+  to: string;
+  fullName: string;
+  studentNumber: string | null;
+  programName: string;
+  programLevel: string;
+  courses: string[];
+  feeAmount: number | null;
+  region: string;
+  portalUrl: string;
+}) {
+  const { fullName, studentNumber, programName, programLevel, courses, feeAmount, region, portalUrl } = opts;
+  const isUsa = region === "usa";
+  const levelLabel = LEVEL_LABELS[programLevel] ?? "Program";
+  const feeDisplay = feeAmount
+    ? isUsa
+      ? `$${feeAmount.toLocaleString()}`
+      : `KSh ${feeAmount.toLocaleString()}`
+    : null;
+
+  const courseList = courses.length > 0
+    ? `<ul style="margin:10px 0 0;padding:0;list-style:none;">
+        ${courses.map(c => `<li style="padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">✦ ${esc(c)}</li>`).join("")}
+       </ul>`
+    : `<p style="font-size:14px;color:#94a3b8;">Course list will be assigned shortly.</p>`;
+
+  const paymentSection = isUsa
+    ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
+         <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (USA)</p>
+         <p style="margin:0 0 6px;font-size:14px;color:#1e293b;"><strong>Zelle:</strong> ${esc(ZELLE_CASHAPP)}</p>
+         <p style="margin:0;font-size:14px;color:#1e293b;"><strong>Cash App:</strong> ${esc(ZELLE_CASHAPP)}</p>
+       </div>`
+    : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
+         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (International / Kenya)</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Bank:</strong> ${esc(BANK_NAME)}</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Name:</strong> ${esc(BANK_ACCOUNT_NAME)}</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Number:</strong> ${esc(BANK_ACCOUNT_NUMBER)}</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Branch:</strong> ${esc(BANK_BRANCH)}</p>
+         ${BANK_SWIFT ? `<p style="margin:0;font-size:14px;color:#1e293b;"><strong>SWIFT / BIC:</strong> ${esc(BANK_SWIFT)}</p>` : ""}
+       </div>`;
+
+  await send(
+    opts.to,
+    `Welcome to ${SCHOOL_NAME} — ${programName}`,
+    wrap(
+      `Welcome, ${esc(fullName)}! 🎓`,
+      `<p style="font-size:15px;color:#475569;">We are thrilled to welcome you to <strong>${SCHOOL_NAME}</strong>. Your account is now active and you are officially enrolled. May this season of study deepen your faith and equip you for God's calling on your life.</p>
+
+       ${studentNumber ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin:16px 0;font-size:14px;color:#92400e;"><strong>Your Student ID:</strong> ${esc(studentNumber)} — please include this as your payment reference.</div>` : ""}
+
+       <!-- Program -->
+       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Your Program</p>
+       <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
+         <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(programName)}</p>
+         <p style="margin:4px 0 0;font-size:13px;color:#64748b;">${esc(levelLabel)}</p>
+       </div>
+
+       <!-- Courses -->
+       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">What You Will Study</p>
+       <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
+         ${courseList}
+       </div>
+
+       <!-- Fees -->
+       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Program Fees</p>
+       ${feeDisplay
+         ? `<div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
+              <p style="margin:0;font-size:22px;font-weight:700;color:#1e293b;">${esc(feeDisplay)}</p>
+              <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Total program fee — payment plans are available, please contact the office.</p>
+            </div>`
+         : `<p style="font-size:14px;color:#64748b;">Please contact the administrative office for your fee schedule.</p>`}
+
+       <!-- Payment instructions -->
+       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Payment Instructions</p>
+       ${paymentSection}
+       <p style="font-size:13px;color:#64748b;margin:8px 0 0;">Once payment is made, please send your proof of payment to the admin office so your account can be updated.</p>
+
+       <!-- CTA -->
+       <div style="margin-top:28px;text-align:center;">
+         <a href="${portalUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Go to My Portal →</a>
+       </div>
+       <p style="margin-top:16px;font-size:13px;color:#94a3b8;text-align:center;">God bless you on this journey. We are here if you need us.</p>`
     )
   );
 }

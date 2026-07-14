@@ -3,11 +3,19 @@ import { requireRole } from "@/lib/auth";
 import type { Announcement, Assignment, Course } from "@/lib/types";
 import Link from "next/link";
 
+// Payment details — set matching env vars in Vercel for production values
+const ZELLE_CASHAPP      = process.env.PAYMENT_ZELLE_CASHAPP      || "253-275-8494";
+const BANK_NAME          = process.env.BANK_NAME                  || "I&M Bank";
+const BANK_ACCOUNT_NAME  = process.env.BANK_ACCOUNT_NAME          || "Revelation Bible College International";
+const BANK_ACCOUNT_NUMBER = process.env.BANK_ACCOUNT_NUMBER       || "";
+const BANK_BRANCH        = process.env.BANK_BRANCH                || "";
+const BANK_SWIFT         = process.env.BANK_SWIFT                 || "";
+
 export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  const [{ data: enrollments }, { data: program }, { data: programCourses }, { data: announcements }] = await Promise.all([
+  const [{ data: enrollments }, { data: program }, { data: programCourses }, { data: announcements }, { data: invoices }] = await Promise.all([
     supabase
       .from("enrollments")
       .select("*, courses(*)")
@@ -19,6 +27,7 @@ export default async function StudentHomePage() {
       ? supabase.from("courses").select("*").eq("program_id", profile.program_id)
       : Promise.resolve({ data: [] as Course[] }),
     supabase.from("announcements").select("*").in("target", ["all", "students"]).order("created_at", { ascending: false }).limit(5),
+    supabase.from("invoices").select("invoice_number, title, total_amount, paid_at, currency").eq("student_id", profile.id).order("created_at", { ascending: false }),
   ]);
 
   const courseIds = (enrollments ?? []).map((e) => e.courses.id);
@@ -64,6 +73,68 @@ export default async function StudentHomePage() {
       {profile.student_number && (
         <p className="text-sm text-slate-500">Student ID: {profile.student_number}</p>
       )}
+
+      {/* Fees & Payment */}
+      {(invoices ?? []).length > 0 && (() => {
+        const region: string = (profile as unknown as { region?: string }).region ?? "international";
+        const isUsa = region === "usa";
+        const unpaid = (invoices ?? []).filter((inv: { paid_at: string | null }) => !inv.paid_at);
+        const paid   = (invoices ?? []).filter((inv: { paid_at: string | null }) =>  inv.paid_at);
+        return (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-800">Fees &amp; Payment</h2>
+
+            {/* Invoice list */}
+            <div className="mt-3 space-y-2">
+              {(invoices ?? []).map((inv: { invoice_number: string; title: string; total_amount: number; paid_at: string | null; currency?: string }) => {
+                const symbol = isUsa ? "$" : "KSh ";
+                return (
+                  <div key={inv.invoice_number} className="flex items-center justify-between rounded-lg border border-amber-100 bg-white px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium text-slate-800">{inv.title}</p>
+                      <p className="text-slate-500">{inv.invoice_number}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-slate-800">{symbol}{inv.total_amount?.toLocaleString()}</p>
+                      {inv.paid_at
+                        ? <p className="text-xs text-green-600 font-semibold">Paid</p>
+                        : <p className="text-xs text-amber-600 font-semibold">Outstanding</p>
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Payment instructions — only show when there are unpaid invoices */}
+            {unpaid.length > 0 && (
+              <div className="mt-4 border-t border-amber-200 pt-4">
+                <p className="text-sm font-semibold text-slate-700 mb-2">How to pay:</p>
+                {isUsa ? (
+                  <div className="rounded-lg border border-amber-100 bg-white px-4 py-3 text-sm space-y-1">
+                    <p className="font-semibold text-slate-800">Zelle or Cash App</p>
+                    <p className="text-slate-600">Send to: <span className="font-mono font-semibold text-slate-800">{ZELLE_CASHAPP}</span></p>
+                    <p className="text-slate-500 text-xs">Include your name and student ID in the memo/note.</p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-amber-100 bg-white px-4 py-3 text-sm space-y-1">
+                    <p className="font-semibold text-slate-800">{BANK_NAME} — Bank Transfer</p>
+                    <p className="text-slate-600">Account name: <span className="font-semibold text-slate-800">{BANK_ACCOUNT_NAME}</span></p>
+                    {BANK_ACCOUNT_NUMBER && <p className="text-slate-600">Account number: <span className="font-mono font-semibold text-slate-800">{BANK_ACCOUNT_NUMBER}</span></p>}
+                    {BANK_BRANCH && <p className="text-slate-600">Branch: <span className="font-semibold text-slate-800">{BANK_BRANCH}</span></p>}
+                    {BANK_SWIFT && <p className="text-slate-600">SWIFT/BIC: <span className="font-mono font-semibold text-slate-800">{BANK_SWIFT}</span></p>}
+                    <p className="text-slate-500 text-xs">Include your name and student ID as the payment reference.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {paid.length > 0 && unpaid.length === 0 && (
+              <p className="mt-3 text-sm text-green-700 font-medium">All fees paid — thank you!</p>
+            )}
+          </div>
+        );
+      })()}
 
       {profile.program_id && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
