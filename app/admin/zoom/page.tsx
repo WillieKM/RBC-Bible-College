@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession } from "@/lib/actions/zoom";
+import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
@@ -189,6 +189,10 @@ export default async function AdminZoomPage({
                     <input type="hidden" name="id" value={s.id} />
                     <input type="hidden" name="active" value={String(s.active)} />
                     <DeleteButton label={s.active ? "Pause" : "Resume"} pendingLabel="…" className="text-sm font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50" />
+                  </form>
+                  <form action={sendZoomNow}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <DeleteButton label="Send Now" pendingLabel="Sending…" className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50" />
                   </form>
                   <form action={deleteZoomSession}>
                     <input type="hidden" name="id" value={s.id} />

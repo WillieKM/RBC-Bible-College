@@ -205,6 +205,16 @@ export async function submitPaymentProof(formData: FormData) {
     }
   }
 
+  // Save proof record to DB for admin inbox
+  await supabase.from("payment_proofs").insert({
+    invoice_id: invoiceId,
+    student_id: profile.id,
+    amount,
+    reference,
+    payment_date: paymentDate,
+    screenshot_url: screenshotUrl,
+  });
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   void sendPaymentProofNotification({
     studentName: studentProfile?.full_name ?? profile.full_name,
@@ -220,6 +230,17 @@ export async function submitPaymentProof(formData: FormData) {
   });
 
   redirect("/student/invoices?proof_sent=1");
+}
+
+export async function markProofReviewed(formData: FormData) {
+  await requireFinanceAccess();
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  await supabase
+    .from("payment_proofs")
+    .update({ reviewed: true, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath("/admin/invoices/proofs");
 }
 
 export async function sendInvoice(formData: FormData) {

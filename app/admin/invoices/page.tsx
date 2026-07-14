@@ -92,6 +92,9 @@ export default async function AdminInvoicesPage() {
               className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
             />
           </form>
+          <Link href="/admin/invoices/proofs" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            Payment Proofs
+          </Link>
           <a href="/api/export/invoices" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
             Export CSV
           </a>
