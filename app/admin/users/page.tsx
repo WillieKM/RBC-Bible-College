@@ -54,18 +54,22 @@ export default async function AdminUsersPage() {
                 <input type="hidden" name="email" value={p.email} />
                 <DeleteButton label="Resend invite" pendingLabel="Sending…" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50" />
               </form>
-              {p.banned ? (
-                <form action={restoreAccess}>
-                  <input type="hidden" name="id" value={p.id} />
-                  <DeleteButton label="Restore access" pendingLabel="Restoring…" className="rounded-lg border border-green-300 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 disabled:opacity-50" />
-                </form>
-              ) : (
-                <form action={revokeAccess}>
-                  <input type="hidden" name="id" value={p.id} />
-                  <DeleteButton label="Revoke access" pendingLabel="Revoking…" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50" />
-                </form>
+              {/* Revoke / Restore — admins cannot be revoked */}
+              {p.role !== "admin" && (
+                p.banned ? (
+                  <form action={restoreAccess}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <DeleteButton label="Restore access" pendingLabel="Restoring…" className="rounded-lg border border-green-300 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 disabled:opacity-50" />
+                  </form>
+                ) : (
+                  <form action={revokeAccess}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <DeleteButton label="Revoke access" pendingLabel="Revoking…" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50" />
+                  </form>
+                )
               )}
-              {viewer?.finance_access && p.id !== viewer?.id && (
+              {/* Delete — any admin can delete, but not other admins or themselves */}
+              {viewer && p.id !== viewer.id && p.role !== "admin" && (
                 <TypeToConfirmButton
                   formAction={deleteUser}
                   hiddenFields={{ id: p.id }}
