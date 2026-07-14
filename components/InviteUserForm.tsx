@@ -44,15 +44,24 @@ export function InviteUserForm({ programs }: { programs: { id: string; name: str
         </select>
       </div>
       {role === "student" && (
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Program</label>
-          <select name="program_id" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="">— select program —</option>
-            {programs.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
+        <>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Program</label>
+            <select name="program_id" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="">— select program —</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Campus / Region</label>
+            <select name="region" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="international">Kenya / International</option>
+              <option value="usa">USA Campus</option>
+            </select>
+          </div>
+        </>
       )}
       <SubmitButton />
     </form>

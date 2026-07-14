@@ -247,9 +247,10 @@ export async function inviteUser(formData: FormData) {
     return;
   }
 
-  // Step 2: create the profile row (with optional program for students)
+  // Step 2: create the profile row (with optional program + region for students)
   const programId = role === "student" ? (String(formData.get("program_id") || "").trim() || null) : null;
-  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId });
+  const region = role === "student" ? (String(formData.get("region") || "international")) : null;
+  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId, region });
 
   // Enrol student in program modules if a program was selected
   if (role === "student" && programId) {
