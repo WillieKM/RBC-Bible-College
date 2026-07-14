@@ -9,6 +9,7 @@ type Status = "detecting" | "processing" | "ready" | "authenticated" | "error";
 
 export function AuthCodeHandler() {
   const [status, setStatus] = useState<Status>("detecting");
+  const [errorDetail, setErrorDetail] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -38,26 +39,24 @@ export function AuthCodeHandler() {
     setStatus("processing");
 
     (async () => {
-      let authError: unknown = null;
+      let authError: { message?: string } | null = null;
 
       if (accessToken && refreshToken) {
-        // Implicit flow: tokens are in the URL hash fragment
         ({ error: authError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         }));
       } else if (token_hash && type) {
-        // OTP hash flow: verifyOtp doesn't need a PKCE verifier
         ({ error: authError } = await supabase.auth.verifyOtp({
           type: type as "recovery" | "invite" | "signup" | "email",
           token_hash,
         }));
       } else if (code) {
-        // PKCE code flow (usually OAuth; may fail for server-generated links)
         ({ error: authError } = await supabase.auth.exchangeCodeForSession(code));
       }
 
       if (authError) {
+        setErrorDetail(`[${token_hash ? "token_hash" : accessToken ? "hash" : "code"}] ${authError.message ?? "Unknown error"}`);
         setStatus("error");
         return;
       }
@@ -110,6 +109,7 @@ export function AuthCodeHandler() {
     <div className="mt-6 space-y-3">
       <div className="rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
         This link has expired or already been used.
+        {errorDetail && <p className="mt-1 text-xs opacity-70">{errorDetail}</p>}
       </div>
       <a
         href="/login/reset"
