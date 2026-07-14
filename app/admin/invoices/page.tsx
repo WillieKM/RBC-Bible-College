@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { CreateInvoiceForm, type InvoiceStudentOption } from "@/components/CreateInvoiceForm";
+import { sendFeeReminders } from "@/lib/actions/admin";
+import { DeleteButton } from "@/components/DeleteButton";
 import { feeForLevel } from "@/lib/fees";
 import type { Invoice, Profile, Program } from "@/lib/types";
 import Link from "next/link";
@@ -80,11 +82,20 @@ export default async function AdminInvoicesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
-        <a href="/api/export/invoices" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-          Export CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <form action={sendFeeReminders}>
+            <DeleteButton
+              label="Send Fee Reminders"
+              pendingLabel="Sending…"
+              className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+            />
+          </form>
+          <a href="/api/export/invoices" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            Export CSV
+          </a>
+        </div>
       </div>
 
       {/* Financial summary */}

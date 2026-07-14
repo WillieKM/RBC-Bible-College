@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { createInviteLink } from "@/lib/actions/invite";
 import { revalidatePath } from "next/cache";
@@ -430,4 +430,50 @@ export async function sendBulkEmail(formData: FormData) {
 
   await sendBulkAnnouncementEmail({ to: recipients.map((r) => r.email), title, body });
   revalidatePath("/admin/announcements");
+}
+
+export async function sendFeeReminders(formData: FormData): Promise<void> {
+  await requireFinanceAccess();
+  const admin = createAdminClient();
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  const { data: invoices } = await admin
+    .from("invoices")
+    .select("id, title, total_amount, student_id, profiles(id, full_name, email, region), payments(amount)");
+
+  if (!invoices) { revalidatePath("/admin/invoices"); return; }
+
+  const byStudent = new Map<string, {
+    profile: { id: string; full_name: string; email: string; region: string | null };
+    invoices: { title: string; balance: number; currency: string }[];
+  }>();
+
+  for (const inv of invoices) {
+    const profile = inv.profiles as unknown as { id: string; full_name: string; email: string; region: string | null } | null;
+    if (!profile) continue;
+    const paid = ((inv.payments ?? []) as { amount: number }[]).reduce((s, p) => s + p.amount, 0);
+    const balance = inv.total_amount - paid;
+    if (balance <= 0) continue;
+    const currency = profile.region === "usa" ? "$" : "KSh";
+    const existing = byStudent.get(profile.id);
+    if (existing) existing.invoices.push({ title: inv.title, balance, currency });
+    else byStudent.set(profile.id, { profile, invoices: [{ title: inv.title, balance, currency }] });
+  }
+
+  for (const { profile, invoices: unpaid } of byStudent.values()) {
+    const currency = profile.region === "usa" ? "$" : "KSh";
+    const totalBalance = unpaid.reduce((s, i) => s + i.balance, 0);
+    try {
+      await sendInvoiceReminderEmail({
+        to: profile.email,
+        studentName: profile.full_name,
+        invoices: unpaid,
+        totalBalance,
+        currency,
+        portalUrl: `${baseUrl}/student/invoices`,
+      });
+    } catch { /* log and continue */ }
+  }
+
+  revalidatePath("/admin/invoices");
 }
