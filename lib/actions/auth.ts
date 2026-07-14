@@ -131,7 +131,7 @@ export async function sendPasswordReset(formData: FormData) {
 
   if (link?.properties) {
     const resetUrl = link.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=recovery`
       : link.properties.action_link;
     await sendPasswordResetEmail({ to: email, fullName: profile.full_name, resetUrl });
   }

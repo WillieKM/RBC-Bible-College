@@ -338,7 +338,7 @@ export async function reviewApplication(formData: FormData) {
       .eq("id", id);
 
     const inviteUrl = invited.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=invite`
+      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=invite`
       : invited.properties.action_link;
     await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: inviteUrl, studentNumber });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
@@ -381,7 +381,7 @@ export async function resendStudentInvite(formData: FormData) {
   }
 
   const resendUrl = link.properties.hashed_token
-    ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+    ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=recovery`
     : link.properties.action_link;
 
   await sendApplicationDecisionEmail({

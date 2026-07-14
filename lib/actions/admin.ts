@@ -261,7 +261,7 @@ export async function inviteUser(formData: FormData) {
 
   if (link?.properties) {
     const loginUrl = link.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=recovery`
       : link.properties.action_link;
     await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
   }
@@ -320,7 +320,7 @@ export async function resendInvite(formData: FormData) {
 
   if (!error && invited?.properties) {
     const loginUrl = invited.properties.hashed_token
-      ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=recovery`
+      ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=recovery`
       : invited.properties.action_link;
     await sendAccountInviteEmail({
       to: email,

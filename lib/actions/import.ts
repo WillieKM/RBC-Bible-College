@@ -134,7 +134,7 @@ export async function bulkImportStudents(formData: FormData) {
       }
 
       const inviteUrl = invited.properties.hashed_token
-        ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=invite`
+        ? `${baseUrl}/settings/new-password?token_hash=${encodeURIComponent(invited.properties.hashed_token)}&type=invite`
         : invited.properties.action_link;
       await sendAccountInviteEmail({
         to: row.email,
