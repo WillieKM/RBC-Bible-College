@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
+import { TypeToConfirmButton } from "@/components/TypeToConfirmButton";
 import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
@@ -65,15 +66,11 @@ export default async function AdminUsersPage() {
                 </form>
               )}
               {viewer?.finance_access && p.id !== viewer?.id && (
-                <form action={deleteUser}>
-                  <input type="hidden" name="id" value={p.id} />
-                  <DeleteButton
-                    label="Delete"
-                    pendingLabel="Deleting…"
-                    confirmMessage={`Permanently delete ${p.full_name}? This removes their account, enrolments, submissions, and all records. This cannot be undone.`}
-                    className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                  />
-                </form>
+                <TypeToConfirmButton
+                  formAction={deleteUser}
+                  hiddenFields={{ id: p.id }}
+                  userName={p.full_name}
+                />
               )}
               <form action={updateUserRole} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={p.id} />
