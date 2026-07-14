@@ -337,7 +337,10 @@ export async function reviewApplication(formData: FormData) {
       .update({ status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", id);
 
-    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: invited.properties.action_link, studentNumber });
+    const inviteUrl = invited.properties.hashed_token
+      ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=invite`
+      : invited.properties.action_link;
+    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: inviteUrl, studentNumber });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
     await supabase
@@ -373,15 +376,19 @@ export async function resendStudentInvite(formData: FormData) {
     options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
-  if (error || !link?.properties?.action_link) {
+  if (error || !link?.properties) {
     redirect(`/admin/applications?error=${encodeURIComponent(error?.message ?? "Could not generate new login link")}`);
   }
+
+  const resendUrl = link.properties.hashed_token
+    ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+    : link.properties.action_link;
 
   await sendApplicationDecisionEmail({
     to: email,
     fullName,
     approved: true,
-    loginUrl: link.properties.action_link,
+    loginUrl: resendUrl,
     studentNumber,
   });
 

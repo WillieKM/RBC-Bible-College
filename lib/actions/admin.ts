@@ -259,8 +259,11 @@ export async function inviteUser(formData: FormData) {
     options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
-  if (link?.properties?.action_link) {
-    await sendAccountInviteEmail({ to: email, fullName, role, loginUrl: link.properties.action_link });
+  if (link?.properties) {
+    const loginUrl = link.properties.hashed_token
+      ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+      : link.properties.action_link;
+    await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
   }
 
   revalidatePath("/admin/users");
@@ -315,12 +318,15 @@ export async function resendInvite(formData: FormData) {
     options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
-  if (!error && invited?.properties.action_link) {
+  if (!error && invited?.properties) {
+    const loginUrl = invited.properties.hashed_token
+      ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=recovery`
+      : invited.properties.action_link;
     await sendAccountInviteEmail({
       to: email,
       fullName: profile?.full_name ?? email,
       role: profile?.role ?? "user",
-      loginUrl: invited.properties.action_link,
+      loginUrl,
     });
   }
 

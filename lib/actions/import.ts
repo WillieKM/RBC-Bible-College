@@ -133,11 +133,14 @@ export async function bulkImportStudents(formData: FormData) {
         await enrollStudentInProgramModules(admin, invited.user.id, programId);
       }
 
+      const inviteUrl = invited.properties.hashed_token
+        ? `${baseUrl}/settings/new-password?token_hash=${invited.properties.hashed_token}&type=invite`
+        : invited.properties.action_link;
       await sendAccountInviteEmail({
         to: row.email,
         fullName: row.full_name,
         role: "student",
-        loginUrl: invited.properties.action_link,
+        loginUrl: inviteUrl,
       });
 
       // Auto-create invoice if program has a fee for this region — use the

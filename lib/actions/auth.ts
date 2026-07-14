@@ -129,12 +129,11 @@ export async function sendPasswordReset(formData: FormData) {
     options: { redirectTo: `${baseUrl}/settings/new-password` },
   });
 
-  if (link?.properties?.action_link) {
-    await sendPasswordResetEmail({
-      to: email,
-      fullName: profile.full_name,
-      resetUrl: link.properties.action_link,
-    });
+  if (link?.properties) {
+    const resetUrl = link.properties.hashed_token
+      ? `${baseUrl}/settings/new-password?token_hash=${link.properties.hashed_token}&type=recovery`
+      : link.properties.action_link;
+    await sendPasswordResetEmail({ to: email, fullName: profile.full_name, resetUrl });
   }
 
   redirect("/login/reset?sent=1");
