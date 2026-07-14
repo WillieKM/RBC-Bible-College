@@ -68,8 +68,8 @@ export default async function AdminUsersPage() {
                   </form>
                 )
               )}
-              {/* Delete — any admin can delete, but not other admins or themselves */}
-              {viewer && p.id !== viewer.id && p.role !== "admin" && (
+              {/* Delete — only finance-access admin can delete, and not other admins or themselves */}
+              {viewer?.finance_access && p.id !== viewer.id && p.role !== "admin" && (
                 <TypeToConfirmButton
                   formAction={deleteUser}
                   hiddenFields={{ id: p.id }}
