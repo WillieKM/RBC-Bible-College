@@ -124,27 +124,72 @@ export default async function AdminApplicationsPage({
         {reviewed.map((app: Application) => {
           const profile = profileByEmail.get(app.email);
           return (
-            <div key={app.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">
-              <span className="font-medium text-slate-800">{app.full_name}</span>
-              <span className="text-slate-500">{app.email}</span>
-              <div className="flex items-center gap-3">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                  {app.status}
-                </span>
-                {app.status === "approved" && (
-                  <form action={resendStudentInvite}>
-                    <input type="hidden" name="email" value={app.email} />
-                    <input type="hidden" name="full_name" value={app.full_name} />
-                    {profile?.student_number && <input type="hidden" name="student_number" value={profile.student_number} />}
-                    <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
+            <details key={app.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                <div className="flex items-center gap-3">
+                  {app.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={app.photo_url} alt={app.full_name} className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200" />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-400">
+                      {app.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-medium text-slate-800">{app.full_name}</span>
+                  <span className="hidden text-slate-400 sm:inline">·</span>
+                  <span className="hidden text-slate-500 sm:inline">{app.email}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {app.status}
+                  </span>
+                  {app.status === "approved" && (
+                    <form action={resendStudentInvite} onClick={(e) => e.stopPropagation()}>
+                      <input type="hidden" name="email" value={app.email} />
+                      <input type="hidden" name="full_name" value={app.full_name} />
+                      {profile?.student_number && <input type="hidden" name="student_number" value={profile.student_number} />}
+                      <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
+                    </form>
+                  )}
+                  <form action={deleteApplication} onClick={(e) => e.stopPropagation()}>
+                    <input type="hidden" name="id" value={app.id} />
+                    <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
                   </form>
-                )}
-                <form action={deleteApplication}>
-                  <input type="hidden" name="id" value={app.id} />
-                  <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
-                </form>
+                </div>
+              </summary>
+
+              {/* Expanded details */}
+              <div className="border-t border-slate-100 px-4 py-4">
+                <div className="flex gap-4">
+                  {app.photo_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={app.photo_url} alt={app.full_name} className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200" />
+                  )}
+                  <div className="space-y-1 text-sm">
+                    <p className="text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
+                    <p className="text-slate-700">Program: {app.program}</p>
+                    <p className="text-slate-500">
+                      {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level]})`}
+                      {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
+                    </p>
+                    {app.statement && (
+                      <p className="mt-2 whitespace-pre-wrap text-slate-600">{app.statement}</p>
+                    )}
+                    {app.details && Object.keys(app.details).length > 0 && (
+                      <dl className="mt-2 space-y-1 text-slate-600">
+                        {Object.entries(app.details).map(([key, value]) => (
+                          <div key={key} className="flex flex-wrap gap-2">
+                            <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
+                            <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    <p className="pt-1 text-xs text-slate-400">Applied {new Date(app.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
           );
         })}
       </div>
