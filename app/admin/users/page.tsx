@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
-import { inviteUser, updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
+import { updateUserRole, updateFinanceAccess, updateStudentProgram, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { TypeToConfirmButton } from "@/components/TypeToConfirmButton";
+import { InviteUserForm } from "@/components/InviteUserForm";
 import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
@@ -17,27 +18,7 @@ export default async function AdminUsersPage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Users</h1>
 
-      <form action={inviteUser} className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Full name</label>
-          <input name="full_name" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Email</label>
-          <input name="email" type="email" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Role</label>
-          <select name="role" defaultValue="professor" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-            <option value="admin">Admin</option>
-            <option value="professor">Professor</option>
-            <option value="student">Student</option>
-          </select>
-        </div>
-        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
-          Invite User
-        </button>
-      </form>
+      <InviteUserForm programs={(programs ?? []).map((p: Program) => ({ id: p.id, name: p.name }))} />
 
       <div className="mt-6 space-y-2">
         {(profiles ?? []).map((p: Profile) => (

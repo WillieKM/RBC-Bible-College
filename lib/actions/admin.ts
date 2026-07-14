@@ -247,8 +247,15 @@ export async function inviteUser(formData: FormData) {
     return;
   }
 
-  // Step 2: create the profile row
-  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role });
+  // Step 2: create the profile row (with optional program for students)
+  const programId = role === "student" ? (String(formData.get("program_id") || "").trim() || null) : null;
+  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId });
+
+  // Enrol student in program modules if a program was selected
+  if (role === "student" && programId) {
+    const supabase = await createClient();
+    await enrollStudentInProgramModules(supabase, created.user.id, programId);
+  }
 
   // Step 3: create a permanent invite link (no Supabase token pre-generated)
   const loginUrl = await createInviteLink(email, fullName, role);
