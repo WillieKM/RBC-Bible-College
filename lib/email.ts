@@ -733,6 +733,94 @@ const LEVEL_LABELS: Record<string, string> = {
   doctorate: "Doctorate Program",
 };
 
+// Official RBC curriculum — used when no module files are uploaded yet
+const CBS_COURSES = [
+  "CBS-001 Who is God and the names of God",
+  "CBS-002 Christology",
+  "CBS-003 Bible Expository",
+  "CBS-004 The Blood Covenant",
+  "CBS-005 Gifts of the Holy Spirit",
+  "CBS-006 Power of Praise and Worship",
+  "CBS-007 Understanding and releasing your Potential",
+  "CBS-008 School of Prayer",
+  "CBS-009 Evangelism",
+  "CBS-010 Foundation of Faith and Prayer",
+];
+
+const DCM_COURSES = [
+  "DCM-009 Who is God?",
+  "DCM-010 Christology",
+  "DCM-011 Pneumatology",
+  "DCM-012 Old and New Testament Survey",
+  "DCM-013 Major and Minor Prophets",
+  "DCM-014 Demonology",
+  "DCM-015 Church History",
+  "DCM-016 Dispensations",
+  "DCM-017 Character and Personality",
+  "DCM-018 Ministry of Prayer",
+  "DCM-019 Ministry Gifts",
+  "DCM-020 Ministry of Healing",
+  "DCM-021 Church Management and Administration",
+  "DCM-022 Pastoral Leadership",
+  "DCM-023 Harmatiology",
+  "DCM-024 Symbolisms",
+  "DCM-025 Evangelism",
+  "DCM-026 Praise and Worship",
+];
+
+const BTH_COURSES = [
+  "BTH-025 World Religions",
+  "BTH-026 Eschatology",
+  "BTH-027 Doctrine of Angels",
+  "BTH-028 Spirits and the Underworld — Altars",
+  "BTH-029 Apocryphal Books",
+  "BTH-030 Humanism Vs. The Godhead",
+  "BTH-031 Customs of the Ancient and Geological Ages",
+  "BTH-032 Ministerial Ethics and Church Ordinances",
+  "BTH-033 Prophecy",
+  "BTH-034 Leadership Skills",
+  "BTH-035 Hermeneutics",
+  "BTH-036 Apologetics",
+  "BTH-037 The Art of Counselling",
+  "BTH-038 Theology of Missions",
+];
+
+const MTH_COURSES = [
+  "MTH-039 Anointing and the Royal Priesthood",
+  "MTH-040 Apologetics",
+  "MTH-041 Skillful Leadership",
+  "MTH-042 Hermeneutics",
+  "MTH-043 Church in the 21st Century",
+  "MTH-044 Denominationalism Vs. Saints",
+];
+
+const DDD_COURSES = [
+  "DDD-041 Traditions",
+  "DDD-042 Revolution in World Missions",
+  "DDD-043 Courageous Leadership",
+];
+
+const DISSERTATION_NOTE: Record<string, string> = {
+  bachelors: "Dissertation: Any of these modules or a desired topic — 20,000 words",
+  masters: "Dissertation: Any of these modules or a desired topic — 30,000 words",
+  doctorate: "Dissertation: Any of these modules — 80,000 words",
+};
+
+function getDefaultCurriculum(programName: string, programLevel: string): string[] {
+  const lower = programName.toLowerCase();
+  if (lower.includes("certificate") || lower.includes("biblical studies")) return CBS_COURSES;
+  if (lower.includes("bachelor")) return BTH_COURSES;
+  if (lower.includes("master")) return MTH_COURSES;
+  if (lower.includes("doctor") || lower.includes("divinity") || lower.includes("theology (th") || lower.includes("ministry (d")) return DDD_COURSES;
+  // Fall back by level
+  if (programLevel === "bachelors") return BTH_COURSES;
+  if (programLevel === "masters") return MTH_COURSES;
+  if (programLevel === "doctorate") return DDD_COURSES;
+  // diploma level — distinguish Certificate vs Diploma
+  if (lower.includes("christian ministry") || lower.includes("dcm")) return DCM_COURSES;
+  return DCM_COURSES; // default diploma curriculum
+}
+
 export async function sendStudentWelcomeEmail(opts: {
   to: string;
   fullName: string;
@@ -753,11 +841,12 @@ export async function sendStudentWelcomeEmail(opts: {
       : `KSh ${feeAmount.toLocaleString()}`
     : null;
 
-  const courseList = courses.length > 0
-    ? `<ul style="margin:10px 0 0;padding:0;list-style:none;">
-        ${courses.map(c => `<li style="padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1e293b;">✦ ${esc(c)}</li>`).join("")}
-       </ul>`
-    : `<p style="font-size:14px;color:#94a3b8;">Course list will be assigned shortly.</p>`;
+  const displayCourses = courses.length > 0 ? courses : getDefaultCurriculum(programName, programLevel);
+  const dissertation = DISSERTATION_NOTE[programLevel] ?? null;
+  const courseList = `<ul style="margin:10px 0 0;padding:0;list-style:none;">
+      ${displayCourses.map(c => `<li style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b;">✦ ${esc(c)}</li>`).join("")}
+    </ul>
+    ${dissertation ? `<p style="margin:12px 0 0;font-size:13px;color:#64748b;font-style:italic;">📝 ${esc(dissertation)}</p>` : ""}`;
 
   const paymentSection = isUsa
     ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
