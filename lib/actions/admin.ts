@@ -254,39 +254,43 @@ export async function inviteUser(formData: FormData) {
   const region = role === "student" ? (String(formData.get("region") || "international")) : null;
   await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId, region });
 
-  // Enrol student in program modules and auto-create fee invoice
-  if (role === "student" && programId) {
-    const supabase = await createClient();
-    await enrollStudentInProgramModules(supabase, created.user.id, programId);
-
-    const { data: prog } = await admin
-      .from("programs")
-      .select("name, program_level, fee_international, fee_usa")
-      .eq("id", programId)
-      .maybeSingle();
-    if (prog) {
-      const regionKey = (region === "usa" ? "usa" : "international") as "usa" | "international";
-      const level = (prog.program_level ?? "diploma") as ProgramLevel;
-      const feeAmount = (regionKey === "usa" ? prog.fee_usa : prog.fee_international) ?? feeForLevel(level, regionKey);
-      if (feeAmount > 0) {
-        const year = new Date().getFullYear();
-        const { data: seqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
-        const invoiceNumber = `INV-${year}-${String(seqData ?? 1).padStart(4, "0")}`;
-        const currency = regionKey === "usa" ? "$" : "KSh";
-        await admin.from("invoices").insert({
-          student_id: created.user.id,
-          title: `${prog.name} — Program Fees`,
-          description: `Tuition fees for ${prog.name} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${feeAmount.toLocaleString()})`,
-          total_amount: feeAmount,
-          invoice_number: invoiceNumber,
-        });
-      }
-    }
-  }
-
-  // Step 3: create a permanent invite link (no Supabase token pre-generated)
+  // Step 3: send invite email immediately — nothing below must block this
   const loginUrl = await createInviteLink(email, fullName, role);
   await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
+
+  // Step 4 (optional): enrol in modules and auto-create fee invoice — fire-and-forget
+  if (role === "student" && programId) {
+    void (async () => {
+      try {
+        const supabase = await createClient();
+        await enrollStudentInProgramModules(supabase, created.user.id, programId);
+
+        const { data: prog } = await admin
+          .from("programs")
+          .select("name, program_level, fee_international, fee_usa")
+          .eq("id", programId)
+          .maybeSingle();
+        if (!prog) return;
+
+        const regionKey = (region === "usa" ? "usa" : "international") as "usa" | "international";
+        const level = (prog.program_level ?? "diploma") as ProgramLevel;
+        const feeAmount = (regionKey === "usa" ? prog.fee_usa : prog.fee_international) ?? feeForLevel(level, regionKey);
+        if (feeAmount > 0) {
+          const year = new Date().getFullYear();
+          const { data: seqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
+          const invoiceNumber = `INV-${year}-${String(seqData ?? 1).padStart(4, "0")}`;
+          const currency = regionKey === "usa" ? "$" : "KSh";
+          await admin.from("invoices").insert({
+            student_id: created.user.id,
+            title: `${prog.name} — Program Fees`,
+            notes: `Tuition fees for ${prog.name} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${feeAmount.toLocaleString()})`,
+            total_amount: feeAmount,
+            invoice_number: invoiceNumber,
+          });
+        }
+      } catch { /* enrolment/invoice errors must never block the invite */ }
+    })();
+  }
 
   revalidatePath("/admin/users");
 }
