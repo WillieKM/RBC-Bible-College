@@ -3,6 +3,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBaseUrl } from "@/lib/site-url";
 import { sendStudentWelcomeEmail } from "@/lib/email";
+import { feeForLevel } from "@/lib/fees";
+import type { ProgramLevel } from "@/lib/types";
 
 /** Creates a permanent invite record and returns the URL to embed in the email. */
 export async function createInviteLink(email: string, fullName: string, role: string): Promise<string> {
@@ -88,10 +90,11 @@ async function sendWelcomeIfStudent(
     if (!program) return;
 
     const region: string = profile.region ?? "international";
-    const feeAmount: number | null =
-      region === "usa"
-        ? (program.fee_usa ?? null)
-        : (program.fee_international ?? null);
+    const regionKey = (region === "usa" ? "usa" : "international") as "usa" | "international";
+    const level = (program.program_level ?? "diploma") as ProgramLevel;
+    const feeAmount: number =
+      (regionKey === "usa" ? program.fee_usa : program.fee_international)
+      ?? feeForLevel(level, regionKey);
 
     const courses: string[] = (modules ?? []).map((m: { title: string }) => m.title);
 
