@@ -5,9 +5,9 @@ const SCHOOL_COLOR = "#14110c";
 const SCHOOL_ACCENT = "#d4af37";
 
 // ─── Payment constants — update these when details change ─────────────────
-const ZELLE_CASHAPP    = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
-const MPESA_PAYBILL    = process.env.MPESA_PAYBILL         || "542542";
-const MPESA_ACCOUNT    = process.env.MPESA_ACCOUNT         || "03009422856350";
+const ZELLE_CASHAPP    = process.env.PAYMENT_ZELLE_CASHAPP || "+1 (206) 326-8094";
+const MPESA_PAYBILL    = process.env.MPESA_PAYBILL         || "247247";
+const MPESA_ACCOUNT    = process.env.MPESA_ACCOUNT         || "0729249697";
 
 // User- and staff-entered text (names, statements, feedback, etc.) is interpolated
 // directly into these HTML email bodies, so it must be escaped to avoid HTML/markup
@@ -848,16 +848,28 @@ export async function sendStudentWelcomeEmail(opts: {
     </ul>
     ${dissertation ? `<p style="margin:12px 0 0;font-size:13px;color:#64748b;font-style:italic;">📝 ${esc(dissertation)}</p>` : ""}`;
 
+  // Enrollment fee per program level
+  const ENROLL_FEES: Record<string, { usa: number; international: number }> = {
+    diploma:   { usa: 100,  international: 1000  },
+    bachelors: { usa: 250,  international: 10000 },
+    masters:   { usa: 300,  international: 20000 },
+    doctorate: { usa: 400,  international: 30000 },
+  };
+  const currency = isUsa ? "$" : "KSh";
+  const enrollFeeAmt = (ENROLL_FEES[programLevel] ?? ENROLL_FEES.diploma)[isUsa ? "usa" : "international"];
+  const enrollDisplay = `${currency}${enrollFeeAmt.toLocaleString()}`;
+  const half    = feeAmount ? Math.round(feeAmount / 2)  : 0;
+  const quarter = feeAmount ? Math.round(feeAmount / 4)  : 0;
+
   const paymentSection = isUsa
     ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
-         <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (USA)</p>
-         <p style="margin:0 0 6px;font-size:14px;color:#1e293b;"><strong>Zelle:</strong> ${esc(ZELLE_CASHAPP)}</p>
-         <p style="margin:0;font-size:14px;color:#1e293b;"><strong>Cash App:</strong> ${esc(ZELLE_CASHAPP)}</p>
+         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (USA)</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>CashApp / Zelle:</strong> <span style="font-family:monospace;font-size:15px;">${esc(ZELLE_CASHAPP)}</span></p>
        </div>`
     : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:8px 0;">
-         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (Kenya / International — M-Pesa)</p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Paybill Number:</strong> <span style="font-family:monospace;font-size:16px;">${esc(MPESA_PAYBILL)}</span></p>
-         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Account Number:</strong> <span style="font-family:monospace;font-size:16px;">${esc(MPESA_ACCOUNT)}</span></p>
+         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (Kenya / International — Lipa na M-Pesa)</p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>Paybill Number:</strong> <span style="font-family:monospace;font-size:16px;font-weight:700;">${esc(MPESA_PAYBILL)}</span></p>
+         <p style="margin:0 0 4px;font-size:14px;color:#1e293b;"><strong>A/C Number:</strong> <span style="font-family:monospace;font-size:16px;font-weight:700;">${esc(MPESA_ACCOUNT)}</span></p>
          <p style="margin:8px 0 0;font-size:12px;color:#64748b;">Go to M-Pesa → Lipa na M-Pesa → Pay Bill. Enter Paybill, then Account Number, then amount.</p>
        </div>`;
 
@@ -883,19 +895,48 @@ export async function sendStudentWelcomeEmail(opts: {
          ${courseList}
        </div>
 
-       <!-- Fees -->
-       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Program Fees</p>
-       ${feeDisplay
-         ? `<div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
-              <p style="margin:0;font-size:22px;font-weight:700;color:#1e293b;">${esc(feeDisplay)}</p>
-              <p style="margin:4px 0 0;font-size:13px;color:#64748b;">Total program fee — payment plans are available, please contact the office.</p>
-            </div>`
-         : `<p style="font-size:14px;color:#64748b;">Please contact the administrative office for your fee schedule.</p>`}
+       <!-- Fees & Payment Plans -->
+       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Tuition Fees</p>
+       <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
+         <table style="width:100%;border-collapse:collapse;">
+           <tr>
+             <td style="padding:5px 0;border-bottom:1px solid #e2e8f0;font-size:14px;color:#475569;">Total cost (including materials)</td>
+             <td style="padding:5px 0;border-bottom:1px solid #e2e8f0;font-size:15px;font-weight:700;color:#1e293b;text-align:right;">${feeDisplay ? esc(feeDisplay) : `${currency}—`}</td>
+           </tr>
+           <tr>
+             <td style="padding:5px 0;font-size:13px;color:#b45309;">Enrollment fee <span style="font-size:11px;font-weight:400;">(upon registration)</span></td>
+             <td style="padding:5px 0;font-size:14px;font-weight:700;color:#b45309;text-align:right;">${esc(enrollDisplay)}</td>
+           </tr>
+         </table>
+
+         <p style="margin:14px 0 6px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;">Payment Plans Available</p>
+         <table style="width:100%;border-collapse:collapse;">
+           <tr style="background:#fff7ed;">
+             <td style="padding:7px 8px;border-radius:6px 0 0 6px;font-size:13px;font-weight:700;color:#1e293b;">Plan 1 — Pay in full</td>
+             <td style="padding:7px 8px;border-radius:0 6px 6px 0;font-size:14px;font-weight:700;color:#1e293b;text-align:right;">${feeDisplay ? esc(feeDisplay) : "—"}</td>
+           </tr>
+           <tr>
+             <td style="padding:7px 8px;font-size:13px;color:#475569;">Plan 2 — 2 instalments of</td>
+             <td style="padding:7px 8px;font-size:13px;color:#475569;text-align:right;">${currency}${half.toLocaleString()} each</td>
+           </tr>
+           <tr style="background:#f8fafc;">
+             <td style="padding:7px 8px;border-radius:6px 0 0 6px;font-size:13px;color:#475569;">Plan 3 — 4 instalments of</td>
+             <td style="padding:7px 8px;border-radius:0 6px 6px 0;font-size:13px;color:#475569;text-align:right;">${currency}${quarter.toLocaleString()} each</td>
+           </tr>
+         </table>
+       </div>
+
+       <!-- Enrollment fee notice -->
+       <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:12px 0;">
+         <p style="margin:0;font-size:13px;color:#92400e;">
+           <strong>Enrollment Fee Notice:</strong> We kindly request that the enrollment fee of <strong>${esc(enrollDisplay)}</strong> be submitted upon registration to confirm your place in the program. This is a one-time administrative fee and is separate from your tuition. Thank you for your understanding.
+         </p>
+       </div>
 
        <!-- Payment instructions -->
-       <p style="margin:20px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Payment Instructions</p>
+       <p style="margin:16px 0 4px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Payments Should Be Made Through</p>
        ${paymentSection}
-       <p style="font-size:13px;color:#64748b;margin:8px 0 0;">Once payment is made, please send your proof of payment to the admin office so your account can be updated.</p>
+       <p style="font-size:13px;color:#64748b;margin:8px 0 0;">Once payment is made, please submit your proof of payment through your student portal so your account can be updated promptly.</p>
 
        <!-- CTA -->
        <div style="margin-top:28px;text-align:center;">
