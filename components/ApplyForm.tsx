@@ -18,12 +18,16 @@ function FeesBlock({ region }: { region: Region }) {
       <p className="text-center text-slate-300">
         Tuition fee for this program: <span className="font-semibold text-gold">{formatFee(fee, region)}</span>
       </p>
-      {region === "international" && (
+      {region === "international" ? (
         <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-          <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-          <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-          <p>Paybill: 542542</p>
-          <p>Account Number: 03009422856350</p>
+          <p className="font-semibold text-gold">Lipa na M-Pesa</p>
+          <p className="mt-1">Paybill: <strong>247247</strong></p>
+          <p>A/C Number: <strong>0729249697</strong></p>
+        </div>
+      ) : (
+        <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+          <p className="font-semibold text-gold">CashApp / Zelle</p>
+          <p className="mt-1"><strong>+1 (206) 326-8094</strong></p>
         </div>
       )}
     </div>

@@ -36,12 +36,16 @@ function FeesBlock({ level, region }: { level: ProgramLevel | null; region: Regi
       <p className="text-center text-slate-300">
         Tuition fee for this program: <span className="font-semibold text-gold">{formatFee(fee, region)}</span>
       </p>
-      {region === "international" && (
+      {region === "international" ? (
         <div className="mt-4 border-t border-gold/20 pt-3 text-center">
-          <p className="font-semibold text-gold">Payments can be made via M-Pesa to</p>
-          <p className="mt-1">Account Name: Revealed Bible Training College Ltd</p>
-          <p>Paybill: 542542</p>
-          <p>Account Number: 03009422856350</p>
+          <p className="font-semibold text-gold">Lipa na M-Pesa</p>
+          <p className="mt-1">Paybill: <strong>247247</strong></p>
+          <p>A/C Number: <strong>0729249697</strong></p>
+        </div>
+      ) : (
+        <div className="mt-4 border-t border-gold/20 pt-3 text-center">
+          <p className="font-semibold text-gold">CashApp / Zelle</p>
+          <p className="mt-1"><strong>+1 (206) 326-8094</strong></p>
         </div>
       )}
     </div>
@@ -110,21 +114,9 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
           className={inputClass}
         >
           <option value="" disabled>Select a program</option>
-          <optgroup label="Bachelor's Programs">
-            <option value="Bachelor of Theology (B.Th.)">Bachelor of Theology (B.Th.)</option>
-            <option value="Bachelor of Divinity (B.Div.)">Bachelor of Divinity (B.Div.)</option>
-            <option value="Bachelor of Religious Education (B.R.E.)">Bachelor of Religious Education (B.R.E.)</option>
-          </optgroup>
-          <optgroup label="Master's Programs">
-            <option value="Master of Theology (M.Th.)">Master of Theology (M.Th.)</option>
-            <option value="Master of Divinity (M.Div.)">Master of Divinity (M.Div.)</option>
-            <option value="Master of Arts in Christian Ministry">Master of Arts in Christian Ministry</option>
-          </optgroup>
-          <optgroup label="Doctorate Programs">
-            <option value="Doctor of Theology (Th.D.)">Doctor of Theology (Th.D.)</option>
-            <option value="Doctor of Divinity (D.Div.)">Doctor of Divinity (D.Div.)</option>
-            <option value="Doctor of Ministry (D.Min.)">Doctor of Ministry (D.Min.)</option>
-          </optgroup>
+          <option value="Bachelor of Theology (B.Th.)">Bachelor of Theology (B.Th.)</option>
+          <option value="Master of Theology (M.Th.)">Master of Theology (M.Th.)</option>
+          <option value="Doctor of Divinity (D.Div.)">Doctor of Divinity (D.Div.)</option>
         </select>
       </div>
 
