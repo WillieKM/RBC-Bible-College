@@ -261,8 +261,26 @@ export async function reviewApplication(formData: FormData) {
       options: { redirectTo: `${baseUrl}/settings/new-password` },
     });
 
-    if (inviteError || !invited?.user) {
-      redirect(`/admin/applications?error=${encodeURIComponent(inviteError?.message ?? "Could not create account")}`);
+    let approvedUserId: string;
+
+    if (inviteError) {
+      // Auth user already exists (no profile yet — checked above). Find their ID
+      // and continue; createInviteLink below handles the password-set flow via recovery.
+      const isAlreadyExists = inviteError.message.toLowerCase().includes("already");
+      if (!isAlreadyExists) {
+        redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message ?? "Could not create account")}`);
+      }
+      const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
+      const existingAuth = (authList?.users ?? []).find((u) => u.email === application.email);
+      if (!existingAuth) {
+        redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message)}`);
+      }
+      approvedUserId = existingAuth.id;
+    } else {
+      if (!invited?.user) {
+        redirect(`/admin/applications?error=Could not create account`);
+      }
+      approvedUserId = invited.user.id;
     }
 
     const studentRegion = application.region ?? "international"; // "usa" | "international"
@@ -304,7 +322,7 @@ export async function reviewApplication(formData: FormData) {
     const studentNumber = `RBC-${year}-${String(studentSeq).padStart(4, "0")}`;
 
     await admin.from("profiles").insert({
-      id: invited.user.id,
+      id: approvedUserId,
       full_name: application.full_name,
       email: application.email,
       role: "student",
@@ -315,7 +333,7 @@ export async function reviewApplication(formData: FormData) {
     });
 
     if (programId) {
-      await enrollStudentInProgramModules(admin, invited.user.id, programId);
+      await enrollStudentInProgramModules(admin, approvedUserId, programId);
     }
 
     const regionKey = studentRegion === "usa" ? "usa" : "international";
@@ -329,7 +347,7 @@ export async function reviewApplication(formData: FormData) {
       const invSeq = await nextSequenceNumber(admin, `invoice_number_${invYear}`);
       const invoiceNumber = `INV-${invYear}-${String(invSeq).padStart(4, "0")}`;
       await admin.from("invoices").insert({
-        student_id: invited.user.id,
+        student_id: approvedUserId,
         title: `${application.program} — Program Fees`,
         notes: `Tuition and program fees for ${application.program} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${programFee.toLocaleString()})`,
         total_amount: programFee,
@@ -343,7 +361,7 @@ export async function reviewApplication(formData: FormData) {
       const envSeq = await nextSequenceNumber(admin, `invoice_number_${envYear}`);
       const envInvoiceNumber = `INV-${envYear}-${String(envSeq).padStart(4, "0")}`;
       await admin.from("invoices").insert({
-        student_id: invited.user.id,
+        student_id: approvedUserId,
         title: `${application.program} — Enrollment Fee`,
         notes: `One-time enrollment/registration fee for ${application.program}.`,
         total_amount: enrollFeeAmt,
