@@ -18,12 +18,16 @@ export default async function AdminStudentDetailPage({
     { data: programs },
     { data: enrollments },
     { data: invoicesRaw },
+    { data: authUser },
   ] = await Promise.all([
     admin.from("profiles").select("*").eq("id", id).single(),
     admin.from("programs").select("id, name, fee_international, fee_usa"),
     admin.from("enrollments").select("*, courses(id, title, code, credits, program_id)").eq("student_id", id),
     admin.from("invoices").select("*, payments(amount)").eq("student_id", id).order("created_at", { ascending: false }),
+    admin.auth.admin.getUserById(id),
   ]);
+
+  const lastSignIn = authUser?.user?.last_sign_in_at ?? null;
 
   if (!student) notFound();
 
@@ -80,6 +84,17 @@ export default async function AdminStudentDetailPage({
         <Link href="/admin/students" className="text-sm text-gold-dark hover:underline">← Students</Link>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">{student.full_name}</h1>
         <p className="text-sm text-slate-500">{student.email}</p>
+        <p className="mt-1 text-xs font-medium">
+          {lastSignIn ? (
+            <span className="text-slate-400">
+              Last login:{" "}
+              {new Date(lastSignIn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}{" "}
+              at {new Date(lastSignIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          ) : (
+            <span className="text-amber-600">Never logged in</span>
+          )}
+        </p>
       </div>
 
       {/* Edit profile */}
@@ -146,6 +161,68 @@ export default async function AdminStudentDetailPage({
           </div>
         </form>
       </div>
+
+      {/* Personal details submitted by student */}
+      {(student.date_of_birth || student.gender || student.nationality || student.city_of_residence || student.occupation || student.highest_education || student.marital_status || student.statement) ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="font-semibold text-slate-800">Personal Details</h2>
+          <p className="mt-1 text-xs text-slate-400">Submitted by the student via their settings page.</p>
+          <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            {student.date_of_birth && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date of Birth</dt>
+                <dd className="mt-0.5 text-slate-800">{new Date(student.date_of_birth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</dd>
+              </div>
+            )}
+            {student.gender && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</dt>
+                <dd className="mt-0.5 text-slate-800">{student.gender}</dd>
+              </div>
+            )}
+            {student.nationality && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nationality</dt>
+                <dd className="mt-0.5 text-slate-800">{student.nationality}</dd>
+              </div>
+            )}
+            {student.city_of_residence && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">City of Residence</dt>
+                <dd className="mt-0.5 text-slate-800">{student.city_of_residence}</dd>
+              </div>
+            )}
+            {student.occupation && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Occupation</dt>
+                <dd className="mt-0.5 text-slate-800">{student.occupation}</dd>
+              </div>
+            )}
+            {student.marital_status && (
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Marital Status</dt>
+                <dd className="mt-0.5 text-slate-800">{student.marital_status}</dd>
+              </div>
+            )}
+            {student.highest_education && (
+              <div className="col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Highest Education</dt>
+                <dd className="mt-0.5 text-slate-800">{student.highest_education}</dd>
+              </div>
+            )}
+            {student.statement && (
+              <div className="col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Life Experience / Statement</dt>
+                <dd className="mt-0.5 whitespace-pre-wrap text-slate-700">{student.statement}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5">
+          <p className="text-sm text-slate-400">No personal details on file yet. The student can complete these in their Settings page.</p>
+        </div>
+      )}
 
       {/* Status controls */}
       <div className="grid grid-cols-2 gap-4">

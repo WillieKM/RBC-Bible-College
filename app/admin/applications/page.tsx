@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { reviewApplication, resendStudentInvite } from "@/lib/actions/applications";
+import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
@@ -175,6 +175,12 @@ export default async function AdminApplicationsPage({
                           <input type="hidden" name="full_name" value={app.full_name} />
                           {profile?.student_number && <input type="hidden" name="student_number" value={profile.student_number} />}
                           <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
+                        </form>
+                      )}
+                      {app.status === "rejected" && (
+                        <form action={reinstateApplication}>
+                          <input type="hidden" name="id" value={app.id} />
+                          <DeleteButton label="↩ Reinstate to pending" pendingLabel="Reinstating…" className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50" />
                         </form>
                       )}
                       <form action={deleteApplication}>

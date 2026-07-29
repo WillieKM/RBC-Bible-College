@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Course, Profile, Program } from "@/lib/types";
@@ -11,15 +12,21 @@ export default async function AdminStudentsPage({
 }) {
   const { q } = await searchParams;
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }] = await Promise.all([
+  const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }, { data: authData }] = await Promise.all([
     supabase.from("profiles").select("*").eq("role", "student").order("full_name", { ascending: true }),
     supabase.from("programs").select("*"),
     supabase.from("courses").select("id, program_id, credits"),
     supabase.from("enrollments").select("course_id, student_id"),
     supabase.from("assignments").select("id, course_id"),
     supabase.from("submissions").select("assignment_id, student_id, grade"),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+
+  const lastLoginMap = new Map(
+    (authData?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null])
+  );
 
   const programMap = new Map((programs ?? []).map((p: Program) => [p.id, p]));
 
@@ -150,6 +157,13 @@ export default async function AdminStudentsPage({
                       {student.student_number && (
                         <p className="text-xs text-slate-400">ID: {student.student_number}</p>
                       )}
+                      {(() => {
+                        const lastLogin = lastLoginMap.get(student.id);
+                        if (!lastLogin) return <p className="text-xs font-medium text-amber-600">Never logged in</p>;
+                        const days = Math.floor((Date.now() - new Date(lastLogin).getTime()) / 86400000);
+                        const label = days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
+                        return <p className="text-xs text-slate-400">Last login: {label}</p>;
+                      })()}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">

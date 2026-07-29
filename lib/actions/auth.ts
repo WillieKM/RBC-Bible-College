@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { writeAuditLog } from "@/lib/audit";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -70,7 +71,7 @@ export async function login(formData: FormData) {
   const { data: userData } = await supabase.auth.getUser();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", userData.user!.id)
     .single();
 
@@ -81,6 +82,13 @@ export async function login(formData: FormData) {
   }
 
   const role = profile.role;
+
+  void writeAuditLog({
+    actorId: userData.user!.id,
+    actorName: profile.full_name ?? email,
+    action: "login",
+    details: { email, role },
+  });
 
   // Admin can go anywhere; others can only go to their own portal
   if (returnTo && ALLOWED_RETURN.has(returnTo)) {
@@ -145,6 +153,37 @@ export async function updatePassword(formData: FormData) {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect(`/settings?error=${encodeURIComponent(error.message)}`);
   redirect("/settings?pw_saved=1");
+}
+
+export async function updatePersonalDetails(formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "student") redirect("/login");
+
+  const supabase = await createClient();
+  const updates: Record<string, unknown> = {};
+
+  const fields: [string, string | null][] = [
+    ["date_of_birth",     String(formData.get("date_of_birth")     || "").trim() || null],
+    ["gender",            String(formData.get("gender")            || "").trim() || null],
+    ["nationality",       String(formData.get("nationality")       || "").trim() || null],
+    ["city_of_residence", String(formData.get("city_of_residence") || "").trim() || null],
+    ["occupation",        String(formData.get("occupation")        || "").trim() || null],
+    ["highest_education", String(formData.get("highest_education") || "").trim() || null],
+    ["marital_status",    String(formData.get("marital_status")    || "").trim() || null],
+    ["statement",         String(formData.get("statement")         || "").trim() || null],
+  ];
+
+  for (const [key, value] of fields) {
+    const existing = (profile as unknown as Record<string, unknown>)[key] ?? null;
+    if (value !== existing) updates[key] = value;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await supabase.from("profiles").update(updates).eq("id", profile.id);
+  }
+
+  revalidatePath("/settings");
+  redirect("/settings?details_saved=1");
 }
 
 export async function updateProfile(formData: FormData) {

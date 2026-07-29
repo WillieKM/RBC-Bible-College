@@ -22,14 +22,8 @@ export const ENROLLMENT_FEES: Record<ProgramLevel, { usa: number; international:
 // "diploma" — see submitApplication.
 export const DEGREE_PROGRAM_LEVELS: Record<string, ProgramLevel> = {
   "Bachelor of Theology (B.Th.)": "bachelors",
-  "Bachelor of Divinity (B.Div.)": "bachelors",
-  "Bachelor of Religious Education (B.R.E.)": "bachelors",
   "Master of Theology (M.Th.)": "masters",
-  "Master of Divinity (M.Div.)": "masters",
-  "Master of Arts in Christian Ministry": "masters",
-  "Doctor of Theology (Th.D.)": "doctorate",
   "Doctor of Divinity (D.Div.)": "doctorate",
-  "Doctor of Ministry (D.Min.)": "doctorate",
 };
 
 export const PROGRAM_LEVEL_LABELS: Record<ProgramLevel, string> = {

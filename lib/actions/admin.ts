@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
-import { feeForLevel } from "@/lib/fees";
+import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
 import { createInviteLink } from "@/lib/actions/invite";
 import { revalidatePath } from "next/cache";
@@ -275,17 +275,32 @@ export async function inviteUser(formData: FormData) {
         const regionKey = (region === "usa" ? "usa" : "international") as "usa" | "international";
         const level = (prog.program_level ?? "diploma") as ProgramLevel;
         const feeAmount = (regionKey === "usa" ? prog.fee_usa : prog.fee_international) ?? feeForLevel(level, regionKey);
+        const currency = regionKey === "usa" ? "$" : "KSh";
+        const year = new Date().getFullYear();
+
         if (feeAmount > 0) {
-          const year = new Date().getFullYear();
           const { data: seqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
           const invoiceNumber = `INV-${year}-${String(seqData ?? 1).padStart(4, "0")}`;
-          const currency = regionKey === "usa" ? "$" : "KSh";
           await admin.from("invoices").insert({
             student_id: created.user.id,
             title: `${prog.name} — Program Fees`,
             notes: `Tuition fees for ${prog.name} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${feeAmount.toLocaleString()})`,
             total_amount: feeAmount,
             invoice_number: invoiceNumber,
+          });
+        }
+
+        // Enrollment fee invoice
+        const enrollFeeAmt = (ENROLLMENT_FEES[level] ?? ENROLLMENT_FEES.diploma)[regionKey];
+        if (enrollFeeAmt > 0) {
+          const { data: envSeqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
+          const envInvoiceNumber = `INV-${year}-${String(envSeqData ?? 1).padStart(4, "0")}`;
+          await admin.from("invoices").insert({
+            student_id: created.user.id,
+            title: `${prog.name} — Enrollment Fee`,
+            notes: `One-time enrollment/registration fee for ${prog.name}.`,
+            total_amount: enrollFeeAmt,
+            invoice_number: envInvoiceNumber,
           });
         }
       } catch { /* enrolment/invoice errors must never block the invite */ }

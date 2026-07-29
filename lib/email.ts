@@ -115,14 +115,41 @@ export async function sendApplicationDecisionEmail(opts: {
   approved: boolean;
   loginUrl?: string;
   studentNumber?: string;
+  enrollmentFee?: number;
+  region?: string;
 }) {
   if (opts.approved) {
+    const isUsa = opts.region === "usa";
+    const currency = isUsa ? "$" : "KSh";
+    const enrollFeeDisplay = opts.enrollmentFee
+      ? `${currency}${opts.enrollmentFee.toLocaleString()}`
+      : null;
+
+    const enrollmentBlock = enrollFeeDisplay
+      ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin:16px 0;">
+           <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">Enrollment Fee Required</p>
+           <p style="margin:0;font-size:13px;color:#92400e;">To confirm your place in the program, please submit an enrollment fee of <strong>${enrollFeeDisplay}</strong>. This is a one-time administrative fee due upon registration and is separate from your tuition.</p>
+         </div>
+         ${isUsa
+           ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:8px 0;">
+                <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay (USA)</p>
+                <p style="margin:0;font-size:14px;color:#1e293b;"><strong>CashApp / Zelle:</strong> <span style="font-family:monospace;">${esc(ZELLE_CASHAPP)}</span></p>
+              </div>`
+           : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:8px 0;">
+                <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay — Lipa na M-Pesa</p>
+                <p style="margin:0 0 2px;font-size:14px;color:#1e293b;"><strong>Paybill:</strong> <span style="font-family:monospace;font-weight:700;">${esc(MPESA_PAYBILL)}</span></p>
+                <p style="margin:0;font-size:14px;color:#1e293b;"><strong>A/C Number:</strong> <span style="font-family:monospace;font-weight:700;">${esc(MPESA_ACCOUNT)}</span></p>
+              </div>`
+         }`
+      : "";
+
     await send(opts.to, `Your application to ${SCHOOL_NAME} has been approved`,
       wrap("Application Approved",
         `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
          <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved and an account has been created for you.</p>
-         ${opts.studentNumber ? `<p style="font-size:15px;color:#475569;">Your student ID is <strong>${esc(opts.studentNumber)}</strong>. Please keep this for your records.</p>` : ""}
-         <p style="font-size:15px;color:#475569;">Click below to set your password and log in.</p>
+         ${opts.studentNumber ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin:16px 0;font-size:14px;color:#92400e;"><strong>Your Student ID:</strong> ${esc(opts.studentNumber)} — please use this as your payment reference.</div>` : ""}
+         ${enrollmentBlock}
+         <p style="font-size:15px;color:#475569;">Click below to set your password and access your student portal.</p>
          ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Your Password →</a></div>` : ""}`
       ));
   } else {

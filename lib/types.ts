@@ -17,6 +17,15 @@ export interface Profile {
   region: string | null;
   banned: boolean;
   created_at: string;
+  // Personal details (filled by student after account creation)
+  date_of_birth: string | null;
+  gender: string | null;
+  nationality: string | null;
+  city_of_residence: string | null;
+  occupation: string | null;
+  highest_education: string | null;
+  marital_status: string | null;
+  statement: string | null;
 }
 
 export interface Program {

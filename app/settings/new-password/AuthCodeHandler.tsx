@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { updatePassword } from "@/lib/actions/auth";
+import { PasswordField } from "@/components/PasswordField";
 
 type Status = "detecting" | "processing" | "ready" | "authenticated" | "error";
 
@@ -79,21 +80,8 @@ export function AuthCodeHandler() {
   if (status === "ready" || status === "authenticated") {
     return (
       <form action={updatePassword} className="mt-6 space-y-4">
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300">
-            New password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoFocus
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-gold"
-          />
-          <p className="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
-        </div>
+        <PasswordField label="New password" />
+        <p className="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
         <button
           type="submit"
           className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"

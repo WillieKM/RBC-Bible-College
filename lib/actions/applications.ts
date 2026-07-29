@@ -15,7 +15,7 @@ import { getBaseUrl } from "@/lib/site-url";
 import { createInviteLink } from "@/lib/actions/invite";
 import { writeAuditLog } from "@/lib/audit";
 import { enrollStudentInProgramModules } from "@/lib/actions/admin";
-import { DEGREE_PROGRAM_LEVELS, feeForLevel } from "@/lib/fees";
+import { DEGREE_PROGRAM_LEVELS, ENROLLMENT_FEES, feeForLevel } from "@/lib/fees";
 import { nextSequenceNumber } from "@/lib/sequences";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -318,18 +318,36 @@ export async function reviewApplication(formData: FormData) {
       await enrollStudentInProgramModules(admin, invited.user.id, programId);
     }
 
-    // Auto-create fee invoice if the program has a fee set for this student's region
+    const regionKey = studentRegion === "usa" ? "usa" : "international";
+    const currency = regionKey === "usa" ? "$" : "KSh";
+    const programLevel = application.program_level as keyof typeof ENROLLMENT_FEES;
+    const enrollFeeAmt = (ENROLLMENT_FEES[programLevel] ?? ENROLLMENT_FEES.diploma)[regionKey];
+
+    // Auto-create tuition invoice
     if (programFee && programFee > 0) {
       const invYear = new Date().getFullYear();
       const invSeq = await nextSequenceNumber(admin, `invoice_number_${invYear}`);
       const invoiceNumber = `INV-${invYear}-${String(invSeq).padStart(4, "0")}`;
-      const currency = studentRegion === "usa" ? "$" : "KSh";
       await admin.from("invoices").insert({
         student_id: invited.user.id,
         title: `${application.program} — Program Fees`,
-        description: `Tuition and program fees for ${application.program} (${studentRegion === "usa" ? "USA" : "International"} rate: ${currency}${programFee.toLocaleString()})`,
+        notes: `Tuition and program fees for ${application.program} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${programFee.toLocaleString()})`,
         total_amount: programFee,
         invoice_number: invoiceNumber,
+      });
+    }
+
+    // Auto-create enrollment fee invoice
+    if (enrollFeeAmt > 0) {
+      const envYear = new Date().getFullYear();
+      const envSeq = await nextSequenceNumber(admin, `invoice_number_${envYear}`);
+      const envInvoiceNumber = `INV-${envYear}-${String(envSeq).padStart(4, "0")}`;
+      await admin.from("invoices").insert({
+        student_id: invited.user.id,
+        title: `${application.program} — Enrollment Fee`,
+        notes: `One-time enrollment/registration fee for ${application.program}.`,
+        total_amount: enrollFeeAmt,
+        invoice_number: envInvoiceNumber,
       });
     }
 
@@ -339,7 +357,15 @@ export async function reviewApplication(formData: FormData) {
       .eq("id", id);
 
     const inviteUrl = await createInviteLink(application.email, application.full_name, "student");
-    await sendApplicationDecisionEmail({ to: application.email, fullName: application.full_name, approved: true, loginUrl: inviteUrl, studentNumber });
+    await sendApplicationDecisionEmail({
+      to: application.email,
+      fullName: application.full_name,
+      approved: true,
+      loginUrl: inviteUrl,
+      studentNumber,
+      enrollmentFee: enrollFeeAmt,
+      region: studentRegion,
+    });
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "approve_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email, program: application.program } });
   } else {
     await supabase
@@ -351,6 +377,21 @@ export async function reviewApplication(formData: FormData) {
     void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "reject_application", targetType: "application", targetId: id, details: { applicant: application.full_name, email: application.email } });
   }
 
+  revalidatePath("/admin/applications");
+}
+
+export async function reinstateApplication(formData: FormData) {
+  const adminProfile = await requireRole(["admin"]);
+  const id = String(formData.get("id"));
+  const supabase = await createClient();
+
+  await supabase
+    .from("applications")
+    .update({ status: "pending", reviewed_at: null })
+    .eq("id", id)
+    .eq("status", "rejected"); // safety: only reinstate rejected ones
+
+  void writeAuditLog({ actorId: adminProfile.id, actorName: adminProfile.full_name, action: "reinstate_application", targetType: "application", targetId: id });
   revalidatePath("/admin/applications");
 }
 
