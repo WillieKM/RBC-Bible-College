@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireFinanceAccess, requireRole } from "@/lib/auth";
 import { sendInvoiceEmail, sendPaymentReceiptEmail, sendPaymentProofNotification } from "@/lib/email";
 import { nextSequenceNumber } from "@/lib/sequences";
@@ -39,17 +40,28 @@ export async function createInvoice(formData: FormData) {
       details: { student_id: studentId, title, total_amount: totalAmount, invoice_number: invoiceNumber },
     });
 
-    const { data: studentProfile } = await supabase
+    const adminDb = createAdminClient();
+    const { data: studentProfile } = await adminDb
       .from("profiles")
       .select("full_name, email")
       .eq("id", studentId)
       .maybeSingle();
 
-    if (studentProfile?.email) {
+    // Fall back to auth user email if profile email is null
+    let recipientEmail = studentProfile?.email ?? null;
+    if (!recipientEmail) {
+      const { data: authUser } = await adminDb.auth.admin.getUserById(studentId);
+      recipientEmail = authUser?.user?.email ?? null;
+    }
+    const recipientName = studentProfile?.full_name ?? "Student";
+
+    console.log(`[invoice] student=${studentId} email=${recipientEmail} profile=${JSON.stringify(studentProfile)}`);
+
+    if (recipientEmail) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       await sendInvoiceEmail({
-        to: studentProfile.email,
-        studentName: studentProfile.full_name,
+        to: recipientEmail,
+        studentName: recipientName,
         invoiceTitle: title,
         invoiceId: invoice.id,
         totalAmount,
