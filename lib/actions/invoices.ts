@@ -84,7 +84,6 @@ export async function createInvoice(formData: FormData) {
   }
 
   revalidatePath("/admin/invoices");
-  if (invoice) redirect(`/admin/invoices/${invoice.id}`);
 }
 
 export async function addPayment(formData: FormData) {
