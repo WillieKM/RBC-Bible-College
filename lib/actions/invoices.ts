@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireFinanceAccess, requireRole } from "@/lib/auth";
 import { sendInvoiceEmail, sendPaymentReceiptEmail, sendPaymentProofNotification } from "@/lib/email";
-import { nextSequenceNumber } from "@/lib/sequences";
 import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -21,18 +20,9 @@ export async function createInvoice(formData: FormData) {
 
   if (!studentId || !title || isNaN(totalAmount) || totalAmount <= 0) return;
 
-  const year = new Date().getFullYear();
-  let invSeq: number;
-  try {
-    invSeq = await nextSequenceNumber(adminDb, `invoice_number_${year}`);
-  } catch (seqErr) {
-    redirect(`/admin/invoices?error=${encodeURIComponent(`Sequence error: ${seqErr instanceof Error ? seqErr.message : String(seqErr)}`)}`);
-  }
-  const invoiceNumber = `INV-${year}-${String(invSeq!).padStart(4, "0")}`;
-
   const { data: invoice, error: invoiceError } = await adminDb
     .from("invoices")
-    .insert({ student_id: studentId, title, total_amount: totalAmount, notes, invoice_number: invoiceNumber })
+    .insert({ student_id: studentId, title, total_amount: totalAmount, notes })
     .select("id")
     .single();
 
