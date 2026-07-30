@@ -32,11 +32,14 @@ function mailer() {
 function send(to: string, subject: string, html: string) {
   const t = mailer();
   if (!t) {
-    console.warn("Email skipped — GMAIL_USER / GMAIL_APP_PASSWORD not set");
+    console.warn("[email] Skipped — GMAIL_USER / GMAIL_APP_PASSWORD not set");
     return Promise.resolve();
   }
   const from = `"${SCHOOL_NAME}" <${process.env.GMAIL_USER}>`;
-  return t.sendMail({ from, to, subject, html });
+  return t.sendMail({ from, to, subject, html }).then(
+    (info) => { console.log(`[email] Sent to ${to} — messageId: ${info.messageId}`); },
+    (err)  => { console.error(`[email] FAILED to ${to}:`, err.message); }
+  );
 }
 
 function wrap(title: string, body: string): string {
