@@ -57,21 +57,30 @@ export async function createInvoice(formData: FormData) {
 
     console.log(`[invoice] student=${studentId} email=${recipientEmail} profile=${JSON.stringify(studentProfile)}`);
 
+    let emailStatus = "no_email";
     if (recipientEmail) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      await sendInvoiceEmail({
-        to: recipientEmail,
-        studentName: recipientName,
-        invoiceTitle: title,
-        invoiceId: invoice.id,
-        totalAmount,
-        amountPaid: 0,
-        balance: totalAmount,
-        payments: [],
-        notes,
-        portalUrl: `${baseUrl}/student/invoices`,
-      });
+      try {
+        await sendInvoiceEmail({
+          to: recipientEmail,
+          studentName: recipientName,
+          invoiceTitle: title,
+          invoiceId: invoice.id,
+          totalAmount,
+          amountPaid: 0,
+          balance: totalAmount,
+          payments: [],
+          notes,
+          portalUrl: `${baseUrl}/student/invoices`,
+        });
+        emailStatus = `sent:${recipientEmail}`;
+      } catch (err) {
+        emailStatus = `failed:${err instanceof Error ? err.message : String(err)}`;
+      }
     }
+
+    revalidatePath("/admin/invoices");
+    redirect(`/admin/invoices/${invoice.id}?email_status=${encodeURIComponent(emailStatus)}`);
   }
 
   revalidatePath("/admin/invoices");

@@ -8,10 +8,12 @@ import { notFound } from "next/navigation";
 
 export default async function AdminInvoiceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ email_status?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { email_status }] = await Promise.all([params, searchParams]);
   const supabase = await createClient();
 
   const { data: invoice } = await supabase
@@ -68,6 +70,23 @@ export default async function AdminInvoiceDetailPage({
   return (
     <div className="max-w-2xl">
       <Link href="/admin/invoices" className="text-sm text-gold-dark hover:underline">← All Invoices</Link>
+
+      {/* Email status banner — shown only right after invoice creation */}
+      {email_status && (
+        <div className={`mt-3 rounded-lg px-4 py-2.5 text-sm font-medium ${
+          email_status.startsWith("sent:")
+            ? "bg-green-50 border border-green-200 text-green-700"
+            : email_status === "no_email"
+            ? "bg-amber-50 border border-amber-200 text-amber-700"
+            : "bg-red-50 border border-red-200 text-red-700"
+        }`}>
+          {email_status.startsWith("sent:")
+            ? `✓ Invoice email sent to ${email_status.replace("sent:", "")}`
+            : email_status === "no_email"
+            ? "⚠ No email address found for this student — invoice email not sent"
+            : `✗ Email failed: ${email_status.replace("failed:", "")}`}
+        </div>
+      )}
 
       {/* Invoice header */}
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
