@@ -12,7 +12,7 @@ import { after } from "next/server";
 
 export async function createInvoice(formData: FormData) {
   const adminProfile = await requireFinanceAccess();
-  const supabase = await createClient();
+  const adminDb = createAdminClient();
 
   const studentId = String(formData.get("student_id") || "").trim();
   const title = String(formData.get("title") || "").trim();
@@ -22,14 +22,16 @@ export async function createInvoice(formData: FormData) {
   if (!studentId || !title || isNaN(totalAmount) || totalAmount <= 0) return;
 
   const year = new Date().getFullYear();
-  const invSeq = await nextSequenceNumber(supabase, `invoice_number_${year}`);
+  const invSeq = await nextSequenceNumber(adminDb, `invoice_number_${year}`);
   const invoiceNumber = `INV-${year}-${String(invSeq).padStart(4, "0")}`;
 
-  const { data: invoice } = await supabase
+  const { data: invoice, error: invoiceError } = await adminDb
     .from("invoices")
     .insert({ student_id: studentId, title, total_amount: totalAmount, notes, invoice_number: invoiceNumber })
     .select("id")
     .single();
+
+  console.log("[createInvoice] insert result:", { invoice, error: invoiceError?.message });
 
   if (invoice) {
     void writeAuditLog({
@@ -41,7 +43,6 @@ export async function createInvoice(formData: FormData) {
       details: { student_id: studentId, title, total_amount: totalAmount, invoice_number: invoiceNumber },
     });
 
-    const adminDb = createAdminClient();
     const { data: studentProfile } = await adminDb
       .from("profiles")
       .select("full_name, email")
