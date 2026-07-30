@@ -357,7 +357,14 @@ export async function resendInvite(formData: FormData) {
 
   const { data: profile } = await admin.from("profiles").select("full_name, role").eq("email", email).maybeSingle();
 
-  const loginUrl = await createInviteLink(email, profile?.full_name ?? email, profile?.role ?? "user");
+  let loginUrl: string;
+  try {
+    loginUrl = await createInviteLink(email, profile?.full_name ?? email, profile?.role ?? "user");
+  } catch (err) {
+    console.error("[resendInvite] createInviteLink failed:", err);
+    revalidatePath("/admin/users");
+    return;
+  }
   await sendAccountInviteEmail({
     to: email,
     fullName: profile?.full_name ?? email,
