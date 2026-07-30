@@ -190,13 +190,11 @@ export async function submitApplication(formData: FormData) {
 
   const programProfessor = programRow?.profiles as unknown as { full_name: string; email: string } | null;
 
-  // Fire all emails in parallel — allSettled means one failure won't crash the form
+  // Emails are awaited so the serverless function stays alive long enough to send them.
+  // allSettled ensures one failure won't crash the form or block the redirect.
   await Promise.allSettled([
-    // Confirmation to the applicant
     sendApplicationConfirmationEmail({ to: email, fullName, program, region }),
-    // Notification to admissions
     sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement }),
-    // Notification to program professor if assigned
     programRow?.professor_id && programProfessor?.email
       ? sendNewApplicationToProfessorEmail({
           to: programProfessor.email,
@@ -207,7 +205,6 @@ export async function submitApplication(formData: FormData) {
           program,
         })
       : Promise.resolve(),
-    // TBCS accreditation confirmation
     source === "tbcs"
       ? sendAccreditationEmail({ to: email, fullName, program })
       : Promise.resolve(),

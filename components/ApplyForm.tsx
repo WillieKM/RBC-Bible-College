@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { submitApplication } from "@/lib/actions/applications";
 import { Declaration } from "@/components/Declaration";
 import { formatFee, feeForLevel } from "@/lib/fees";
@@ -31,6 +32,19 @@ function FeesBlock({ region }: { region: Region }) {
         </div>
       )}
     </div>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {pending ? "Submitting… please wait" : "Submit Application"}
+    </button>
   );
 }
 
@@ -187,12 +201,7 @@ export function ApplyForm({ presetRegion }: { presetRegion: Region | null }) {
 
       <Declaration />
 
-      <button
-        type="submit"
-        className="w-full rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"
-      >
-        Submit Application
-      </button>
+      <SubmitButton />
     </form>
   );
 }
