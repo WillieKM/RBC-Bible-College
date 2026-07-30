@@ -47,7 +47,7 @@ export async function createInvoice(formData: FormData) {
 
     if (studentProfile?.email) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      void sendInvoiceEmail({
+      await sendInvoiceEmail({
         to: studentProfile.email,
         studentName: studentProfile.full_name,
         invoiceTitle: title,
