@@ -22,8 +22,13 @@ export async function createInvoice(formData: FormData) {
   if (!studentId || !title || isNaN(totalAmount) || totalAmount <= 0) return;
 
   const year = new Date().getFullYear();
-  const invSeq = await nextSequenceNumber(adminDb, `invoice_number_${year}`);
-  const invoiceNumber = `INV-${year}-${String(invSeq).padStart(4, "0")}`;
+  let invSeq: number;
+  try {
+    invSeq = await nextSequenceNumber(adminDb, `invoice_number_${year}`);
+  } catch (seqErr) {
+    redirect(`/admin/invoices?error=${encodeURIComponent(`Sequence error: ${seqErr instanceof Error ? seqErr.message : String(seqErr)}`)}`);
+  }
+  const invoiceNumber = `INV-${year}-${String(invSeq!).padStart(4, "0")}`;
 
   const { data: invoice, error: invoiceError } = await adminDb
     .from("invoices")
@@ -31,7 +36,9 @@ export async function createInvoice(formData: FormData) {
     .select("id")
     .single();
 
-  console.log("[createInvoice] insert result:", { invoice, error: invoiceError?.message });
+  if (!invoice) {
+    redirect(`/admin/invoices?error=${encodeURIComponent(`Insert failed: ${invoiceError?.message ?? "unknown error"}`)}`);
+  }
 
   if (invoice) {
     void writeAuditLog({

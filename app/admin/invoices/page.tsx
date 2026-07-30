@@ -13,7 +13,12 @@ function statusBadge(total: number, paid: number) {
   return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">Unpaid</span>;
 }
 
-export default async function AdminInvoicesPage() {
+export default async function AdminInvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error: pageError } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: invoicesRaw }, { data: students }, { data: programs }] = await Promise.all([
@@ -82,6 +87,11 @@ export default async function AdminInvoicesPage() {
 
   return (
     <div>
+      {pageError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {pageError}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
         <div className="flex items-center gap-2">
