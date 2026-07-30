@@ -38,6 +38,28 @@ export async function createInvoice(formData: FormData) {
       targetId: invoice.id,
       details: { student_id: studentId, title, total_amount: totalAmount, invoice_number: invoiceNumber },
     });
+
+    const { data: studentProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", studentId)
+      .maybeSingle();
+
+    if (studentProfile?.email) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      void sendInvoiceEmail({
+        to: studentProfile.email,
+        studentName: studentProfile.full_name,
+        invoiceTitle: title,
+        invoiceId: invoice.id,
+        totalAmount,
+        amountPaid: 0,
+        balance: totalAmount,
+        payments: [],
+        notes,
+        portalUrl: `${baseUrl}/student/invoices`,
+      });
+    }
   }
 
   revalidatePath("/admin/invoices");
