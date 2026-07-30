@@ -255,7 +255,14 @@ export async function inviteUser(formData: FormData) {
   await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId, region });
 
   // Step 3: send invite email immediately — nothing below must block this
-  const loginUrl = await createInviteLink(email, fullName, role);
+  let loginUrl: string;
+  try {
+    loginUrl = await createInviteLink(email, fullName, role);
+  } catch (linkErr) {
+    console.error("[inviteUser] createInviteLink failed:", linkErr);
+    revalidatePath("/admin/users");
+    return;
+  }
   await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
 
   // Step 4 (optional): enrol in modules and auto-create fee invoice — fire-and-forget

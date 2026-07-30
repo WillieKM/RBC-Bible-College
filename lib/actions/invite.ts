@@ -12,10 +12,14 @@ export async function createInviteLink(email: string, fullName: string, role: st
   const baseUrl = await getBaseUrl();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin.from("invite_links") as any)
+  const { data, error } = await (admin.from("invite_links") as any)
     .insert({ email, full_name: fullName, role })
     .select("id")
     .single();
+
+  if (!data?.id) {
+    throw new Error(`Failed to create invite link for ${email}: ${error?.message ?? "no row returned"}`);
+  }
 
   return `${baseUrl}/auth/invite?t=${data.id}`;
 }
