@@ -56,32 +56,37 @@ export async function createInvoice(formData: FormData) {
     }
     const recipientName = studentProfile?.full_name ?? "Student";
 
-    console.log(`[invoice] student=${studentId} email=${recipientEmail} profile=${JSON.stringify(studentProfile)}`);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const emailTo = recipientEmail;
+    const emailName = recipientName;
+    const capturedInvoiceId = invoice.id;
+    const capturedTitle = title;
+    const capturedActorId = adminProfile.id;
+    const capturedActorName = adminProfile.full_name;
 
-    if (recipientEmail) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      const emailTo = recipientEmail;
-      const emailName = recipientName;
-      const invoiceId = invoice.id;
-      after(async () => {
-        try {
-          await sendInvoiceEmail({
-            to: emailTo,
-            studentName: emailName,
-            invoiceTitle: title,
-            invoiceId,
-            totalAmount,
-            amountPaid: 0,
-            balance: totalAmount,
-            payments: [],
-            notes,
-            portalUrl: `${baseUrl}/student/invoices`,
-          });
-        } catch (err) {
-          console.error("[invoice email] failed:", err);
-        }
-      });
-    }
+    after(async () => {
+      if (!emailTo) {
+        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_skipped", targetType: "invoice", targetId: capturedInvoiceId, details: { reason: "no_email_found", profile: JSON.stringify(studentProfile) } });
+        return;
+      }
+      try {
+        await sendInvoiceEmail({
+          to: emailTo,
+          studentName: emailName,
+          invoiceTitle: capturedTitle,
+          invoiceId: capturedInvoiceId,
+          totalAmount,
+          amountPaid: 0,
+          balance: totalAmount,
+          payments: [],
+          notes,
+          portalUrl: `${baseUrl}/student/invoices`,
+        });
+        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_sent", targetType: "invoice", targetId: capturedInvoiceId, details: { to: emailTo } });
+      } catch (err) {
+        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_failed", targetType: "invoice", targetId: capturedInvoiceId, details: { to: emailTo, error: err instanceof Error ? err.message : String(err) } });
+      }
+    });
 
     revalidatePath("/admin/invoices");
     redirect(`/admin/invoices/${invoice.id}`);
