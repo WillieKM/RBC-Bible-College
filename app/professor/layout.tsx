@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 const LINKS = [
   { href: "/professor", label: "My Courses" },
   { href: "/professor/modules", label: "Modules" },
+  { href: "/professor/hours", label: "My Hours" },
   { href: "/professor/zoom-attendance", label: "Zoom Register" },
   { href: "/professor/announcements", label: "Notices" },
   { href: "/professor/prayers", label: "Prayer Board" },
