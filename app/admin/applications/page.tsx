@@ -94,25 +94,18 @@ export default async function AdminApplicationsPage({
                   )}
                 </div>
               </div>
-              <form action={reviewApplication} className="flex shrink-0 flex-col gap-2">
-                <input type="hidden" name="id" value={app.id} />
-                <div className="flex gap-2">
-                  <button
-                    name="decision"
-                    value="approve"
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    name="decision"
-                    value="reject"
-                    className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </form>
+              <div className="flex shrink-0 gap-2">
+                <form action={reviewApplication}>
+                  <input type="hidden" name="id" value={app.id} />
+                  <input type="hidden" name="decision" value="approve" />
+                  <DeleteButton label="Approve" pendingLabel="Approving…" className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50" />
+                </form>
+                <form action={reviewApplication}>
+                  <input type="hidden" name="id" value={app.id} />
+                  <input type="hidden" name="decision" value="reject" />
+                  <DeleteButton label="Reject" pendingLabel="Rejecting…" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" />
+                </form>
+              </div>
             </div>
           </div>
         ))}

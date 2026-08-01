@@ -150,10 +150,17 @@ export default async function AdminStudentsPage({
                       </div>
                     )}
                     <div>
-                      <Link href={`/admin/students/${student.id}`} className="font-semibold text-slate-900 hover:text-gold-dark after:absolute after:inset-0">
-                        {student.full_name}
-                      </Link>
-                      <p className="text-sm text-slate-500">{student.email}</p>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/admin/students/${student.id}`} className="font-semibold text-slate-900 hover:text-gold-dark after:absolute after:inset-0">
+                          {student.full_name}
+                        </Link>
+                        {(!student.program_id || !student.region || !student.email) && (
+                          <span title={[!student.program_id && "No program", !student.region && "No region", !student.email && "No email"].filter(Boolean).join(" · ")} className="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
+                            ⚠ Incomplete
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500">{student.email || <span className="text-red-500 italic">No email</span>}</p>
                       {student.student_number && (
                         <p className="text-xs text-slate-400">ID: {student.student_number}</p>
                       )}

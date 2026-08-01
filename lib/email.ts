@@ -976,3 +976,49 @@ export async function sendStudentWelcomeEmail(opts: {
     )
   );
 }
+
+// ─── Direct message from admin to a student ───────────────────────────────────
+
+export async function sendDirectMessageEmail(opts: {
+  to: string;
+  studentName: string;
+  subject: string;
+  body: string;
+}) {
+  await send(
+    opts.to,
+    opts.subject,
+    wrap(
+      "Message from RBC",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:16px 0;font-size:15px;color:#1e293b;white-space:pre-wrap;">${esc(opts.body)}</div>
+       <p style="font-size:13px;color:#94a3b8;margin-top:16px;">This message was sent by your administrator at ${SCHOOL_NAME}. Reply to this email if you have questions.</p>`
+    )
+  );
+}
+
+// ─── Zoom session reminder (sent a short time before the session) ─────────────
+
+export async function sendZoomReminderEmail(opts: {
+  to: string;
+  studentName: string;
+  sessionTitle: string;
+  description: string | null;
+  zoomUrl: string;
+  startsIn: string;
+}) {
+  await send(
+    opts.to,
+    `Reminder: "${opts.sessionTitle}" starts ${opts.startsIn}`,
+    wrap(
+      "Class Reminder",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Your class <strong>${esc(opts.sessionTitle)}</strong> starts <strong>${esc(opts.startsIn)}</strong>.</p>
+       ${opts.description ? `<p style="font-size:14px;color:#64748b;">${esc(opts.description)}</p>` : ""}
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.zoomUrl}" style="display:inline-block;background:#2D8CFF;color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Join Now →</a>
+       </div>
+       <p style="margin-top:12px;font-size:13px;color:#94a3b8;text-align:center;">Link: ${opts.zoomUrl}</p>`
+    )
+  );
+}

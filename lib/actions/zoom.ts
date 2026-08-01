@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { sendZoomLinkEmail } from "@/lib/email";
+import { sendZoomLinkEmail, sendZoomReminderEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -138,6 +138,40 @@ export async function sendZoomNow(formData: FormData) {
   );
 
   await admin.from("zoom_sessions").update({ last_sent_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/admin/zoom");
+}
+
+export async function sendZoomReminder(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const id = String(formData.get("id") || "");
+  const startsIn = String(formData.get("starts_in") || "soon");
+  if (!id) return;
+
+  const { data: session } = await admin.from("zoom_sessions").select("*").eq("id", id).single();
+  if (!session) { revalidatePath("/admin/zoom"); return; }
+
+  let studentsQuery = admin.from("profiles").select("full_name, email").eq("role", "student");
+  if (session.target_audience !== "all") {
+    const { data: programs } = await admin.from("programs").select("id").eq("program_level", session.target_audience);
+    const ids = (programs ?? []).map((p: { id: string }) => p.id);
+    if (ids.length > 0) studentsQuery = studentsQuery.in("program_id", ids);
+    else { revalidatePath("/admin/zoom"); return; }
+  }
+
+  const { data: students } = await studentsQuery;
+  await Promise.allSettled(
+    (students ?? []).map((s: { full_name: string; email: string }) =>
+      sendZoomReminderEmail({
+        to: s.email,
+        studentName: s.full_name,
+        sessionTitle: session.title,
+        description: session.description,
+        zoomUrl: session.zoom_url,
+        startsIn,
+      })
+    )
+  );
   revalidatePath("/admin/zoom");
 }
 

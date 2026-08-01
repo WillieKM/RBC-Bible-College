@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -566,4 +566,19 @@ export async function sendFeeReminders(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/admin/invoices");
+}
+
+export async function sendDirectMessage(formData: FormData) {
+  await requireRole(["admin"]);
+  const studentId = String(formData.get("student_id") || "").trim();
+  const subject = String(formData.get("subject") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  if (!studentId || !subject || !body) return;
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("full_name, email").eq("id", studentId).single();
+  if (!profile?.email) return;
+
+  await sendDirectMessageEmail({ to: profile.email, studentName: profile.full_name, subject, body });
+  revalidatePath(`/admin/students/${studentId}`);
 }

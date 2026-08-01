@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow } from "@/lib/actions/zoom";
+import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
@@ -206,6 +206,15 @@ export default async function AdminZoomPage({
                   <form action={sendZoomNow}>
                     <input type="hidden" name="id" value={s.id} />
                     <DeleteButton label="Send Now" pendingLabel="Sending…" className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50" />
+                  </form>
+                  <form action={sendZoomReminder} className="flex items-center gap-1">
+                    <input type="hidden" name="id" value={s.id} />
+                    <select name="starts_in" className="rounded border border-slate-200 px-1.5 py-0.5 text-xs text-slate-600">
+                      <option value="in 1 hour">in 1 hour</option>
+                      <option value="in 30 minutes">in 30 min</option>
+                      <option value="tomorrow">tomorrow</option>
+                    </select>
+                    <DeleteButton label="Remind" pendingLabel="…" className="text-sm font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50" />
                   </form>
                   <form action={deleteZoomSession}>
                     <input type="hidden" name="id" value={s.id} />

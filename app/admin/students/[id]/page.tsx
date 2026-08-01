@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { updateStudentProfile, updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
+import { updateStudentProfile, updatePaymentStatus, markProgramComplete, sendDirectMessage } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Assignment, Course, Invoice, Payment, Program, Submission } from "@/lib/types";
 import Link from "next/link";
@@ -340,6 +340,24 @@ export default async function AdminStudentDetailPage({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Direct message */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="font-semibold text-slate-800">Send Message</h2>
+        <p className="mt-0.5 text-xs text-slate-400">Sends an email directly to {student.full_name}.</p>
+        <form action={sendDirectMessage} className="mt-4 space-y-3">
+          <input type="hidden" name="student_id" value={student.id} />
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Subject</label>
+            <input name="subject" required placeholder="e.g. Your assignment submission" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Message</label>
+            <textarea name="body" required rows={4} placeholder="Type your message here…" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+          </div>
+          <DeleteButton label="Send Email" pendingLabel="Sending…" className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50" />
+        </form>
       </div>
     </div>
   );
