@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -59,10 +60,10 @@ export default async function StudentModulesPage() {
                     {m.description && <p className="mt-0.5 text-sm text-slate-600">{m.description}</p>}
                     <p className="mt-1 text-xs text-slate-400">Released {formatDate(m.sent_at!)}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <a href={m.file_url} target="_blank" rel="noopener noreferrer"
+                      <Link href={`/student/modules/${m.id}`}
                         className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
                         View PDF →
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -95,11 +96,10 @@ export default async function StudentModulesPage() {
                     {m.description && <p className="mt-0.5 text-xs text-slate-400">{m.description}</p>}
                     <p className="mt-1 text-xs text-slate-400">Released {formatDate(m.sent_at!)}</p>
                   </div>
-                  {/* Still accessible for review */}
-                  <a href={m.file_url} target="_blank" rel="noopener noreferrer"
+                  <Link href={`/student/modules/${m.id}`}
                     className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100">
                     Review →
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}
