@@ -12,6 +12,7 @@ const BASE_LINKS = [
 ];
 
 const FINANCE_LINK = { href: "/admin/invoices", label: "Invoices" };
+const PROOFS_LINK = { href: "/admin/invoices/proofs", label: "Payment Proofs" };
 
 const REST_LINKS = [
   { href: "/admin/modules", label: "Modules" },
@@ -26,6 +27,6 @@ const REST_LINKS = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireRole(["admin"]);
-  const links = profile.finance_access ? [...BASE_LINKS, FINANCE_LINK, ...REST_LINKS] : [...BASE_LINKS, ...REST_LINKS];
+  const links = profile.finance_access ? [...BASE_LINKS, FINANCE_LINK, PROOFS_LINK, ...REST_LINKS] : [...BASE_LINKS, ...REST_LINKS];
   return <DashboardShell profile={profile} links={links} activePortal="admin">{children}</DashboardShell>;
 }

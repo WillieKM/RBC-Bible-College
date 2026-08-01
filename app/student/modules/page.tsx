@@ -59,15 +59,9 @@ export default async function StudentModulesPage() {
                     {m.description && <p className="mt-0.5 text-sm text-slate-600">{m.description}</p>}
                     <p className="mt-1 text-xs text-slate-400">Released {formatDate(m.sent_at!)}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {!m.restrict_download && (
-                        <a href={m.file_url} target="_blank" rel="noopener noreferrer" download
-                          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
-                          Download →
-                        </a>
-                      )}
                       <a href={m.file_url} target="_blank" rel="noopener noreferrer"
-                        className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        {m.restrict_download ? "Open PDF →" : "Preview PDF →"}
+                        className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+                        View PDF →
                       </a>
                     </div>
                   </div>
