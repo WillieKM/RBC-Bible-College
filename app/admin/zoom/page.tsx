@@ -126,6 +126,10 @@ export default async function AdminZoomPage({
             <textarea name="description" rows={2} placeholder="Topic or notes for students" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </div>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">YouTube recording URL <span className="font-normal text-slate-400">(paste after session — optional)</span></label>
+          <input name="recording_url" type="url" placeholder="https://youtu.be/..." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
         <RecurrenceFields />
         <DeleteButton label="Save Session" pendingLabel="Saving…" className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50" />
       </form>
@@ -160,6 +164,10 @@ export default async function AdminZoomPage({
                     <textarea name="description" rows={2} defaultValue={s.description ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">YouTube recording URL <span className="font-normal text-slate-400">(optional)</span></label>
+                  <input name="recording_url" type="url" defaultValue={(s as ZoomSession & { recording_url?: string }).recording_url ?? ""} placeholder="https://youtu.be/..." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </div>
                 <RecurrenceFields defaultRecurrence={s.recurrence} defaultDay={s.day_of_week} defaultSendAt={s.send_at} />
                 <div className="flex items-center gap-3">
                   <DeleteButton label="Save" pendingLabel="Saving…" className="rounded-lg bg-gold px-4 py-1.5 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50" />
@@ -180,6 +188,11 @@ export default async function AdminZoomPage({
                     <a href={s.zoom_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gold-dark hover:underline">
                       Open link →
                     </a>
+                    {(s as ZoomSession & { recording_url?: string }).recording_url && (
+                      <a href={(s as ZoomSession & { recording_url?: string }).recording_url!} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-red-600 hover:underline">
+                        ▶ Recording
+                      </a>
+                    )}
                   </div>
                 </div>
                 <div className="ml-4 flex shrink-0 items-center gap-3">

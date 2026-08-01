@@ -5,8 +5,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const profile = await requireRole(["student"]);
 
   const links = [
+    { href: "/student/getting-started", label: "Getting Started" },
     { href: "/student", label: "My Courses" },
     { href: "/student/modules", label: "Modules" },
+    { href: "/student/zoom", label: "Zoom & Recordings" },
     { href: "/student/transcript", label: "Transcript" },
     { href: "/student/attendance", label: "Attendance" },
     { href: "/student/invoices", label: "Invoices" },

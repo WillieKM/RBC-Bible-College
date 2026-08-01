@@ -19,6 +19,7 @@ export async function createZoomSession(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
+  const recordingUrl = String(formData.get("recording_url") || "").trim() || null;
   const targetAudience = String(formData.get("target_audience") || "all");
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
@@ -33,6 +34,7 @@ export async function createZoomSession(formData: FormData) {
     title,
     zoom_url: zoomUrl,
     description,
+    recording_url: recordingUrl,
     target_audience: targetAudience,
     recurrence,
     send_at: sendAt,
@@ -51,6 +53,7 @@ export async function updateZoomSession(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
+  const recordingUrl = String(formData.get("recording_url") || "").trim() || null;
   const targetAudience = String(formData.get("target_audience") || "all");
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
@@ -65,6 +68,7 @@ export async function updateZoomSession(formData: FormData) {
     title,
     zoom_url: zoomUrl,
     description,
+    recording_url: recordingUrl,
     target_audience: targetAudience,
     recurrence,
     send_at: sendAt,
