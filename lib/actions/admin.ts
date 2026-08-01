@@ -77,7 +77,7 @@ export async function updateProgramFee(formData: FormData) {
 }
 
 export async function updateUserProfile(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const admin = createAdminClient();
   const id = String(formData.get("id"));
   const fullName = String(formData.get("full_name") || "").trim();
@@ -100,7 +100,7 @@ export async function updateUserProfile(formData: FormData) {
 }
 
 export async function updateStudentProgram(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireFinanceAccess();
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const programId = String(formData.get("program_id") || "") || null;

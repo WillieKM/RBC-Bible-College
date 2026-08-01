@@ -77,7 +77,7 @@ export default async function AdminUsersPage() {
                     </button>
                   </form>
                 )}
-                {p.role === "student" && (
+                {p.role === "student" && viewer?.finance_access && (
                   <form action={updateStudentProgram} className="flex items-center gap-2">
                     <input type="hidden" name="id" value={p.id} />
                     <select name="program_id" defaultValue={p.program_id ?? ""} className="rounded-lg border border-slate-300 px-2 py-1 text-sm">
@@ -94,8 +94,8 @@ export default async function AdminUsersPage() {
               </div>
             </div>
 
-            {/* Edit name / email row */}
-            <form action={updateUserProfile} className="flex flex-wrap items-end gap-2 border-t border-slate-100 bg-slate-50 px-4 py-2.5">
+            {/* Edit name / email row — main admin only */}
+            {viewer?.finance_access && <form action={updateUserProfile} className="flex flex-wrap items-end gap-2 border-t border-slate-100 bg-slate-50 px-4 py-2.5">
               <input type="hidden" name="id" value={p.id} />
               <div>
                 <label className="block text-xs font-medium text-slate-500">Full name</label>
@@ -121,7 +121,7 @@ export default async function AdminUsersPage() {
                 pendingLabel="Saving…"
                 className="rounded border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
               />
-            </form>
+            </form>}
           </div>
         ))}
         {(profiles ?? []).length === 0 && <p className="text-sm text-slate-500">No users yet.</p>}
