@@ -76,6 +76,29 @@ export async function updateProgramFee(formData: FormData) {
   revalidatePath("/admin/programs");
 }
 
+export async function updateUserProfile(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const id = String(formData.get("id"));
+  const fullName = String(formData.get("full_name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+
+  if (!fullName && !email) return;
+
+  const updates: Record<string, string> = {};
+  if (fullName) updates.full_name = fullName;
+  if (email) updates.email = email;
+
+  await admin.from("profiles").update(updates).eq("id", id);
+
+  // Also update email in auth if changed
+  if (email) {
+    await admin.auth.admin.updateUserById(id, { email });
+  }
+
+  revalidatePath("/admin/users");
+}
+
 export async function updateStudentProgram(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = await createClient();
