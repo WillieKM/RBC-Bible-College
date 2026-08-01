@@ -7,6 +7,7 @@ import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
 import { createInviteLink } from "@/lib/actions/invite";
+import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
@@ -569,7 +570,7 @@ export async function sendFeeReminders(formData: FormData): Promise<void> {
 }
 
 export async function sendDirectMessage(formData: FormData) {
-  await requireRole(["admin"]);
+  const adminProfile = await requireRole(["admin"]);
   const studentId = String(formData.get("student_id") || "").trim();
   const subject = String(formData.get("subject") || "").trim();
   const body = String(formData.get("body") || "").trim();
@@ -580,5 +581,13 @@ export async function sendDirectMessage(formData: FormData) {
   if (!profile?.email) return;
 
   await sendDirectMessageEmail({ to: profile.email, studentName: profile.full_name, subject, body });
+  void writeAuditLog({
+    actorId: adminProfile.id,
+    actorName: adminProfile.full_name,
+    action: "send_direct_message",
+    targetType: "profile",
+    targetId: studentId,
+    details: { subject, to: profile.email, student_name: profile.full_name },
+  });
   revalidatePath(`/admin/students/${studentId}`);
 }

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { sendNewSubmissionEmail } from "@/lib/email";
+import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
 
 export async function submitAssignment(formData: FormData) {
@@ -43,13 +44,20 @@ export async function submitAssignment(formData: FormData) {
   const professor = assignment.courses?.professor;
   if (professor) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const reviewUrl = `${baseUrl}/professor/assignments/${assignmentId}`;
     await sendNewSubmissionEmail({
       to: professor.email,
       professorName: professor.full_name,
       studentName: profile.full_name,
       courseTitle: assignment.courses.title,
       assignmentTitle: assignment.title,
-      reviewUrl: `${baseUrl}/professor/assignments/${assignmentId}`,
+      reviewUrl,
+    });
+    void createNotification({
+      userId: professor.id,
+      title: `New submission: ${assignment.title}`,
+      body: `${profile.full_name} submitted "${assignment.title}" in ${assignment.courses.title}.`,
+      link: `/professor/assignments/${assignmentId}`,
     });
   }
 

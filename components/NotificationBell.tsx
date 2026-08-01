@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications";
 import type { Notification } from "@/lib/types";
 
 export function NotificationBell({ notifications }: { notifications: Notification[] }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
@@ -40,7 +42,16 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
               <p className="px-4 py-6 text-center text-sm text-slate-400">No notifications yet.</p>
             )}
             {notifications.map((n) => (
-              <div key={n.id} className={`border-b border-slate-50 px-4 py-3 ${n.read ? "" : "bg-gold/5"}`}>
+              <div
+                key={n.id}
+                className={`border-b border-slate-50 px-4 py-3 ${n.read ? "" : "bg-gold/5"} ${n.link ? "cursor-pointer hover:bg-slate-50" : ""}`}
+                onClick={() => {
+                  if (n.link) {
+                    setOpen(false);
+                    router.push(n.link);
+                  }
+                }}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-800">{n.title}</p>
@@ -48,7 +59,7 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
                     <p className="mt-1 text-xs text-slate-400">{new Date(n.created_at).toLocaleString()}</p>
                   </div>
                   {!n.read && (
-                    <form action={markNotificationRead}>
+                    <form action={markNotificationRead} onClick={(e) => e.stopPropagation()}>
                       <input type="hidden" name="id" value={n.id} />
                       <button className="mt-0.5 h-2 w-2 rounded-full bg-gold hover:bg-gold-dark" title="Mark read" />
                     </form>
