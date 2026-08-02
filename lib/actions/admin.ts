@@ -241,6 +241,22 @@ export async function enrollStudent(formData: FormData) {
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
+export async function bulkEnrollStudents(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const courseId = String(formData.get("course_id"));
+  const studentIds = formData.getAll("student_ids[]").map(String).filter(Boolean);
+  if (studentIds.length === 0) return;
+
+  await supabase
+    .from("enrollments")
+    .upsert(
+      studentIds.map((sid) => ({ course_id: courseId, student_id: sid })),
+      { onConflict: "course_id,student_id", ignoreDuplicates: true }
+    );
+  revalidatePath(`/admin/courses/${courseId}`);
+}
+
 export async function unenrollStudent(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = await createClient();

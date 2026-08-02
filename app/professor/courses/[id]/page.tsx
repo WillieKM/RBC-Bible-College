@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
-import { createAssignment, addCourseMaterial, deleteCourseMaterial, saveAttendance } from "@/lib/actions/professor";
+import { createAssignment, addCourseMaterial, deleteCourseMaterial, saveAttendance, sendProfessorMessage } from "@/lib/actions/professor";
 import { postDiscussion, deleteDiscussion } from "@/lib/actions/discussions";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Assignment, CourseMaterial, Discussion } from "@/lib/types";
@@ -170,6 +170,36 @@ export default async function ProfessorCoursePage({
           })}
           {(discussions ?? []).length === 0 && <p className="text-sm text-slate-400">No messages yet.</p>}
         </div>
+      </section>
+
+      {/* ── Message Students ── */}
+      <section>
+        <h2 className="text-lg font-semibold text-slate-800">Message Students</h2>
+        <form action={sendProfessorMessage} className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <input type="hidden" name="course_id" value={course.id} />
+          <div className="flex flex-wrap gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">To</label>
+              <select name="student_id" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">All enrolled students</option>
+                {(enrollments ?? []).map((e) => (
+                  <option key={e.student_id} value={e.student_id}>{e.profiles?.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 min-w-48">
+              <label className="block text-sm font-medium text-slate-700">Subject</label>
+              <input name="subject" required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Message</label>
+            <textarea name="body" rows={4} required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+            Send Message
+          </button>
+        </form>
       </section>
 
       {/* ── Attendance ── */}

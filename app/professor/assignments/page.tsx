@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { createAssignment } from "@/lib/actions/professor";
 import Link from "next/link";
 
 export default async function ProfessorAssignmentsPage() {
@@ -121,6 +122,43 @@ export default async function ProfessorAssignmentsPage() {
       <p className="mt-1 text-sm text-slate-500">
         {list.length} assignment{list.length !== 1 ? "s" : ""} across your courses
       </p>
+
+      {/* ── Quick create ── */}
+      <details className="mt-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700 hover:text-gold-dark">
+          + New Assignment
+        </summary>
+        <form action={createAssignment} className="flex flex-wrap items-end gap-3 border-t border-slate-100 px-5 pb-5 pt-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Course</label>
+            <select name="course_id" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="">Select course</option>
+              {(courses ?? []).map((c) => (
+                <option key={c.id} value={c.id}>{c.title}{c.code ? ` (${c.code})` : ""}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Title</label>
+            <input name="title" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Due date</label>
+            <input name="due_date" type="date" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Points</label>
+            <input name="points_possible" type="number" min="0" className="mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <div className="w-full">
+            <label className="block text-sm font-medium text-slate-700">Description</label>
+            <textarea name="description" rows={2} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+            Create Assignment
+          </button>
+        </form>
+      </details>
 
       {list.length === 0 && (
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">

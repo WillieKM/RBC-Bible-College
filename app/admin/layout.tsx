@@ -5,6 +5,7 @@ const BASE_LINKS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/applications", label: "Applications" },
   { href: "/admin/students", label: "Students" },
+  { href: "/admin/progress", label: "Progress" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/invites", label: "Invites" },
   { href: "/admin/programs", label: "Programs" },

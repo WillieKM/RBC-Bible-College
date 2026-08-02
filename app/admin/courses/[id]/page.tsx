@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { enrollStudent, unenrollStudent, updateCourse } from "@/lib/actions/admin";
+import { enrollStudent, bulkEnrollStudents, unenrollStudent, updateCourse } from "@/lib/actions/admin";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -116,19 +116,27 @@ export default async function AdminCourseDetailPage({
         {(enrollments ?? []).length === 0 && <p className="text-sm text-slate-500">No students enrolled.</p>}
       </div>
 
-      <h2 className="mt-6 text-lg font-semibold text-slate-800">Enroll a Student</h2>
-      <form action={enrollStudent} className="mt-3 flex items-end gap-3">
-        <input type="hidden" name="course_id" value={course.id} />
-        <select name="student_id" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-          <option value="">Select a student</option>
-          {availableStudents.map((s: Profile) => (
-            <option key={s.id} value={s.id}>{s.full_name} ({s.email})</option>
-          ))}
-        </select>
-        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
-          Enroll
-        </button>
-      </form>
+      <h2 className="mt-6 text-lg font-semibold text-slate-800">Enroll Students</h2>
+      {availableStudents.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-500">All students are already enrolled.</p>
+      ) : (
+        <form action={bulkEnrollStudents} className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <input type="hidden" name="course_id" value={course.id} />
+          <p className="mb-3 text-xs text-slate-500">Select one or more students to enroll:</p>
+          <div className="max-h-60 space-y-1 overflow-y-auto">
+            {availableStudents.map((s: Profile) => (
+              <label key={s.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50">
+                <input type="checkbox" name="student_ids[]" value={s.id} className="h-4 w-4 accent-gold" />
+                <span className="text-sm text-slate-800">{s.full_name}</span>
+                <span className="text-xs text-slate-400">{s.email}</span>
+              </label>
+            ))}
+          </div>
+          <button className="mt-3 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+            Enroll Selected
+          </button>
+        </form>
+      )}
     </div>
   );
 }

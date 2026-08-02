@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { sendGradedEmail, sendNewAssignmentEmail } from "@/lib/email";
+import { sendGradedEmail, sendNewAssignmentEmail, sendDirectMessageEmail } from "@/lib/email";
 import { writeAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
@@ -56,6 +56,7 @@ export async function createAssignment(formData: FormData) {
   }
 
   revalidatePath(`/professor/courses/${courseId}`);
+  revalidatePath("/professor/assignments");
 }
 
 export async function gradeSubmission(formData: FormData) {
@@ -169,5 +170,54 @@ export async function saveAttendance(formData: FormData) {
   }));
 
   await supabase.from("attendance").upsert(rows, { onConflict: "course_id,student_id,session_date" });
+  revalidatePath(`/professor/courses/${courseId}`);
+}
+
+export async function sendProfessorMessage(formData: FormData) {
+  const profile = await requireRole(["professor"]);
+  const supabase = await createClient();
+
+  const courseId = String(formData.get("course_id"));
+  const studentId = String(formData.get("student_id") || "");
+  const subject = String(formData.get("subject") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  if (!subject || !body) return;
+
+  // Verify course belongs to this professor
+  const { data: course } = await supabase.from("courses").select("professor_id, title").eq("id", courseId).single();
+  if (!course || course.professor_id !== profile.id) return;
+
+  if (studentId) {
+    // Send to one student — verify they're enrolled
+    const { data: enrollment } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("course_id", courseId)
+      .eq("student_id", studentId)
+      .single();
+    if (!enrollment) return;
+
+    const { data: student } = await supabase.from("profiles").select("full_name, email").eq("id", studentId).single();
+    if (!student) return;
+
+    await sendDirectMessageEmail({ to: student.email, studentName: student.full_name, subject, body });
+    void createNotification({ userId: studentId, title: `Message from ${profile.full_name}`, body: subject, link: null });
+  } else {
+    // Broadcast to all enrolled students
+    const { data: enrollments } = await supabase
+      .from("enrollments")
+      .select("profiles(id, full_name, email)")
+      .eq("course_id", courseId);
+
+    await Promise.allSettled(
+      (enrollments ?? []).map((e) => {
+        const student = e.profiles as unknown as { id: string; full_name: string; email: string } | null;
+        if (!student) return Promise.resolve();
+        void createNotification({ userId: student.id, title: `Message from ${profile.full_name}`, body: subject, link: null });
+        return sendDirectMessageEmail({ to: student.email, studentName: student.full_name, subject, body });
+      })
+    );
+  }
+
   revalidatePath(`/professor/courses/${courseId}`);
 }
