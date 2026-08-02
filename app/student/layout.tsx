@@ -7,6 +7,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const links = [
     { href: "/student/getting-started", label: "Getting Started" },
     { href: "/student", label: "My Courses" },
+    { href: "/student/assignments", label: "Assignments" },
     { href: "/student/modules", label: "Modules" },
     { href: "/student/zoom", label: "Zoom & Recordings" },
     { href: "/student/transcript", label: "Transcript" },
