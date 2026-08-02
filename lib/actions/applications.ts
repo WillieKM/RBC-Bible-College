@@ -123,6 +123,19 @@ export async function submitApplication(formData: FormData) {
     redirect(`${returnTo}?error=Photo+must+be+smaller+than+5MB`);
   }
 
+  // Block if a profile (active account) already exists for this email.
+  // This catches re-applications from existing students regardless of what
+  // happened to their original application record.
+  const { data: existingProfile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingProfile) {
+    redirect(`${returnTo}?notice=${encodeURIComponent("An account already exists with this email address. Please log in instead, or contact admissions if you need help accessing your account.")}`);
+  }
+
   // Applications RLS restricts reads to admins, so this existence check needs
   // the service-role client even though the insert below uses the anon client.
   const { data: existing } = await adminClient
