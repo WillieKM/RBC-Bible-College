@@ -32,4 +32,5 @@ export async function deleteHandbookPage(formData: FormData) {
   await supabase.from("handbook_pages").delete().eq("id", id);
   revalidatePath("/admin/handbook");
   revalidatePath("/student/handbook");
+  revalidatePath("/professor/handbook");
 }

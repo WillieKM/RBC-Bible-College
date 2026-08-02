@@ -18,6 +18,7 @@ export async function logProfessorHours(formData: FormData) {
 
   await admin.from("professor_hours").insert({ professor_id: professorId, date, hours, category, description });
   revalidatePath("/admin/hours");
+  revalidatePath("/professor/hours");
 }
 
 export async function approveProfessorHours(formData: FormData) {
@@ -30,6 +31,7 @@ export async function approveProfessorHours(formData: FormData) {
     .eq("id", id);
 
   revalidatePath("/admin/hours");
+  revalidatePath("/professor/hours");
 }
 
 export async function deleteProfessorHours(formData: FormData) {
@@ -39,4 +41,5 @@ export async function deleteProfessorHours(formData: FormData) {
 
   await admin.from("professor_hours").delete().eq("id", id);
   revalidatePath("/admin/hours");
+  revalidatePath("/professor/hours");
 }

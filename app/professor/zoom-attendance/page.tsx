@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireRole } from "@/lib/auth";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
 
@@ -8,6 +9,7 @@ const AUDIENCE_LABELS: Record<string, string> = {
 };
 
 export default async function ProfessorZoomAttendancePage() {
+  await requireRole(["professor"]);
   const admin = createAdminClient();
 
   const { data: sessionsRaw } = await admin

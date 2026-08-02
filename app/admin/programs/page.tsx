@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createProgram, deleteProgram } from "@/lib/actions/admin";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
+import { TypeToConfirmButton } from "@/components/TypeToConfirmButton";
 import type { Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
@@ -75,10 +76,11 @@ export default async function AdminProgramsPage() {
                 </p>
               )}
             </div>
-            <form action={deleteProgram}>
-              <input type="hidden" name="id" value={program.id} />
-              <button className="text-sm font-medium text-red-600 hover:underline">Delete</button>
-            </form>
+            <TypeToConfirmButton
+              formAction={deleteProgram}
+              hiddenFields={{ id: program.id }}
+              userName={program.name}
+            />
           </div>
         ))}
         {(programs ?? []).length === 0 && <p className="text-sm text-slate-500">No programs yet.</p>}

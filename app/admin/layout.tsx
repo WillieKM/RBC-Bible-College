@@ -17,6 +17,7 @@ const PROOFS_LINK = { href: "/admin/invoices/proofs", label: "Payment Proofs" };
 
 const REST_LINKS = [
   { href: "/admin/modules", label: "Modules" },
+  { href: "/admin/prayers", label: "Prayer Board" },
   { href: "/admin/hours", label: "Prof. Hours" },
   { href: "/admin/zoom", label: "Zoom Sessions" },
   { href: "/admin/announcements", label: "Notices" },
@@ -24,6 +25,7 @@ const REST_LINKS = [
   { href: "/admin/calendar", label: "Calendar" },
   { href: "/admin/handbook", label: "Handbook" },
   { href: "/admin/audit", label: "Audit" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

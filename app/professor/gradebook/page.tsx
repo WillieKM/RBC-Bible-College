@@ -143,9 +143,9 @@ export default async function GradeBookPage() {
                     </tbody>
                   </table>
                   <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-400">
-                    <span className="font-semibold text-green-700">12</span> graded &nbsp;·&nbsp;
-                    <span className="text-amber-500">●</span> submitted, awaiting grade &nbsp;·&nbsp;
-                    <span className="text-slate-300">—</span> not submitted
+                    <span className="font-semibold text-green-700">number</span> = graded &nbsp;·&nbsp;
+                    <span className="text-amber-500">●</span> = submitted, awaiting grade &nbsp;·&nbsp;
+                    <span className="text-slate-300">—</span> = not submitted
                   </div>
                 </div>
               )}

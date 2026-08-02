@@ -104,6 +104,10 @@ export async function gradeSubmission(formData: FormData) {
   }
 
   revalidatePath(`/professor/assignments/${assignmentId}`);
+  revalidatePath("/professor/assignments");
+  revalidatePath(`/student/assignments/${assignmentId}`);
+  revalidatePath("/student/transcript");
+  revalidatePath("/student");
 }
 
 export async function addCourseMaterial(formData: FormData) {

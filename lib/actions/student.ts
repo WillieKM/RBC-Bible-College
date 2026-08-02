@@ -62,4 +62,7 @@ export async function submitAssignment(formData: FormData) {
   }
 
   revalidatePath(`/student/assignments/${assignmentId}`);
+  revalidatePath("/student/assignments");
+  revalidatePath(`/professor/assignments/${assignmentId}`);
+  revalidatePath("/professor/assignments");
 }

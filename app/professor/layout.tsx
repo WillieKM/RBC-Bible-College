@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth";
 import { DashboardShell } from "@/components/DashboardShell";
 
 const LINKS = [
+  { href: "/professor/getting-started", label: "Getting Started" },
   { href: "/professor", label: "My Courses" },
   { href: "/professor/assignments", label: "Assignments" },
   { href: "/professor/gradebook", label: "Grade Book" },

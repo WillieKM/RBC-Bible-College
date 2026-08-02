@@ -17,7 +17,7 @@ export async function DashboardShell({
   activePortal?: "admin" | "student" | "professor";
 }) {
   const isAdmin = profile.role === "admin";
-  const showBell = profile.role === "student" || profile.role === "professor";
+  const showBell = profile.role === "student" || profile.role === "professor" || profile.role === "admin";
 
   let notifications: Notification[] = [];
   if (showBell) {
