@@ -20,6 +20,7 @@ import { nextSequenceNumber } from "@/lib/sequences";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { after } from "next/server";
 
 const TOP_LEVEL_FORM_KEYS = new Set([
   "full_name",
@@ -203,25 +204,36 @@ export async function submitApplication(formData: FormData) {
 
   const programProfessor = programRow?.profiles as unknown as { full_name: string; email: string } | null;
 
-  // Emails are awaited so the serverless function stays alive long enough to send them.
-  // allSettled ensures one failure won't crash the form or block the redirect.
-  await Promise.allSettled([
-    sendApplicationConfirmationEmail({ to: email, fullName, program, region }),
-    sendNewApplicationEmail({ fullName, email, phone: phone || null, program, statement }),
-    programRow?.professor_id && programProfessor?.email
-      ? sendNewApplicationToProfessorEmail({
-          to: programProfessor.email,
-          professorName: programProfessor.full_name,
-          fullName,
-          email,
-          phone: phone || null,
-          program,
-        })
-      : Promise.resolve(),
-    source === "tbcs"
-      ? sendAccreditationEmail({ to: email, fullName, program })
-      : Promise.resolve(),
-  ]);
+  // Fire emails after the redirect so the applicant reaches the success page
+  // immediately without waiting for email delivery.
+  const capturedEmail = email;
+  const capturedFullName = fullName;
+  const capturedProgram = program;
+  const capturedRegion = region;
+  const capturedPhone = phone;
+  const capturedSource = source;
+  const capturedProfessor = programProfessor;
+  const capturedProfessorId = programRow?.professor_id;
+
+  after(async () => {
+    await Promise.allSettled([
+      sendApplicationConfirmationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram, region: capturedRegion }),
+      sendNewApplicationEmail({ fullName: capturedFullName, email: capturedEmail, phone: capturedPhone || null, program: capturedProgram, statement }),
+      capturedProfessorId && capturedProfessor?.email
+        ? sendNewApplicationToProfessorEmail({
+            to: capturedProfessor.email,
+            professorName: capturedProfessor.full_name,
+            fullName: capturedFullName,
+            email: capturedEmail,
+            phone: capturedPhone || null,
+            program: capturedProgram,
+          })
+        : Promise.resolve(),
+      capturedSource === "tbcs"
+        ? sendAccreditationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram })
+        : Promise.resolve(),
+    ]);
+  });
 
   const params = new URLSearchParams({
     name: fullName,
