@@ -201,7 +201,7 @@ export async function sendProfessorMessage(formData: FormData) {
     if (!student) return;
 
     await sendDirectMessageEmail({ to: student.email, studentName: student.full_name, subject, body });
-    void createNotification({ userId: studentId, title: `Message from ${profile.full_name}`, body: subject, link: null });
+    void createNotification({ userId: studentId, title: `Message from ${profile.full_name}`, body: subject, link: undefined});
   } else {
     // Broadcast to all enrolled students
     const { data: enrollments } = await supabase
@@ -213,7 +213,7 @@ export async function sendProfessorMessage(formData: FormData) {
       (enrollments ?? []).map((e) => {
         const student = e.profiles as unknown as { id: string; full_name: string; email: string } | null;
         if (!student) return Promise.resolve();
-        void createNotification({ userId: student.id, title: `Message from ${profile.full_name}`, body: subject, link: null });
+        void createNotification({ userId: student.id, title: `Message from ${profile.full_name}`, body: subject, link: undefined});
         return sendDirectMessageEmail({ to: student.email, studentName: student.full_name, subject, body });
       })
     );
