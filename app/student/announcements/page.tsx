@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 import type { Announcement } from "@/lib/types";
 
 export default async function StudentAnnouncementsPage() {
+  await requireRole(["student"]);
   const supabase = await createClient();
 
   const { data } = await supabase

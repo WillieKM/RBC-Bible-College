@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarEvent } from "@/lib/types";
 
@@ -11,6 +12,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default async function StudentCalendarPage() {
+  await requireRole(["student"]);
   const supabase = await createClient();
   const { data: events } = await supabase
     .from("events")
@@ -42,7 +44,6 @@ export default async function StudentCalendarPage() {
             <CalendarGrid events={all} />
           </div>
 
-          {/* Upcoming events list */}
           {upcoming.length > 0 && (
             <div className="mt-10">
               <h2 className="text-base font-semibold text-slate-800">Upcoming Events</h2>

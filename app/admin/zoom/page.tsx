@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireRole } from "@/lib/auth";
 import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
@@ -86,6 +87,7 @@ export default async function AdminZoomPage({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
+  await requireRole(["admin"]);
   const { edit } = await searchParams;
   const admin = createAdminClient();
 

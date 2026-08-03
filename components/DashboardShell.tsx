@@ -33,11 +33,18 @@ export async function DashboardShell({
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {isAdmin && activePortal && activePortal !== "admin" && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2">
+          <p className="mx-auto max-w-5xl text-xs text-amber-700">
+            Previewing the <span className="font-semibold capitalize">{activePortal}</span> portal — your admin account isn&apos;t enrolled as a {activePortal}, so personal course data won&apos;t appear here.
+          </p>
+        </div>
+      )}
       {isAdmin && activePortal && (
         <div className="border-b border-gold/40 bg-ink-light px-4 py-2">
           <div className="mx-auto flex max-w-5xl items-center gap-1.5">
             <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              View as:
+              Portal:
             </span>
             {(
               [
