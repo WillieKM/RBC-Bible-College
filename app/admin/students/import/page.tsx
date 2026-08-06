@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { bulkImportStudents } from "@/lib/actions/import";
+import { requireRole } from "@/lib/auth";
+import { CsvImportForm } from "@/components/CsvImportForm";
 import type { Program } from "@/lib/types";
 
 const TEMPLATE = [
@@ -20,6 +21,7 @@ export default async function BulkImportPage({
     error?: string;
   }>;
 }) {
+  await requireRole(["admin"]);
   const params = await searchParams;
   const supabase = await createClient();
   const { data: programs } = await supabase.from("programs").select("name").order("name");
@@ -42,7 +44,7 @@ export default async function BulkImportPage({
   const programNames = (programs ?? []).map((p: Pick<Program, "name">) => p.name);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <p className="text-sm">
         <a href="/admin/students" className="text-gold-dark hover:underline">← Students</a>
       </p>
@@ -51,7 +53,7 @@ export default async function BulkImportPage({
         For students already enrolled before this portal was set up. Each student receives an invitation email to set their password and access the portal.
       </p>
 
-      {/* Results panel */}
+      {/* ── Results panel (shown after submit) ── */}
       {hasResults && (
         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="font-semibold text-slate-800">Import Results</h2>
@@ -78,7 +80,7 @@ export default async function BulkImportPage({
                   <div className="flex items-center gap-2">
                     {r.reason && <span className="text-xs text-slate-400">{r.reason}</span>}
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      r.status === "added" ? "bg-green-100 text-green-700"
+                      r.status === "added"   ? "bg-green-100 text-green-700"
                       : r.status === "skipped" ? "bg-amber-100 text-amber-700"
                       : "bg-red-100 text-red-600"
                     }`}>{r.status}</span>
@@ -89,7 +91,9 @@ export default async function BulkImportPage({
           )}
 
           <div className="mt-4">
-            <a href="/admin/students/import" className="text-sm text-gold-dark hover:underline">Import another batch →</a>
+            <a href="/admin/students/import" className="text-sm text-gold-dark hover:underline">
+              Import another batch →
+            </a>
           </div>
         </div>
       )}
@@ -100,10 +104,10 @@ export default async function BulkImportPage({
         </div>
       )}
 
-      {/* Instructions */}
+      {/* ── Instructions + form (hidden after submit) ── */}
       {!hasResults && (
         <>
-          {/* Column format */}
+          {/* CSV format reference */}
           <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="font-semibold text-slate-800">CSV Format</h2>
             <div className="mt-3 overflow-x-auto">
@@ -138,7 +142,7 @@ export default async function BulkImportPage({
           </div>
 
           {/* Template download */}
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3">
             <a
               href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`}
               download="student-import-template.csv"
@@ -147,52 +151,10 @@ export default async function BulkImportPage({
               Download template CSV
             </a>
           </div>
+
+          {/* Live-preview import form */}
+          <CsvImportForm programs={programNames} />
         </>
-      )}
-
-      {/* Import form */}
-      {!hasResults && (
-        <form action={bulkImportStudents} encType="multipart/form-data" className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">Import</h2>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-700">
-              Paste CSV data
-              <span className="ml-1 font-normal text-slate-400">(include or skip the header row)</span>
-            </label>
-            <textarea
-              name="csv_text"
-              rows={10}
-              placeholder={`Full Name,Email,Program,Region,Student Number\nJohn Mwangi,john@example.com,Diploma,international,\nJane Smith,jane@example.com,Certificate,international,RBC-2023-0012`}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-gold"
-            />
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-700">
-              Or upload a CSV file
-            </label>
-            <input
-              type="file"
-              name="csv_file"
-              accept=".csv,text/csv"
-              className="mt-1 block text-sm text-slate-600"
-            />
-          </div>
-
-          <div className="mt-5 flex items-center gap-3">
-            <button
-              type="submit"
-              className="rounded-lg bg-gold px-5 py-2 text-sm font-semibold text-ink hover:bg-gold-dark"
-            >
-              Import Students
-            </button>
-            <p className="text-xs text-slate-400">
-              Each new student receives an email invitation to set their password.
-              Existing accounts are skipped automatically.
-            </p>
-          </div>
-        </form>
       )}
     </div>
   );
