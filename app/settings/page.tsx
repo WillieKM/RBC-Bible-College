@@ -3,6 +3,7 @@ import { updateProfile, updatePassword, updatePersonalDetails } from "@/lib/acti
 import { DashboardShell } from "@/components/DashboardShell";
 import { PasswordField } from "@/components/PasswordField";
 import { redirect } from "next/navigation";
+import type { NavGroup } from "@/components/Sidebar";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -21,10 +22,14 @@ export default async function SettingsPage({
 
   const backHref = ROLE_HOME[profile.role] ?? "/";
 
+  const groups: NavGroup[] = [
+    { links: [{ href: backHref, label: "← Back to Dashboard" }] },
+  ];
+
   return (
     <DashboardShell
       profile={profile}
-      links={[{ href: backHref, label: "← Back to Dashboard" }]}
+      groups={groups}
       activePortal={profile.role as "admin" | "student" | "professor"}
     >
       <div className="max-w-lg">

@@ -1,129 +1,59 @@
-import { logout } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, Notification } from "@/lib/types";
-import { NotificationBell } from "@/components/NotificationBell";
-import Link from "next/link";
-import Image from "next/image";
+import { Sidebar, type NavGroup } from "@/components/Sidebar";
+import { PageTransition } from "@/components/PageTransition";
 
 export async function DashboardShell({
   profile,
-  links,
+  groups,
   children,
   activePortal,
 }: {
   profile: Profile;
-  links: { href: string; label: string }[];
+  groups: NavGroup[];
   children: React.ReactNode;
   activePortal?: "admin" | "student" | "professor";
 }) {
   const isAdmin = profile.role === "admin";
-  const showBell = profile.role === "student" || profile.role === "professor" || profile.role === "admin";
 
-  let notifications: Notification[] = [];
-  if (showBell) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    notifications = (data ?? []) as Notification[];
-  }
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const notifications = (data ?? []) as Notification[];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {isAdmin && activePortal && activePortal !== "admin" && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2">
-          <p className="mx-auto max-w-5xl text-xs text-amber-700">
-            Previewing the <span className="font-semibold capitalize">{activePortal}</span> portal — your admin account isn&apos;t enrolled as a {activePortal}, so personal course data won&apos;t appear here.
-          </p>
-        </div>
-      )}
-      {isAdmin && activePortal && (
-        <div className="border-b border-gold/40 bg-ink-light px-4 py-2">
-          <div className="mx-auto flex max-w-5xl items-center gap-1.5">
-            <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Portal:
-            </span>
-            {(
-              [
-                { portal: "admin" as const, href: "/admin", label: "Admin" },
-                { portal: "student" as const, href: "/student", label: "Student" },
-                { portal: "professor" as const, href: "/professor", label: "Professor" },
-              ] as const
-            ).map(({ portal, href, label }) => (
-              <Link
-                key={portal}
-                href={href}
-                className={`rounded px-3 py-0.5 text-xs font-semibold transition-colors ${
-                  activePortal === portal
-                    ? "bg-gold text-ink"
-                    : "text-slate-400 hover:bg-gold/10 hover:text-gold"
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-100">
+      <Sidebar
+        profile={profile}
+        groups={groups}
+        activePortal={activePortal}
+        isAdmin={isAdmin}
+        notifications={notifications}
+      />
 
-      <header className="border-b border-gold/20 bg-ink">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <Image
-                src="/logo.jpg"
-                alt="Revelation Bible College International"
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-              <span className="font-bold text-gold">RBC</span>
-            </Link>
-            <nav className="flex flex-wrap gap-x-3 gap-y-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="whitespace-nowrap text-sm font-medium text-slate-300 hover:text-gold"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            {showBell && <NotificationBell notifications={notifications} />}
-            <Link href="/settings" className="flex items-center gap-2 group" title="Settings">
-              {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.full_name}
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-gold/40 group-hover:ring-gold"
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-xs font-bold text-gold group-hover:bg-gold/30">
-                  {profile.full_name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <span className="hidden text-sm text-slate-400 group-hover:text-gold sm:block">
-                {profile.full_name.split(" ")[0]}{" "}
-                <span className="text-slate-500">({profile.role})</span>
-              </span>
-            </Link>
-            <form action={logout}>
-              <button className="text-sm font-medium text-slate-400 hover:text-red-400">
-                Sign out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      {/* Content area — offset for fixed sidebar on desktop, mobile top bar */}
+      <div className="lg:ml-60 pt-14 lg:pt-0 flex flex-col min-h-screen">
 
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        {/* Admin preview banner */}
+        {isAdmin && activePortal && activePortal !== "admin" && (
+          <div className="border-b border-amber-200 bg-amber-50 px-6 py-2.5">
+            <p className="text-xs text-amber-700">
+              Previewing the{" "}
+              <span className="font-semibold capitalize">{activePortal}</span>{" "}
+              portal — your admin account isn&apos;t enrolled as a{" "}
+              {activePortal}, so personal course data won&apos;t appear here.
+            </p>
+          </div>
+        )}
+
+        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 max-w-5xl w-full mx-auto">
+          <PageTransition>{children}</PageTransition>
+        </main>
+      </div>
     </div>
   );
 }

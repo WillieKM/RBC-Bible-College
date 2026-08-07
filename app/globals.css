@@ -46,3 +46,13 @@ body {
 @keyframes csvSpin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Page & sidebar animations ── */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sidebarOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
