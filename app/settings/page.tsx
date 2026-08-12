@@ -3,13 +3,7 @@ import { updateProfile, updatePassword, updatePersonalDetails } from "@/lib/acti
 import { DashboardShell } from "@/components/DashboardShell";
 import { PasswordField } from "@/components/PasswordField";
 import { redirect } from "next/navigation";
-import type { NavGroup } from "@/components/Sidebar";
-
-const ROLE_HOME: Record<string, string> = {
-  admin: "/admin",
-  professor: "/professor",
-  student: "/student",
-};
+import { getNavGroups } from "@/lib/portal-nav";
 
 export default async function SettingsPage({
   searchParams,
@@ -20,16 +14,10 @@ export default async function SettingsPage({
   if (!profile) redirect("/login");
   const { saved, pw_saved, error, details_saved } = await searchParams;
 
-  const backHref = ROLE_HOME[profile.role] ?? "/";
-
-  const groups: NavGroup[] = [
-    { links: [{ href: backHref, label: "← Back to Dashboard" }] },
-  ];
-
   return (
     <DashboardShell
       profile={profile}
-      groups={groups}
+      groups={getNavGroups(profile)}
       activePortal={profile.role as "admin" | "student" | "professor"}
     >
       <div className="max-w-lg">

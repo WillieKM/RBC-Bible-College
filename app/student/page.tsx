@@ -202,29 +202,70 @@ export default async function StudentHomePage() {
           const course = e.courses as Course;
           const prerequisiteTitle = course.prerequisite_id ? courseTitleMap.get(course.prerequisite_id) : null;
           const locked = !!course.prerequisite_id && !completedCourseIds.has(course.prerequisite_id);
+          const completed = completedCourseIds.has(course.id);
+
+          const moduleAssignments = assignmentsByCourse.get(course.id) ?? [];
+          const gradedCount   = moduleAssignments.filter((a) => submissionMap.get(a.id)?.grade != null).length;
+          const submittedCount = moduleAssignments.filter((a) => submissionMap.has(a.id)).length;
+          const totalCount    = moduleAssignments.length;
+          const pct = totalCount > 0 ? Math.round((gradedCount / totalCount) * 100) : 0;
+
           return (
             <Link
               key={e.id}
               href={`/student/courses/${course.id}`}
-              className="block rounded-lg border border-slate-200 bg-white px-4 py-3 hover:border-gold"
+              className={`block rounded-xl border bg-white px-4 py-3 shadow-sm transition-all hover:border-gold hover:shadow-md ${
+                completed ? "border-green-200" : locked ? "border-slate-100 opacity-75" : "border-slate-200"
+              }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold text-slate-900">
-                  {course.title} {course.code ? <span className="text-slate-400">({course.code})</span> : null}
+                  {course.title}
+                  {course.code && <span className="ml-1.5 text-xs font-normal text-slate-400">({course.code})</span>}
                 </p>
-                {completedCourseIds.has(course.id) && (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Completed</span>
+                {completed && (
+                  <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                    ✓ Completed
+                  </span>
                 )}
                 {locked && (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                    Locked — complete {prerequisiteTitle} first
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                    🔒 Locked
                   </span>
                 )}
               </div>
+
+              {locked && prerequisiteTitle && (
+                <p className="mt-1 text-xs text-slate-400">Complete &ldquo;{prerequisiteTitle}&rdquo; first</p>
+              )}
+
+              {totalCount > 0 && !locked && (
+                <div className="mt-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                    <span>
+                      {gradedCount}/{totalCount} graded
+                      {submittedCount > gradedCount && (
+                        <span className="ml-1.5 text-amber-500">· {submittedCount - gradedCount} awaiting grade</span>
+                      )}
+                    </span>
+                    <span>{pct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${completed ? "bg-green-400" : "bg-gold"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {totalCount === 0 && !locked && (
+                <p className="mt-1 text-xs text-slate-400">No assignments yet</p>
+              )}
             </Link>
           );
         })}
-        {(enrollments ?? []).length === 0 && <p className="text-sm text-slate-500">You're not enrolled in any courses yet.</p>}
+        {(enrollments ?? []).length === 0 && <p className="text-sm text-slate-500">You&apos;re not enrolled in any courses yet.</p>}
       </div>
     </div>
   );

@@ -1,50 +1,11 @@
 import { requireRole } from "@/lib/auth";
 import { DashboardShell } from "@/components/DashboardShell";
-import type { NavGroup } from "@/components/Sidebar";
+import { studentNavGroups } from "@/lib/portal-nav";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireRole(["student"]);
-
-  const groups: NavGroup[] = [
-    {
-      links: [{ href: "/student/getting-started", label: "Getting Started" }],
-    },
-    {
-      label: "Study",
-      links: [
-        { href: "/student", label: "My Courses" },
-        { href: "/student/assignments", label: "Assignments" },
-        { href: "/student/modules", label: "Modules" },
-        { href: "/student/zoom", label: "Zoom & Recordings" },
-        { href: "/student/transcript", label: "Transcript" },
-        { href: "/student/attendance", label: "Attendance" },
-      ],
-    },
-    {
-      label: "Finance",
-      links: [{ href: "/student/invoices", label: "Invoices" }],
-    },
-    {
-      label: "Community",
-      links: [
-        { href: "/student/announcements", label: "Notices" },
-        { href: "/student/prayers", label: "Prayer Board" },
-        { href: "/student/library", label: "Library" },
-        { href: "/student/calendar", label: "Calendar" },
-        { href: "/student/handbook", label: "Handbook" },
-      ],
-    },
-    {
-      links: [
-        { href: "/student/id-card", label: "ID Card" },
-        ...(profile.completed_at ? [{ href: "/student/certificate", label: "Certificate" }] : []),
-        { href: "/settings", label: "Settings" },
-      ],
-    },
-  ];
-
   return (
-    <DashboardShell profile={profile} groups={groups} activePortal="student">
+    <DashboardShell profile={profile} groups={studentNavGroups(profile)} activePortal="student">
       {children}
     </DashboardShell>
   );
