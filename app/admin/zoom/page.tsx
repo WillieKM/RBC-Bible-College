@@ -129,6 +129,18 @@ export default async function AdminZoomPage({
           </div>
         </div>
         <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Also send to specific emails{" "}
+            <span className="font-normal text-slate-400">(optional — comma or newline separated)</span>
+          </label>
+          <textarea
+            name="specific_emails"
+            rows={2}
+            placeholder={"pastor@example.com, deacon@example.com\nextra@example.com"}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-gold/40"
+          />
+        </div>
+        <div>
           <label className="block text-sm font-medium text-slate-700">YouTube recording URL <span className="font-normal text-slate-400">(paste after session — optional)</span></label>
           <input name="recording_url" type="url" placeholder="https://youtu.be/..." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         </div>
@@ -167,6 +179,19 @@ export default async function AdminZoomPage({
                   </div>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Also send to specific emails{" "}
+                    <span className="font-normal text-slate-400">(optional — comma or newline separated)</span>
+                  </label>
+                  <textarea
+                    name="specific_emails"
+                    rows={2}
+                    defaultValue={(s as ZoomSession & { specific_emails?: string }).specific_emails ?? ""}
+                    placeholder={"pastor@example.com, deacon@example.com"}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-gold/40"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700">YouTube recording URL <span className="font-normal text-slate-400">(optional)</span></label>
                   <input name="recording_url" type="url" defaultValue={(s as ZoomSession & { recording_url?: string }).recording_url ?? ""} placeholder="https://youtu.be/..." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                 </div>
@@ -181,7 +206,15 @@ export default async function AdminZoomPage({
               <div className="flex items-start justify-between px-5 py-4">
                 <div className="flex-1">
                   <p className="font-semibold text-slate-900">{s.title}</p>
-                  <p className="text-sm text-slate-500">{audienceLabel(s)}</p>
+                  <p className="text-sm text-slate-500">
+                    {audienceLabel(s)}
+                    {(s as ZoomSession & { specific_emails?: string }).specific_emails && (
+                      <span className="ml-2 text-xs text-slate-400">
+                        + {(s as ZoomSession & { specific_emails?: string }).specific_emails!
+                          .split(/[\n,]/).map(e => e.trim()).filter(Boolean).length} specific
+                      </span>
+                    )}
+                  </p>
                   {s.description && <p className="mt-0.5 text-xs text-slate-400">{s.description}</p>}
                   <div className="mt-1 flex flex-wrap items-center gap-3">
                     <span className={`text-xs font-medium ${s.active ? "text-blue-600" : "text-slate-400"}`}>

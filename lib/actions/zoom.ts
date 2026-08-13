@@ -12,6 +12,15 @@ const AUDIENCE_LABELS: Record<string, string> = {
   masters: "Master's", diploma: "Diploma", certificate: "Certificate",
 };
 
+function parseSpecificEmails(raw: string | null): { email: string; full_name: string }[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]/)
+    .map((e) => e.trim())
+    .filter((e) => e.includes("@"))
+    .map((email) => ({ email, full_name: email.split("@")[0] }));
+}
+
 export async function createZoomSession(formData: FormData) {
   const profile = await requireRole(["admin"]);
   const supabase = await createClient();
@@ -21,6 +30,7 @@ export async function createZoomSession(formData: FormData) {
   const description = String(formData.get("description") || "").trim() || null;
   const recordingUrl = String(formData.get("recording_url") || "").trim() || null;
   const targetAudience = String(formData.get("target_audience") || "all");
+  const specificEmails = String(formData.get("specific_emails") || "").trim() || null;
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
   const dayOfWeekRaw = String(formData.get("day_of_week") || "").trim();
@@ -36,6 +46,7 @@ export async function createZoomSession(formData: FormData) {
     description,
     recording_url: recordingUrl,
     target_audience: targetAudience,
+    specific_emails: specificEmails,
     recurrence,
     send_at: sendAt,
     day_of_week: recurrence !== "none" ? dayOfWeek : null,
@@ -55,6 +66,7 @@ export async function updateZoomSession(formData: FormData) {
   const description = String(formData.get("description") || "").trim() || null;
   const recordingUrl = String(formData.get("recording_url") || "").trim() || null;
   const targetAudience = String(formData.get("target_audience") || "all");
+  const specificEmails = String(formData.get("specific_emails") || "").trim() || null;
   const recurrence = String(formData.get("recurrence") || "none") as "none" | "weekly" | "biweekly" | "monthly";
   const sendAtRaw = String(formData.get("send_at") || "").trim();
   const dayOfWeekRaw = String(formData.get("day_of_week") || "").trim();
@@ -70,6 +82,7 @@ export async function updateZoomSession(formData: FormData) {
     description,
     recording_url: recordingUrl,
     target_audience: targetAudience,
+    specific_emails: specificEmails,
     recurrence,
     send_at: sendAt,
     day_of_week: recurrence !== "none" ? dayOfWeek : null,
@@ -124,8 +137,14 @@ export async function sendZoomNow(formData: FormData) {
   const { data: students } = await studentsQuery;
   const programName = AUDIENCE_LABELS[session.target_audience] ?? "your program";
 
+  const specificRecipients = parseSpecificEmails((session as { specific_emails?: string | null }).specific_emails ?? null);
+  const allRecipients = [
+    ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
+    ...specificRecipients,
+  ];
+
   await Promise.allSettled(
-    (students ?? []).map((s: { full_name: string; email: string }) =>
+    allRecipients.map((s) =>
       sendZoomLinkEmail({
         to: s.email,
         studentName: s.full_name,
@@ -160,8 +179,14 @@ export async function sendZoomReminder(formData: FormData) {
   }
 
   const { data: students } = await studentsQuery;
+  const specificRecipients = parseSpecificEmails((session as { specific_emails?: string | null }).specific_emails ?? null);
+  const allRecipients = [
+    ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
+    ...specificRecipients,
+  ];
+
   await Promise.allSettled(
-    (students ?? []).map((s: { full_name: string; email: string }) =>
+    allRecipients.map((s) =>
       sendZoomReminderEmail({
         to: s.email,
         studentName: s.full_name,
