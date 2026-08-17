@@ -123,6 +123,26 @@ export default async function AdminHomePage() {
         </Link>
       </div>
 
+      {/* Quick exports */}
+      <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="flex-1">
+          <p className="font-semibold text-slate-800">Student Call List</p>
+          <p className="text-xs text-slate-500">
+            Name · Student ID · Phone · Campus · Program · Outstanding balance — ready to open in Excel
+          </p>
+        </div>
+        <a
+          href="/api/export/call-list"
+          download
+          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download Excel (.csv)
+        </a>
+      </div>
+
       {/* Management section */}
       <h2 className="mt-10 text-lg font-semibold text-slate-800">Manage</h2>
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
