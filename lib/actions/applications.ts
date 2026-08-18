@@ -352,6 +352,7 @@ export async function reviewApplication(formData: FormData) {
       student_number: studentNumber,
       avatar_url: application.photo_url ?? null,
       region: studentRegion,
+      phone: application.phone ?? null,
     });
 
     if (programId) {

@@ -15,25 +15,29 @@ export async function GET() {
 
   const admin = createAdminClient();
 
-  // Separate queries — no foreign key joins that can silently fail
   const [
     { data: students, error: studentsErr },
     { data: programs, error: programsErr },
     { data: invoices, error: invoicesErr },
     { data: payments, error: paymentsErr },
+    // Pull phone from approved applications as fallback for existing students
+    { data: applications },
   ] = await Promise.all([
-    admin.from("profiles").select("id, full_name, student_number, phone, region, program_id").eq("role", "student").order("full_name"),
+    admin.from("profiles").select("id, full_name, student_number, phone, email, region, program_id").eq("role", "student").order("full_name"),
     admin.from("programs").select("id, name"),
     admin.from("invoices").select("id, student_id, total_amount"),
     admin.from("payments").select("invoice_id, amount"),
+    admin.from("applications").select("email, phone").eq("status", "approved").not("phone", "is", null),
   ]);
 
-  // Surface any query errors for debugging
   if (studentsErr || programsErr || invoicesErr || paymentsErr) {
-    return NextResponse.json({
-      studentsErr, programsErr, invoicesErr, paymentsErr,
-      studentCount: students?.length ?? 0,
-    }, { status: 500 });
+    return NextResponse.json({ studentsErr, programsErr, invoicesErr, paymentsErr }, { status: 500 });
+  }
+
+  // email → phone from applications (fallback for pre-fix profiles)
+  const appPhoneByEmail = new Map<string, string>();
+  for (const a of applications ?? []) {
+    if (a.email && a.phone) appPhoneByEmail.set(a.email.toLowerCase(), a.phone);
   }
 
   const programById = new Map((programs ?? []).map((p) => [p.id, p.name as string]));
@@ -56,10 +60,13 @@ export async function GET() {
     const campus   = isUsa ? "USA" : "Kenya / International";
     const currency = isUsa ? "USD" : "KSh";
     const balance  = balanceByStudent.get(s.id) ?? 0;
+    // Use profile phone first, fall back to application phone
+    const phone    = s.phone || appPhoneByEmail.get(s.email?.toLowerCase() ?? "") || "";
+
     return [
       esc(s.full_name),
       esc(s.student_number),
-      esc(s.phone),
+      esc(phone),
       esc(campus),
       esc(s.program_id ? programById.get(s.program_id) ?? "" : ""),
       esc(currency),
