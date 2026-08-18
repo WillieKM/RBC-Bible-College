@@ -21,13 +21,20 @@ export async function GET() {
     { data: invoices, error: invoicesErr },
     { data: payments, error: paymentsErr },
     { data: applications },
+    { data: { users: authUsers } },
   ] = await Promise.all([
     admin.from("profiles").select("id, full_name, student_number, phone, email, region, program_id").eq("role", "student").order("full_name"),
     admin.from("programs").select("id, name, fee_usa, fee_international"),
     admin.from("invoices").select("id, student_id, total_amount"),
     admin.from("payments").select("invoice_id, amount"),
     admin.from("applications").select("email, phone").eq("status", "approved").not("phone", "is", null),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+
+  const lastSignInById = new Map<string, string | null>();
+  for (const u of authUsers ?? []) {
+    lastSignInById.set(u.id, u.last_sign_in_at ?? null);
+  }
 
   if (studentsErr || programsErr || invoicesErr || paymentsErr) {
     return NextResponse.json({ studentsErr, programsErr, invoicesErr, paymentsErr }, { status: 500 });
@@ -76,6 +83,7 @@ export async function GET() {
     "Total Billed",
     "Total Paid",
     "Outstanding Balance",
+    "Last Login",
   ];
 
   const rows = (students ?? []).map((s) => {
@@ -90,6 +98,10 @@ export async function GET() {
     const outstanding = Math.max(0, billed - paid);
 
     const fmt = (n: number) => isUsa ? n.toFixed(2) : Math.round(n);
+    const lastSignIn = lastSignInById.get(s.id);
+    const lastLoginLabel = lastSignIn
+      ? new Date(lastSignIn).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      : "Never logged in";
 
     return [
       esc(s.full_name),
@@ -102,6 +114,7 @@ export async function GET() {
       esc(billed > 0 ? fmt(billed) : 0),
       esc(paid > 0 ? fmt(paid) : 0),
       esc(outstanding > 0 ? fmt(outstanding) : 0),
+      esc(lastLoginLabel),
     ].join(",");
   });
 
