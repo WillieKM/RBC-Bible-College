@@ -35,6 +35,8 @@ export interface Program {
   professor_id: string | null;
   fee_international: number | null;
   fee_usa: number | null;
+  enrollment_fee_international: number | null;
+  enrollment_fee_usa: number | null;
   created_at: string;
 }
 

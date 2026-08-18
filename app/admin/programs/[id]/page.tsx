@@ -57,6 +57,48 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
       </p>
       <form action={updateProgramFee} className="mt-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="id" value={(program as Program).id} />
+
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Enrollment / Registration Fee</p>
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              International enrollment fee
+              <span className="ml-1 text-xs font-normal text-slate-400">(KSh)</span>
+            </label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">KSh</span>
+              <input
+                name="enrollment_fee_international"
+                type="number"
+                step="1"
+                min="0"
+                defaultValue={(program as Program).enrollment_fee_international ?? ""}
+                placeholder="e.g. 10000"
+                className="w-44 rounded-lg border border-slate-300 py-2 pl-10 pr-3 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              USA enrollment fee
+              <span className="ml-1 text-xs font-normal text-slate-400">(USD $)</span>
+            </label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">$</span>
+              <input
+                name="enrollment_fee_usa"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={(program as Program).enrollment_fee_usa ?? ""}
+                placeholder="e.g. 250"
+                className="w-44 rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-400">Program / Tuition Fee</p>
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700">
@@ -71,7 +113,7 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
                 step="0.01"
                 min="0"
                 defaultValue={(program as Program).fee_international ?? ""}
-                placeholder="e.g. 1500"
+                placeholder="e.g. 120000"
                 className="w-44 rounded-lg border border-slate-300 py-2 pl-10 pr-3 text-sm"
               />
             </div>
@@ -89,20 +131,37 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
                 step="0.01"
                 min="0"
                 defaultValue={(program as Program).fee_usa ?? ""}
-                placeholder="e.g. 500"
+                placeholder="e.g. 2000"
                 className="w-44 rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-sm"
               />
             </div>
           </div>
           <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Save Fees</button>
         </div>
-        {((program as Program).fee_international != null || (program as Program).fee_usa != null) && (
-          <div className="mt-3 flex flex-wrap gap-4 rounded-lg bg-slate-50 px-4 py-3 text-sm">
-            {(program as Program).fee_international != null && (
-              <span>International: <strong>KSh{Number((program as Program).fee_international).toLocaleString()}</strong></span>
+        {((program as Program).fee_international != null || (program as Program).fee_usa != null ||
+          (program as Program).enrollment_fee_international != null || (program as Program).enrollment_fee_usa != null) && (
+          <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm">
+            {((program as Program).enrollment_fee_international != null || (program as Program).enrollment_fee_usa != null) && (
+              <div className="flex flex-wrap gap-4 border-b border-slate-200 pb-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 w-full">Enrollment Fee</span>
+                {(program as Program).enrollment_fee_international != null && (
+                  <span>International: <strong>KSh{Number((program as Program).enrollment_fee_international).toLocaleString()}</strong></span>
+                )}
+                {(program as Program).enrollment_fee_usa != null && (
+                  <span>USA: <strong>${Number((program as Program).enrollment_fee_usa).toLocaleString()}</strong></span>
+                )}
+              </div>
             )}
-            {(program as Program).fee_usa != null && (
-              <span>USA: <strong>${Number((program as Program).fee_usa).toLocaleString()}</strong></span>
+            {((program as Program).fee_international != null || (program as Program).fee_usa != null) && (
+              <div className="flex flex-wrap gap-4 pt-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 w-full">Program Fee</span>
+                {(program as Program).fee_international != null && (
+                  <span>International: <strong>KSh{Number((program as Program).fee_international).toLocaleString()}</strong></span>
+                )}
+                {(program as Program).fee_usa != null && (
+                  <span>USA: <strong>${Number((program as Program).fee_usa).toLocaleString()}</strong></span>
+                )}
+              </div>
             )}
           </div>
         )}

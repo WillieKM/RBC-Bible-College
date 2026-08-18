@@ -310,10 +310,12 @@ export async function reviewApplication(formData: FormData) {
     let programId: string | null = null;
     let programFeeIntl: number | null = null;
     let programFeeUsa: number | null = null;
+    let programEnrollFeeIntl: number | null = null;
+    let programEnrollFeeUsa: number | null = null;
     if (application.program) {
       const { data: existingProgram } = await admin
         .from("programs")
-        .select("id, fee_international, fee_usa")
+        .select("id, fee_international, fee_usa, enrollment_fee_international, enrollment_fee_usa")
         .eq("name", application.program)
         .maybeSingle();
 
@@ -321,15 +323,19 @@ export async function reviewApplication(formData: FormData) {
         programId = existingProgram.id;
         programFeeIntl = existingProgram.fee_international ?? null;
         programFeeUsa = existingProgram.fee_usa ?? null;
+        programEnrollFeeIntl = existingProgram.enrollment_fee_international ?? null;
+        programEnrollFeeUsa = existingProgram.enrollment_fee_usa ?? null;
       } else {
         const { data: newProgram } = await admin
           .from("programs")
           .insert({ name: application.program, program_level: application.program_level })
-          .select("id, fee_international, fee_usa")
+          .select("id, fee_international, fee_usa, enrollment_fee_international, enrollment_fee_usa")
           .single();
         programId = newProgram?.id ?? null;
         programFeeIntl = newProgram?.fee_international ?? null;
         programFeeUsa = newProgram?.fee_usa ?? null;
+        programEnrollFeeIntl = newProgram?.enrollment_fee_international ?? null;
+        programEnrollFeeUsa = newProgram?.enrollment_fee_usa ?? null;
       }
     }
 
@@ -362,7 +368,8 @@ export async function reviewApplication(formData: FormData) {
     const regionKey = studentRegion === "usa" ? "usa" : "international";
     const currency = regionKey === "usa" ? "$" : "KSh";
     const programLevel = application.program_level as keyof typeof ENROLLMENT_FEES;
-    const enrollFeeAmt = (ENROLLMENT_FEES[programLevel] ?? ENROLLMENT_FEES.diploma)[regionKey];
+    const perProgramEnrollFee = regionKey === "usa" ? programEnrollFeeUsa : programEnrollFeeIntl;
+    const enrollFeeAmt = perProgramEnrollFee ?? (ENROLLMENT_FEES[programLevel] ?? ENROLLMENT_FEES.diploma)[regionKey];
 
     // Auto-create tuition invoice
     if (programFee && programFee > 0) {

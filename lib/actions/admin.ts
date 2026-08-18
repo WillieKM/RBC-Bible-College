@@ -72,6 +72,8 @@ export async function updateProgramFee(formData: FormData) {
   await supabase.from("programs").update({
     fee_international: parseFee("fee_international"),
     fee_usa: parseFee("fee_usa"),
+    enrollment_fee_international: parseFee("enrollment_fee_international"),
+    enrollment_fee_usa: parseFee("enrollment_fee_usa"),
   }).eq("id", id);
   revalidatePath(`/admin/programs/${id}`);
   revalidatePath("/admin/programs");
