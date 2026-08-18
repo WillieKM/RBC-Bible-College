@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
 import { deleteApplication } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
-import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
-import type { Application } from "@/lib/types";
+import { PROGRAM_LEVEL_LABELS, FEE_SCHEDULE, ENROLLMENT_FEES } from "@/lib/fees";
+import type { Application, ProgramLevel } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
   searchParams,
@@ -13,10 +13,15 @@ export default async function AdminApplicationsPage({
   const { error, resent } = await searchParams;
   const supabase = await createClient();
 
-  const { data: applications } = await supabase.from("applications").select("*").order("created_at", { ascending: false });
+  const [{ data: applications }, { data: profiles }, { data: programs }] = await Promise.all([
+    supabase.from("applications").select("*").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("email, student_number, full_name"),
+    supabase.from("programs").select("id, name, fee_usa, fee_international, enrollment_fee_usa, enrollment_fee_international, program_level"),
+  ]);
+
   // Fetch student numbers so we can pre-fill the resend invite form
-  const { data: profiles } = await supabase.from("profiles").select("email, student_number, full_name");
   const profileByEmail = new Map((profiles ?? []).map((p: { email: string; student_number: string | null; full_name: string }) => [p.email, p]));
+  const programByName = new Map((programs ?? []).map((p) => [p.name as string, p]));
 
   const pending = (applications ?? []).filter((a: Application) => a.status === "pending");
   const reviewed = (applications ?? []).filter((a: Application) => a.status !== "pending");
@@ -76,6 +81,19 @@ export default async function AdminApplicationsPage({
                     {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level]})`}
                     {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
                   </p>
+                  {(() => {
+                    const region = app.region === "usa" ? "usa" : "international";
+                    const level = app.program_level as ProgramLevel;
+                    const prog = programByName.get(app.program);
+                    const programFee = (region === "usa" ? prog?.fee_usa : prog?.fee_international) ?? FEE_SCHEDULE[level]?.[region] ?? 0;
+                    const enrollFee = (region === "usa" ? prog?.enrollment_fee_usa : prog?.enrollment_fee_international) ?? ENROLLMENT_FEES[level]?.[region] ?? 0;
+                    const currency = region === "usa" ? "$" : "KSh";
+                    return (
+                      <p className="mt-1 text-xs font-medium text-indigo-700">
+                        Will invoice: {currency}{Number(enrollFee).toLocaleString()} enrollment + {currency}{Number(programFee).toLocaleString()} program fees
+                      </p>
+                    );
+                  })()}
                   {app.statement && (
                     <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>
                   )}
