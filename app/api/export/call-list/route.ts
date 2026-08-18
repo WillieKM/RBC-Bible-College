@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { FEE_SCHEDULE, ENROLLMENT_FEES } from "@/lib/fees";
+import type { ProgramLevel } from "@/lib/types";
 
 function esc(v: string | number | null | undefined): string {
   return `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -24,7 +26,7 @@ export async function GET() {
     { data: { users: authUsers } },
   ] = await Promise.all([
     admin.from("profiles").select("id, full_name, student_number, phone, email, region, program_id").eq("role", "student").order("full_name"),
-    admin.from("programs").select("id, name, fee_usa, fee_international"),
+    admin.from("programs").select("id, name, fee_usa, fee_international, enrollment_fee_usa, enrollment_fee_international, program_level"),
     admin.from("invoices").select("id, student_id, total_amount"),
     admin.from("payments").select("invoice_id, amount"),
     admin.from("applications").select("email, phone").eq("status", "approved").not("phone", "is", null),
@@ -47,7 +49,12 @@ export async function GET() {
   }
 
   const programById = new Map(
-    (programs ?? []).map((p) => [p.id, p as { id: string; name: string; fee_usa: number | null; fee_international: number | null }])
+    (programs ?? []).map((p) => [p.id, p as {
+      id: string; name: string;
+      fee_usa: number | null; fee_international: number | null;
+      enrollment_fee_usa: number | null; enrollment_fee_international: number | null;
+      program_level: string;
+    }])
   );
 
   // Total invoiced per student
@@ -79,7 +86,9 @@ export async function GET() {
     "Campus",
     "Program",
     "Currency",
+    "Enrollment Fee",
     "Program Fee",
+    "Total Program Fees",
     "Total Billed",
     "Total Paid",
     "Outstanding Balance",
@@ -87,18 +96,28 @@ export async function GET() {
   ];
 
   const rows = (students ?? []).map((s) => {
-    const isUsa      = s.region === "usa";
-    const campus     = isUsa ? "USA" : "Kenya / International";
-    const currency   = isUsa ? "USD" : "KSh";
-    const phone      = s.phone || appPhoneByEmail.get(s.email?.toLowerCase() ?? "") || "";
-    const program    = s.program_id ? programById.get(s.program_id) : null;
-    const programFee = program ? (isUsa ? program.fee_usa : program.fee_international) ?? 0 : 0;
-    const billed     = invoicedByStudent.get(s.id) ?? 0;
-    const paid       = paidByStudent.get(s.id) ?? 0;
+    const isUsa       = s.region === "usa";
+    const regionKey   = isUsa ? "usa" : "international";
+    const campus      = isUsa ? "USA" : "Kenya / International";
+    const currency    = isUsa ? "USD" : "KSh";
+    const phone       = s.phone || appPhoneByEmail.get(s.email?.toLowerCase() ?? "") || "";
+    const program     = s.program_id ? programById.get(s.program_id) : null;
+    const level       = (program?.program_level ?? "diploma") as ProgramLevel;
+
+    const programFee  = (isUsa ? program?.fee_usa : program?.fee_international)
+                        ?? FEE_SCHEDULE[level]?.[regionKey]
+                        ?? 0;
+    const enrollFee   = (isUsa ? program?.enrollment_fee_usa : program?.enrollment_fee_international)
+                        ?? ENROLLMENT_FEES[level]?.[regionKey]
+                        ?? 0;
+    const totalProgramFees = enrollFee + programFee;
+
+    const billed      = invoicedByStudent.get(s.id) ?? 0;
+    const paid        = paidByStudent.get(s.id) ?? 0;
     const outstanding = Math.max(0, billed - paid);
 
     const fmt = (n: number) => isUsa ? n.toFixed(2) : Math.round(n);
-    const lastSignIn = lastSignInById.get(s.id);
+    const lastSignIn  = lastSignInById.get(s.id);
     const lastLoginLabel = lastSignIn
       ? new Date(lastSignIn).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
       : "Never logged in";
@@ -110,7 +129,9 @@ export async function GET() {
       esc(campus),
       esc(program?.name ?? ""),
       esc(currency),
+      esc(enrollFee > 0 ? fmt(enrollFee) : ""),
       esc(programFee > 0 ? fmt(programFee) : ""),
+      esc(totalProgramFees > 0 ? fmt(totalProgramFees) : ""),
       esc(billed > 0 ? fmt(billed) : 0),
       esc(paid > 0 ? fmt(paid) : 0),
       esc(outstanding > 0 ? fmt(outstanding) : 0),
