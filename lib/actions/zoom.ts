@@ -21,6 +21,45 @@ function parseSpecificEmails(raw: string | null): { email: string; full_name: st
     .map((email) => ({ email, full_name: email.split("@")[0] }));
 }
 
+export async function saveProgramZoomUrl(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "").trim();
+  const zoomUrl = String(formData.get("zoom_url") || "").trim() || null;
+  if (!id) return;
+  await supabase.from("programs").update({ zoom_url: zoomUrl }).eq("id", id);
+  revalidatePath("/admin/zoom");
+}
+
+export async function sendProgramZoomNow(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const programId = String(formData.get("program_id") || "").trim();
+  const programName = String(formData.get("program_name") || "").trim();
+  const zoomUrl = String(formData.get("zoom_url") || "").trim();
+  if (!programId || !zoomUrl) return;
+
+  const { data: students } = await admin
+    .from("profiles")
+    .select("full_name, email")
+    .eq("role", "student")
+    .eq("program_id", programId);
+
+  await Promise.allSettled(
+    (students ?? []).map((s: { full_name: string; email: string }) =>
+      sendZoomLinkEmail({
+        to: s.email,
+        studentName: s.full_name,
+        sessionTitle: `${programName} — Class Session`,
+        description: null,
+        zoomUrl,
+        programName,
+      })
+    )
+  );
+  revalidatePath("/admin/zoom");
+}
+
 export async function createZoomSession(formData: FormData) {
   const profile = await requireRole(["admin"]);
   const supabase = await createClient();

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder } from "@/lib/actions/zoom";
+import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder, saveProgramZoomUrl, sendProgramZoomNow } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
@@ -92,10 +92,10 @@ export default async function AdminZoomPage({
   const { edit } = await searchParams;
   const admin = createAdminClient();
 
-  const { data: sessionsRaw } = await admin
-    .from("zoom_sessions")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: sessionsRaw }, { data: programs }] = await Promise.all([
+    admin.from("zoom_sessions").select("*").order("created_at", { ascending: false }),
+    admin.from("programs").select("id, name, zoom_url").order("name", { ascending: true }),
+  ]);
 
   const sessions = (sessionsRaw ?? []) as ZoomSession[];
 
@@ -106,8 +106,52 @@ export default async function AdminZoomPage({
         Add class Zoom links, choose which students receive them, and set a one-off or recurring send schedule.
       </p>
 
+      {/* Program quick-send cards */}
+      {(programs ?? []).length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-base font-semibold text-slate-800">Program Zoom Links</h2>
+          <p className="mt-0.5 text-xs text-slate-400">Store one Zoom link per program and send instantly to all enrolled students.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(programs ?? []).map((prog: { id: string; name: string; zoom_url: string | null }) => (
+              <div key={prog.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="font-semibold text-slate-800 truncate">{prog.name}</p>
+                <form action={saveProgramZoomUrl} className="mt-2 flex gap-2">
+                  <input type="hidden" name="id" value={prog.id} />
+                  <input
+                    name="zoom_url"
+                    type="url"
+                    defaultValue={prog.zoom_url ?? ""}
+                    placeholder="https://zoom.us/j/..."
+                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                  />
+                  <button className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    Save
+                  </button>
+                </form>
+                {prog.zoom_url && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <a href={prog.zoom_url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-xs text-gold-dark hover:underline">
+                      {prog.zoom_url}
+                    </a>
+                    <form action={sendProgramZoomNow}>
+                      <input type="hidden" name="program_id" value={prog.id} />
+                      <input type="hidden" name="program_name" value={prog.name} />
+                      <input type="hidden" name="zoom_url" value={prog.zoom_url} />
+                      <DeleteButton label="Send Now" pendingLabel="Sending…" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50" />
+                    </form>
+                  </div>
+                )}
+                {!prog.zoom_url && (
+                  <p className="mt-2 text-xs text-slate-400 italic">No link saved yet</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Create form */}
-      <form action={createZoomSession} className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <form action={createZoomSession} className="mt-8 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="font-semibold text-slate-800">Add Zoom Session</h2>
         <div className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-48">
