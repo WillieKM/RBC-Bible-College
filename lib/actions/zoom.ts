@@ -37,34 +37,32 @@ export async function sendZoomGroupNow(formData: FormData) {
   const groupId = String(formData.get("group_id") || "").trim();
   const groupTitle = String(formData.get("group_title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
+  const sendTo = String(formData.get("send_to") || "all");
   const specificEmailsRaw = String(formData.get("specific_emails") || "").trim();
   if (!groupId || !zoomUrl) return;
 
-  const { data: group } = await admin
-    .from("zoom_groups")
-    .select("program_levels")
-    .eq("id", groupId)
-    .single();
-
-  const levels: string[] = group?.program_levels ?? [];
-
-  // Get all programs matching those levels
-  const { data: programs } = await admin
-    .from("programs")
-    .select("id")
-    .in("program_level", levels);
-
-  const programIds = (programs ?? []).map((p: { id: string }) => p.id);
-
-  const { data: students } = programIds.length > 0
-    ? await admin.from("profiles").select("full_name, email").eq("role", "student").in("program_id", programIds)
-    : { data: [] };
-
   const specificRecipients = parseSpecificEmails(specificEmailsRaw || null);
-  const allRecipients = [
-    ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
-    ...specificRecipients,
-  ];
+  let allRecipients: { email: string; full_name: string }[] = [];
+
+  if (sendTo === "specific") {
+    allRecipients = specificRecipients;
+  } else {
+    const { data: group } = await admin
+      .from("zoom_groups")
+      .select("program_levels")
+      .eq("id", groupId)
+      .single();
+
+    const levels: string[] = group?.program_levels ?? [];
+    const { data: programs } = await admin.from("programs").select("id").in("program_level", levels);
+    const programIds = (programs ?? []).map((p: { id: string }) => p.id);
+
+    const { data: students } = programIds.length > 0
+      ? await admin.from("profiles").select("full_name, email").eq("role", "student").in("program_id", programIds)
+      : { data: [] };
+
+    allRecipients = (students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email }));
+  }
 
   await Promise.allSettled(
     allRecipients.map((r) =>

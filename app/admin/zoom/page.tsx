@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder, saveZoomGroupUrl, sendZoomGroupNow } from "@/lib/actions/zoom";
+import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder, saveZoomGroupUrl } from "@/lib/actions/zoom";
+import { ZoomGroupSendForm } from "@/components/ZoomGroupSendForm";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
@@ -128,33 +129,11 @@ export default async function AdminZoomPage({
               </form>
               {/* Send Now row */}
               {group.zoom_url && (
-                <form action={sendZoomGroupNow} className="mt-3 space-y-2">
-                  <input type="hidden" name="group_id" value={group.id} />
-                  <input type="hidden" name="group_title" value={group.title} />
-                  <input type="hidden" name="zoom_url" value={group.zoom_url} />
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600">
-                      Also send to specific emails{" "}
-                      <span className="font-normal text-slate-400">(optional — comma or newline separated)</span>
-                    </label>
-                    <textarea
-                      name="specific_emails"
-                      rows={2}
-                      placeholder="pastor@example.com, guest@example.com"
-                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <DeleteButton
-                      label="Send Now →"
-                      pendingLabel="Sending…"
-                      className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                    />
-                    <a href={group.zoom_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gold-dark hover:underline truncate">
-                      {group.zoom_url}
-                    </a>
-                  </div>
-                </form>
+                <ZoomGroupSendForm
+                  groupId={group.id}
+                  groupTitle={group.title}
+                  zoomUrl={group.zoom_url}
+                />
               )}
               {!group.zoom_url && (
                 <p className="mt-2 text-sm text-slate-400 italic">Paste the Zoom link above and save to enable sending.</p>
