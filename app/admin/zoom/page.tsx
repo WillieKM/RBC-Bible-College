@@ -133,6 +133,13 @@ export default async function AdminZoomPage({
                   groupId={group.id}
                   groupTitle={group.title}
                   zoomUrl={group.zoom_url}
+                  studentsLabel={
+                    group.id === "diploma"
+                      ? "All Diploma students"
+                      : group.id === "bachelors_doctorate"
+                      ? "All Bachelor's & Doctorate students"
+                      : "All enrolled students"
+                  }
                 />
               )}
               {!group.zoom_url && (

@@ -8,10 +8,12 @@ export function ZoomGroupSendForm({
   groupId,
   groupTitle,
   zoomUrl,
+  studentsLabel,
 }: {
   groupId: string;
   groupTitle: string;
   zoomUrl: string;
+  studentsLabel: string;
 }) {
   const [sendTo, setSendTo] = useState<"all" | "specific">("all");
 
@@ -29,7 +31,7 @@ export function ZoomGroupSendForm({
           onChange={(e) => setSendTo(e.target.value as "all" | "specific")}
           className="mt-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
         >
-          <option value="all">All enrolled students</option>
+          <option value="all">{studentsLabel}</option>
           <option value="specific">Specific emails only</option>
         </select>
       </div>
