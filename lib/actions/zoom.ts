@@ -21,39 +21,60 @@ function parseSpecificEmails(raw: string | null): { email: string; full_name: st
     .map((email) => ({ email, full_name: email.split("@")[0] }));
 }
 
-export async function saveProgramZoomUrl(formData: FormData) {
+export async function saveZoomGroupUrl(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const admin = createAdminClient();
   const id = String(formData.get("id") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim() || null;
   if (!id) return;
-  await supabase.from("programs").update({ zoom_url: zoomUrl }).eq("id", id);
+  await admin.from("zoom_groups").update({ zoom_url: zoomUrl }).eq("id", id);
   revalidatePath("/admin/zoom");
 }
 
-export async function sendProgramZoomNow(formData: FormData) {
+export async function sendZoomGroupNow(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();
-  const programId = String(formData.get("program_id") || "").trim();
-  const programName = String(formData.get("program_name") || "").trim();
+  const groupId = String(formData.get("group_id") || "").trim();
+  const groupTitle = String(formData.get("group_title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
-  if (!programId || !zoomUrl) return;
+  const specificEmailsRaw = String(formData.get("specific_emails") || "").trim();
+  if (!groupId || !zoomUrl) return;
 
-  const { data: students } = await admin
-    .from("profiles")
-    .select("full_name, email")
-    .eq("role", "student")
-    .eq("program_id", programId);
+  const { data: group } = await admin
+    .from("zoom_groups")
+    .select("program_levels")
+    .eq("id", groupId)
+    .single();
+
+  const levels: string[] = group?.program_levels ?? [];
+
+  // Get all programs matching those levels
+  const { data: programs } = await admin
+    .from("programs")
+    .select("id")
+    .in("program_level", levels);
+
+  const programIds = (programs ?? []).map((p: { id: string }) => p.id);
+
+  const { data: students } = programIds.length > 0
+    ? await admin.from("profiles").select("full_name, email").eq("role", "student").in("program_id", programIds)
+    : { data: [] };
+
+  const specificRecipients = parseSpecificEmails(specificEmailsRaw || null);
+  const allRecipients = [
+    ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
+    ...specificRecipients,
+  ];
 
   await Promise.allSettled(
-    (students ?? []).map((s: { full_name: string; email: string }) =>
+    allRecipients.map((r) =>
       sendZoomLinkEmail({
-        to: s.email,
-        studentName: s.full_name,
-        sessionTitle: `${programName} — Class Session`,
+        to: r.email,
+        studentName: r.full_name,
+        sessionTitle: groupTitle,
         description: null,
         zoomUrl,
-        programName,
+        programName: groupTitle,
       })
     )
   );

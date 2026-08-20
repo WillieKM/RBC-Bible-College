@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder, saveProgramZoomUrl, sendProgramZoomNow } from "@/lib/actions/zoom";
+import { createZoomSession, updateZoomSession, toggleZoomSession, deleteZoomSession, sendZoomNow, sendZoomReminder, saveZoomGroupUrl, sendZoomGroupNow } from "@/lib/actions/zoom";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
 import type { ZoomSession } from "@/lib/types";
@@ -92,9 +92,9 @@ export default async function AdminZoomPage({
   const { edit } = await searchParams;
   const admin = createAdminClient();
 
-  const [{ data: sessionsRaw }, { data: programs }] = await Promise.all([
+  const [{ data: sessionsRaw }, { data: zoomGroups }] = await Promise.all([
     admin.from("zoom_sessions").select("*").order("created_at", { ascending: false }),
-    admin.from("programs").select("id, name, zoom_url").order("name", { ascending: true }),
+    admin.from("zoom_groups").select("*").order("id", { ascending: true }),
   ]);
 
   const sessions = (sessionsRaw ?? []) as ZoomSession[];
@@ -106,47 +106,61 @@ export default async function AdminZoomPage({
         Add class Zoom links, choose which students receive them, and set a one-off or recurring send schedule.
       </p>
 
-      {/* Program quick-send cards */}
-      {(programs ?? []).length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-base font-semibold text-slate-800">Program Zoom Links</h2>
-          <p className="mt-0.5 text-xs text-slate-400">Store one Zoom link per program and send instantly to all enrolled students.</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(programs ?? []).map((prog: { id: string; name: string; zoom_url: string | null }) => (
-              <div key={prog.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="font-semibold text-slate-800 truncate">{prog.name}</p>
-                <form action={saveProgramZoomUrl} className="mt-2 flex gap-2">
-                  <input type="hidden" name="id" value={prog.id} />
-                  <input
-                    name="zoom_url"
-                    type="url"
-                    defaultValue={prog.zoom_url ?? ""}
-                    placeholder="https://zoom.us/j/..."
-                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
-                  />
-                  <button className="shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
-                    Save
-                  </button>
-                </form>
-                {prog.zoom_url && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <a href={prog.zoom_url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-xs text-gold-dark hover:underline">
-                      {prog.zoom_url}
-                    </a>
-                    <form action={sendProgramZoomNow}>
-                      <input type="hidden" name="program_id" value={prog.id} />
-                      <input type="hidden" name="program_name" value={prog.name} />
-                      <input type="hidden" name="zoom_url" value={prog.zoom_url} />
-                      <DeleteButton label="Send Now" pendingLabel="Sending…" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50" />
-                    </form>
+      {/* Zoom group banners */}
+      {(zoomGroups ?? []).length > 0 && (
+        <div className="mt-6 space-y-4">
+          {(zoomGroups ?? []).map((group: { id: string; title: string; zoom_url: string | null }) => (
+            <div key={group.id} className="rounded-xl border-2 border-gold/40 bg-amber-50 p-5 shadow-sm">
+              <p className="text-base font-bold text-slate-800">{group.title}</p>
+              {/* Save URL row */}
+              <form action={saveZoomGroupUrl} className="mt-3 flex flex-wrap gap-2">
+                <input type="hidden" name="id" value={group.id} />
+                <input
+                  name="zoom_url"
+                  type="url"
+                  defaultValue={group.zoom_url ?? ""}
+                  placeholder="https://zoom.us/j/..."
+                  className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                />
+                <button className="shrink-0 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  Save Link
+                </button>
+              </form>
+              {/* Send Now row */}
+              {group.zoom_url && (
+                <form action={sendZoomGroupNow} className="mt-3 space-y-2">
+                  <input type="hidden" name="group_id" value={group.id} />
+                  <input type="hidden" name="group_title" value={group.title} />
+                  <input type="hidden" name="zoom_url" value={group.zoom_url} />
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600">
+                      Also send to specific emails{" "}
+                      <span className="font-normal text-slate-400">(optional — comma or newline separated)</span>
+                    </label>
+                    <textarea
+                      name="specific_emails"
+                      rows={2}
+                      placeholder="pastor@example.com, guest@example.com"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"
+                    />
                   </div>
-                )}
-                {!prog.zoom_url && (
-                  <p className="mt-2 text-xs text-slate-400 italic">No link saved yet</p>
-                )}
-              </div>
-            ))}
-          </div>
+                  <div className="flex items-center gap-3">
+                    <DeleteButton
+                      label="Send Now →"
+                      pendingLabel="Sending…"
+                      className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    />
+                    <a href={group.zoom_url} target="_blank" rel="noopener noreferrer" className="text-xs text-gold-dark hover:underline truncate">
+                      {group.zoom_url}
+                    </a>
+                  </div>
+                </form>
+              )}
+              {!group.zoom_url && (
+                <p className="mt-2 text-sm text-slate-400 italic">Paste the Zoom link above and save to enable sending.</p>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
