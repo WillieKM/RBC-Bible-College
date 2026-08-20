@@ -704,6 +704,7 @@ export async function sendZoomLinkEmail(opts: {
   description: string | null;
   zoomUrl: string;
   programName: string;
+  passcode?: string | null;
 }) {
   await send(
     opts.to,
@@ -715,6 +716,7 @@ export async function sendZoomLinkEmail(opts: {
        <div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;">
          <p style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">${esc(opts.sessionTitle)}</p>
          ${opts.description ? `<p style="margin:8px 0 0;font-size:14px;color:#475569;">${esc(opts.description)}</p>` : ""}
+         ${opts.passcode ? `<p style="margin:10px 0 0;font-size:14px;color:#475569;">Passcode: <strong style="letter-spacing:2px;">${esc(opts.passcode)}</strong></p>` : ""}
        </div>
        <div style="margin-top:24px;text-align:center;">
          <a href="${opts.zoomUrl}" style="display:inline-block;background:#2D8CFF;color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Join Zoom Session →</a>

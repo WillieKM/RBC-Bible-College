@@ -26,8 +26,9 @@ export async function saveZoomGroupUrl(formData: FormData) {
   const admin = createAdminClient();
   const id = String(formData.get("id") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim() || null;
+  const zoomPasscode = String(formData.get("zoom_passcode") || "").trim() || null;
   if (!id) return;
-  await admin.from("zoom_groups").update({ zoom_url: zoomUrl }).eq("id", id);
+  await admin.from("zoom_groups").update({ zoom_url: zoomUrl, zoom_passcode: zoomPasscode }).eq("id", id);
   revalidatePath("/admin/zoom");
 }
 
@@ -37,6 +38,7 @@ export async function sendZoomGroupNow(formData: FormData) {
   const groupId = String(formData.get("group_id") || "").trim();
   const groupTitle = String(formData.get("group_title") || "").trim();
   const zoomUrl = String(formData.get("zoom_url") || "").trim();
+  const zoomPasscode = String(formData.get("zoom_passcode") || "").trim() || null;
   const sendTo = String(formData.get("send_to") || "all");
   const specificEmailsRaw = String(formData.get("specific_emails") || "").trim();
   if (!groupId || !zoomUrl) return;
@@ -73,6 +75,7 @@ export async function sendZoomGroupNow(formData: FormData) {
         description: null,
         zoomUrl,
         programName: groupTitle,
+        passcode: zoomPasscode,
       })
     )
   );

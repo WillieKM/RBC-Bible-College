@@ -8,11 +8,13 @@ export function ZoomGroupSendForm({
   groupId,
   groupTitle,
   zoomUrl,
+  passcode,
   studentsLabel,
 }: {
   groupId: string;
   groupTitle: string;
   zoomUrl: string;
+  passcode: string | null;
   studentsLabel: string;
 }) {
   const [sendTo, setSendTo] = useState<"all" | "specific">("all");
@@ -22,6 +24,7 @@ export function ZoomGroupSendForm({
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="group_title" value={groupTitle} />
       <input type="hidden" name="zoom_url" value={zoomUrl} />
+      <input type="hidden" name="zoom_passcode" value={passcode ?? ""} />
       <input type="hidden" name="send_to" value={sendTo} />
 
       <div>

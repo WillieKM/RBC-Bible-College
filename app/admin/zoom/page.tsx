@@ -114,18 +114,27 @@ export default async function AdminZoomPage({
             <div key={group.id} className="rounded-xl border-2 border-gold/40 bg-amber-50 p-5 shadow-sm">
               <p className="text-base font-bold text-slate-800">{group.title}</p>
               {/* Save URL row */}
-              <form action={saveZoomGroupUrl} className="mt-3 flex flex-wrap gap-2">
+              <form action={saveZoomGroupUrl} className="mt-3 space-y-2">
                 <input type="hidden" name="id" value={group.id} />
-                <input
-                  name="zoom_url"
-                  type="url"
-                  defaultValue={group.zoom_url ?? ""}
-                  placeholder="https://zoom.us/j/..."
-                  className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-                />
-                <button className="shrink-0 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  Save Link
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    name="zoom_url"
+                    type="url"
+                    defaultValue={(group as { id: string; title: string; zoom_url: string | null; zoom_passcode: string | null }).zoom_url ?? ""}
+                    placeholder="https://zoom.us/j/..."
+                    className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  />
+                  <input
+                    name="zoom_passcode"
+                    type="text"
+                    defaultValue={(group as { id: string; title: string; zoom_url: string | null; zoom_passcode: string | null }).zoom_passcode ?? ""}
+                    placeholder="Passcode (optional)"
+                    className="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  />
+                  <button className="shrink-0 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Save
+                  </button>
+                </div>
               </form>
               {/* Send Now row */}
               {group.zoom_url && (
@@ -133,6 +142,7 @@ export default async function AdminZoomPage({
                   groupId={group.id}
                   groupTitle={group.title}
                   zoomUrl={group.zoom_url}
+                  passcode={(group as { id: string; title: string; zoom_url: string | null; zoom_passcode: string | null }).zoom_passcode ?? null}
                   studentsLabel={
                     group.id === "diploma"
                       ? "All Diploma students"
