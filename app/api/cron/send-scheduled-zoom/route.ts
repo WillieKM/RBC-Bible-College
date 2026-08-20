@@ -1,36 +1,65 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendZoomLinkEmail } from "@/lib/email";
 
-const AUDIENCE_LABELS: Record<string, string> = {
-  all: "All Students",
-  doctorate: "Doctorate",
-  bachelors: "Bachelor's",
-  masters: "Master's",
-  diploma: "Diploma",
-  certificate: "Certificate",
-};
+function parseSpecificEmails(raw: string | null): { email: string; full_name: string }[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]/)
+    .map((e) => e.trim())
+    .filter((e) => e.includes("@"))
+    .map((email) => ({ email, full_name: email.split("@")[0] }));
+}
 
-async function getStudentsForAudience(admin: ReturnType<typeof createAdminClient>, audience: string) {
-  let query = admin.from("profiles").select("full_name, email, program_id").eq("role", "student");
+function isDueToday(session: {
+  recurrence: string;
+  day_of_week: number | null;
+  send_at: string | null;
+  last_sent_at: string | null;
+}): boolean {
+  const now = new Date();
+  const todayDow = now.getDay();
 
-  if (audience === "all") {
-    return query;
+  if (session.recurrence === "none") {
+    return (
+      session.send_at != null &&
+      new Date(session.send_at) <= now &&
+      session.last_sent_at == null
+    );
   }
 
-  // Tier-based: doctorate, bachelors, masters — target by program_level
-  if (["doctorate", "bachelors", "masters"].includes(audience)) {
-    const { data: programs } = await admin.from("programs").select("id").eq("program_level", audience);
-    const ids = (programs ?? []).map((p: { id: string }) => p.id);
-    if (ids.length === 0) return { data: [] };
-    return query.in("program_id", ids);
+  if (session.recurrence === "weekly") {
+    if (session.day_of_week == null || session.day_of_week !== todayDow) return false;
+    if (session.last_sent_at) {
+      const lastSent = new Date(session.last_sent_at);
+      if (lastSent.toDateString() === now.toDateString()) return false;
+    }
+    return true;
   }
 
-  // diploma / certificate — target by program_level so all matching programs are included
-  const { data: programs } = await admin.from("programs").select("id").eq("program_level", audience);
-  const ids = (programs ?? []).map((p: { id: string }) => p.id);
-  if (ids.length === 0) return { data: [] };
-  return query.in("program_id", ids);
+  if (session.recurrence === "biweekly") {
+    if (session.day_of_week == null || session.day_of_week !== todayDow) return false;
+    if (session.last_sent_at) {
+      const daysSinceLast = (now.getTime() - new Date(session.last_sent_at).getTime()) / 86_400_000;
+      if (daysSinceLast < 13) return false;
+    }
+    return true;
+  }
+
+  if (session.recurrence === "monthly") {
+    const targetDay = session.send_at ? new Date(session.send_at).getDate() : 1;
+    if (now.getDate() !== targetDay) return false;
+    if (session.last_sent_at) {
+      const lastSent = new Date(session.last_sent_at);
+      if (
+        lastSent.getFullYear() === now.getFullYear() &&
+        lastSent.getMonth() === now.getMonth()
+      ) return false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 export async function GET(request: Request) {
@@ -43,66 +72,77 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const now = new Date();
-  const todayDow = now.getDay();
 
-  const { data: oneOff } = await admin
-    .from("zoom_sessions").select("*").eq("recurrence", "none")
-    .is("last_sent_at", null).eq("active", true)
-    .not("send_at", "is", null).lte("send_at", now.toISOString());
+  const { data: sessions } = await admin
+    .from("zoom_sessions")
+    .select("*")
+    .eq("active", true);
 
-  const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: weekly } = await admin
-    .from("zoom_sessions").select("*").eq("recurrence", "weekly")
-    .eq("day_of_week", todayDow).eq("active", true)
-    .or(`last_sent_at.is.null,last_sent_at.lte.${sixDaysAgo}`);
+  if (!sessions || sessions.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, sessions: 0 });
+  }
 
-  const thirteenDaysAgo = new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: biweekly } = await admin
-    .from("zoom_sessions").select("*").eq("recurrence", "biweekly")
-    .eq("day_of_week", todayDow).eq("active", true)
-    .or(`last_sent_at.is.null,last_sent_at.lte.${thirteenDaysAgo}`);
+  const dueSessions = sessions.filter(isDueToday);
 
-  const twentySevenDaysAgo = new Date(now.getTime() - 27 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: allMonthly } = await admin
-    .from("zoom_sessions").select("*").eq("recurrence", "monthly").eq("active", true)
-    .or(`last_sent_at.is.null,last_sent_at.lte.${twentySevenDaysAgo}`);
+  if (dueSessions.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, sessions: 0 });
+  }
 
-  const monthly = (allMonthly ?? []).filter((s) =>
-    s.send_at && new Date(s.send_at).getDate() === now.getDate()
-  );
-
-  const due = [...(oneOff ?? []), ...(weekly ?? []), ...(biweekly ?? []), ...monthly];
-  if (due.length === 0) return NextResponse.json({ ok: true, sent: 0 });
+  const AUDIENCE_LABELS: Record<string, string> = {
+    all: "All Students", doctorate: "Doctorate", bachelors: "Bachelor's",
+    masters: "Master's", diploma: "Diploma", certificate: "Certificate",
+  };
 
   let totalSent = 0;
 
-  for (const session of due) {
-    const { data: students } = await getStudentsForAudience(admin, session.target_audience ?? "all");
+  for (const session of dueSessions) {
+    let studentsQuery = admin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("role", "student");
 
-    if (!students || students.length === 0) {
-      await admin.from("zoom_sessions").update({ last_sent_at: now.toISOString() }).eq("id", session.id);
-      continue;
+    if (session.target_audience !== "all") {
+      const { data: programs } = await admin
+        .from("programs")
+        .select("id")
+        .eq("program_level", session.target_audience);
+      const ids = (programs ?? []).map((p: { id: string }) => p.id);
+      if (ids.length === 0) {
+        await admin.from("zoom_sessions").update({ last_sent_at: new Date().toISOString() }).eq("id", session.id);
+        continue;
+      }
+      studentsQuery = studentsQuery.in("program_id", ids);
     }
 
-    const audienceLabel = AUDIENCE_LABELS[session.target_audience] ?? "your program";
+    const { data: students } = await studentsQuery;
+    const specificRecipients = parseSpecificEmails(session.specific_emails ?? null);
+    const allRecipients = [
+      ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
+      ...specificRecipients,
+    ];
+
+    const programName = AUDIENCE_LABELS[session.target_audience] ?? "your program";
 
     await Promise.allSettled(
-      students.map((s: { full_name: string; email: string }) =>
+      allRecipients.map((r) =>
         sendZoomLinkEmail({
-          to: s.email,
-          studentName: s.full_name,
+          to: r.email,
+          studentName: r.full_name,
           sessionTitle: session.title,
           description: session.description,
           zoomUrl: session.zoom_url,
-          programName: audienceLabel,
+          programName,
         })
       )
     );
 
-    await admin.from("zoom_sessions").update({ last_sent_at: now.toISOString() }).eq("id", session.id);
-    totalSent += students.length;
+    await admin
+      .from("zoom_sessions")
+      .update({ last_sent_at: new Date().toISOString() })
+      .eq("id", session.id);
+
+    totalSent += allRecipients.length;
   }
 
-  return NextResponse.json({ ok: true, sent: totalSent, sessions: due.length });
+  return NextResponse.json({ ok: true, sent: totalSent, sessions: dueSessions.length });
 }
