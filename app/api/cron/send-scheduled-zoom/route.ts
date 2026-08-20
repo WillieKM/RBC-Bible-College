@@ -96,30 +96,36 @@ export async function GET(request: Request) {
   let totalSent = 0;
 
   for (const session of dueSessions) {
-    let studentsQuery = admin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("role", "student");
-
-    if (session.target_audience !== "all") {
-      const { data: programs } = await admin
-        .from("programs")
-        .select("id")
-        .eq("program_level", session.target_audience);
-      const ids = (programs ?? []).map((p: { id: string }) => p.id);
-      if (ids.length === 0) {
-        await admin.from("zoom_sessions").update({ last_sent_at: new Date().toISOString() }).eq("id", session.id);
-        continue;
-      }
-      studentsQuery = studentsQuery.in("program_id", ids);
-    }
-
-    const { data: students } = await studentsQuery;
     const specificRecipients = parseSpecificEmails(session.specific_emails ?? null);
-    const allRecipients = [
-      ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
-      ...specificRecipients,
-    ];
+    let allRecipients: { email: string; full_name: string }[] = [];
+
+    if (session.target_audience === "specific") {
+      allRecipients = specificRecipients;
+    } else {
+      let studentsQuery = admin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("role", "student");
+
+      if (session.target_audience !== "all") {
+        const { data: programs } = await admin
+          .from("programs")
+          .select("id")
+          .eq("program_level", session.target_audience);
+        const ids = (programs ?? []).map((p: { id: string }) => p.id);
+        if (ids.length === 0) {
+          await admin.from("zoom_sessions").update({ last_sent_at: new Date().toISOString() }).eq("id", session.id);
+          continue;
+        }
+        studentsQuery = studentsQuery.in("program_id", ids);
+      }
+
+      const { data: students } = await studentsQuery;
+      allRecipients = [
+        ...(students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email })),
+        ...specificRecipients,
+      ];
+    }
 
     const programName = AUDIENCE_LABELS[session.target_audience] ?? "your program";
 

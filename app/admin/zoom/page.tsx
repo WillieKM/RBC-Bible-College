@@ -14,6 +14,7 @@ const AUDIENCE_OPTIONS = [
   { value: "masters", label: "Master's" },
   { value: "diploma", label: "Diploma" },
   { value: "certificate", label: "Certificate" },
+  { value: "specific", label: "Specific emails only" },
 ];
 
 const RECURRENCE_LABELS: Record<string, string> = {
