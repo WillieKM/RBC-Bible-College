@@ -147,13 +147,16 @@ export async function sendApplicationDecisionEmail(opts: {
       : "";
 
     await send(opts.to, `Your application to ${SCHOOL_NAME} has been approved`,
-      wrap("Application Approved",
+      wrap("Application Approved 🎉",
         `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
-         <p style="font-size:15px;color:#475569;">Congratulations! Your application has been approved and an account has been created for you.</p>
+         <p style="font-size:15px;color:#475569;">We are delighted to inform you that your application to <strong>${SCHOOL_NAME}</strong> has been reviewed and approved. Welcome to the RBC family!</p>
+         <p style="font-size:15px;color:#475569;">A student portal account has been created for you. Please use the button below to set a password and access your courses, assignments, and fee invoices.</p>
          ${opts.studentNumber ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin:16px 0;font-size:14px;color:#92400e;"><strong>Your Student ID:</strong> ${esc(opts.studentNumber)} — please use this as your payment reference.</div>` : ""}
          ${enrollmentBlock}
-         <p style="font-size:15px;color:#475569;">Click below to set your password and access your student portal.</p>
-         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Your Password →</a></div>` : ""}`
+         ${opts.loginUrl ? `<div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Access Student Portal →</a></div>
+         <p style="margin-top:16px;font-size:12px;color:#94a3b8;text-align:center;">If the button does not work, copy and paste this link into your browser:<br><span style="word-break:break-all;">${opts.loginUrl}</span></p>` : ""}
+         <p style="margin-top:20px;font-size:13px;color:#64748b;">If you did not apply to ${SCHOOL_NAME} or believe this email was sent in error, please disregard it. For any questions, reply to this email and our admissions team will assist you.</p>
+         <p style="margin-top:8px;font-size:12px;color:#94a3b8;">📬 If this email landed in your spam or junk folder, please mark it as "Not Spam" so you continue to receive important updates from us.</p>`
       ));
   } else {
     await send(opts.to, `Update on your application to ${SCHOOL_NAME}`,
@@ -413,10 +416,14 @@ export async function sendAccountInviteEmail(opts: {
   loginUrl: string;
 }) {
   await send(opts.to, `Your ${SCHOOL_NAME} account is ready`,
-    wrap("Welcome",
+    wrap("Welcome to RBC",
       `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.fullName)}</strong>,</p>
-       <p style="font-size:15px;color:#475569;">An account has been created for you at ${SCHOOL_NAME} as a <strong>${esc(opts.role)}</strong>. Click below to set your password and log in.</p>
-       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Your Password →</a></div>`
+       <p style="font-size:15px;color:#475569;">An account has been set up for you at <strong>${SCHOOL_NAME}</strong> with the role of <strong>${esc(opts.role)}</strong>.</p>
+       <p style="font-size:15px;color:#475569;">Use the button below to choose a password and access your account. This link is unique to you — please do not share it.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Access My Account →</a></div>
+       <p style="margin-top:16px;font-size:12px;color:#94a3b8;text-align:center;">If the button does not work, copy and paste this link into your browser:<br><span style="word-break:break-all;">${opts.loginUrl}</span></p>
+       <p style="margin-top:20px;font-size:13px;color:#64748b;">If you were not expecting this email or believe it was sent in error, please disregard it or reply to let us know.</p>
+       <p style="margin-top:8px;font-size:12px;color:#94a3b8;">📬 If this email landed in your spam or junk folder, please mark it as "Not Spam" so you continue to receive important updates from us.</p>`
     ));
 }
 
