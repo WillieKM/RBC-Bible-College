@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getBaseUrl } from "@/lib/site-url";
 import { sendApplicationDecisionEmail } from "@/lib/email";
 
-export async function GET() {
+export async function GET(req: Request) {
   // Only admins can use this
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +16,9 @@ export async function GET() {
   const { data: profile } = await supabase.from("profiles").select("role, email, full_name").eq("id", user.id).single();
   if (profile?.role !== "admin") return NextResponse.json({ error: "Not an admin" }, { status: 403 });
 
-  const adminEmail = profile.email as string;
+  // Allow ?to=otheremail@example.com to test delivery to a specific address
+  const { searchParams } = new URL(req.url);
+  const adminEmail = searchParams.get("to") || (profile.email as string);
   const results: Record<string, unknown> = {};
 
   // ── Step 1: check env vars ────────────────────────────────────────────────
