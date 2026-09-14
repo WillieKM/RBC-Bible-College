@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
 import { InviteUserForm } from "@/components/InviteUserForm";
 import { UserSearchList } from "@/components/UserSearchList";
@@ -6,11 +7,19 @@ import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
-  const [viewer, { data: profiles }, { data: programs }] = await Promise.all([
+  const admin = createAdminClient();
+
+  const [viewer, { data: profiles }, { data: programs }, { data: authUsers }] = await Promise.all([
     getCurrentProfile(),
     supabase.from("profiles").select("*").order("created_at", { ascending: false }),
     supabase.from("programs").select("*").order("name", { ascending: true }),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+
+  const lastSignInById: Record<string, string | null> = {};
+  for (const u of authUsers?.users ?? []) {
+    lastSignInById[u.id] = u.last_sign_in_at ?? null;
+  }
 
   return (
     <div>
@@ -23,6 +32,7 @@ export default async function AdminUsersPage() {
         programs={(programs ?? []) as Program[]}
         viewerFinanceAccess={viewer?.finance_access ?? false}
         viewerId={viewer?.id ?? ""}
+        lastSignInById={lastSignInById}
       />
     </div>
   );

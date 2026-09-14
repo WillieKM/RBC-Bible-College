@@ -30,9 +30,27 @@ export default async function ProfessorHomePage() {
         .order("submitted_at", { ascending: true })
     : { data: [] };
 
+  const isNewProfessor = (courses ?? []).length === 0;
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
+
+      {isNewProfessor && (
+        <div className="mt-4 rounded-xl border-2 border-gold/50 bg-amber-50 px-6 py-5">
+          <p className="text-lg font-bold text-slate-900">Welcome to RBC, {profile.full_name?.split(" ")[0]}! 👋</p>
+          <p className="mt-1 text-sm text-slate-600">Your professor account is all set up. Your assigned courses will appear here once the admin links them to your profile.</p>
+          <p className="mt-3 text-sm text-slate-600">In the meantime, take a few minutes to get familiar with the portal:</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <a href="/professor/getting-started" className="inline-block rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-gold/80">
+              Read the Getting Started Guide →
+            </a>
+            <a href="/settings" className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              Set Up Your Profile
+            </a>
+          </div>
+        </div>
+      )}
 
       {(ungraded ?? []).length > 0 && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -407,6 +407,36 @@ export async function sendBulkAnnouncementEmail(opts: {
   }
 }
 
+// ─── Professor invite (to new professor) ─────────────────────────────────────
+
+export async function sendProfessorWelcomeEmail(opts: {
+  to: string;
+  fullName: string;
+  loginUrl: string;
+}) {
+  const portalUrl = opts.loginUrl.replace(/\/auth\/.*/, "/professor");
+  await send(opts.to, `Welcome to ${SCHOOL_NAME} — Professor Portal Access`,
+    wrap("Welcome, Professor!",
+      `<p style="font-size:15px;color:#475569;">Dear <strong>${esc(opts.fullName)}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">We are pleased to welcome you to the <strong>${SCHOOL_NAME}</strong> faculty. A professor account has been created for you on our online portal.</p>
+       <p style="font-size:15px;color:#475569;">Through the portal you can view your assigned courses, post and grade assignments, track student progress in the grade book, and manage Zoom attendance records.</p>
+       <p style="font-size:15px;color:#475569;">Click below to set your password and access your professor dashboard. Once logged in, start with the <strong>Getting Started</strong> guide in your sidebar — it walks through everything step by step.</p>
+       <div style="margin-top:24px;text-align:center;"><a href="${opts.loginUrl}" style="display:inline-block;background:${SCHOOL_ACCENT};color:${SCHOOL_COLOR};padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Set Up My Account →</a></div>
+       <p style="margin-top:16px;font-size:12px;color:#94a3b8;text-align:center;">If the button does not work, copy and paste this link into your browser:<br><span style="word-break:break-all;">${opts.loginUrl}</span></p>
+       <div style="margin-top:24px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;">
+         <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">Quick checklist for your first login</p>
+         <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">
+           ✅ Set a secure password in Settings<br>
+           ✅ Read the Getting Started guide in your sidebar<br>
+           ✅ Check that your assigned courses appear on your dashboard<br>
+           ✅ Bookmark the portal: <a href="${portalUrl}" style="color:#92400e;">${portalUrl}</a>
+         </p>
+       </div>
+       <p style="margin-top:20px;font-size:13px;color:#64748b;">If you have any questions or access issues, please reply to this email and the administration team will assist you promptly.</p>
+       <p style="margin-top:8px;font-size:12px;color:#94a3b8;">📬 If this email landed in your spam or junk folder, please mark it as "Not Spam" to ensure you receive future updates.</p>`
+    ));
+}
+
 // ─── Account invite (to new user) ──────────────────────────────────────────
 
 export async function sendAccountInviteEmail(opts: {

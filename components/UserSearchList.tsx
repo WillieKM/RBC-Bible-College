@@ -11,11 +11,13 @@ export function UserSearchList({
   programs,
   viewerFinanceAccess,
   viewerId,
+  lastSignInById = {},
 }: {
   profiles: Profile[];
   programs: Program[];
   viewerFinanceAccess: boolean;
   viewerId: string;
+  lastSignInById?: Record<string, string | null>;
 }) {
   const [query, setQuery] = useState("");
 
@@ -57,9 +59,17 @@ export function UserSearchList({
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-slate-900">{p.full_name}</p>
                   {p.banned && <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Access revoked</span>}
+                  {!lastSignInById[p.id] && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Never logged in</span>
+                  )}
                 </div>
                 <p className="text-sm text-slate-500">{p.email}</p>
                 {p.student_number && <p className="text-xs text-slate-400">ID: {p.student_number}</p>}
+                {lastSignInById[p.id] && (
+                  <p className="text-xs text-slate-400">
+                    Last login: {new Date(lastSignInById[p.id]!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <form action={resendInvite}>

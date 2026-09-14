@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -305,7 +305,11 @@ export async function inviteUser(formData: FormData) {
     revalidatePath("/admin/users");
     return;
   }
-  await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
+  if (role === "professor") {
+    await sendProfessorWelcomeEmail({ to: email, fullName, loginUrl });
+  } else {
+    await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
+  }
 
   // Step 4 (optional): enrol in modules and auto-create fee invoice — fire-and-forget
   if (role === "student" && programId) {
