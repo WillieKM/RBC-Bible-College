@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateUserRole, updateFinanceAccess, updateStudentProgram, updateUserProfile, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
+import { updateUserRole, updateSecondaryRole, updateFinanceAccess, updateStudentProgram, updateUserProfile, resendInvite, revokeAccess, restoreAccess, deleteUser } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { TypeToConfirmButton } from "@/components/TypeToConfirmButton";
 import type { Profile, Program } from "@/lib/types";
@@ -124,6 +124,19 @@ export function UserSearchList({
                       {programs.map((program) => (
                         <option key={program.id} value={program.id}>{program.name}</option>
                       ))}
+                    </select>
+                    <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                      Save
+                    </button>
+                  </form>
+                )}
+                {p.role !== "admin" && viewerFinanceAccess && (
+                  <form action={updateSecondaryRole} className="flex items-center gap-2">
+                    <input type="hidden" name="id" value={p.id} />
+                    <select name="secondary_role" defaultValue={p.secondary_role ?? ""} className="rounded-lg border border-slate-300 px-2 py-1 text-sm text-slate-600">
+                      <option value="">No dual access</option>
+                      {p.role !== "student"   && <option value="student">+ Student access</option>}
+                      {p.role !== "professor" && <option value="professor">+ Professor access</option>}
                     </select>
                     <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
                       Save

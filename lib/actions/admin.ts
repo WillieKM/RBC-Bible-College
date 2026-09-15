@@ -374,6 +374,16 @@ export async function updateUserRole(formData: FormData) {
   revalidatePath("/admin/users");
 }
 
+export async function updateSecondaryRole(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const id = String(formData.get("id"));
+  const raw = String(formData.get("secondary_role") || "").trim();
+  const secondary_role = ["professor", "student"].includes(raw) ? raw : null;
+  await admin.from("profiles").update({ secondary_role }).eq("id", id);
+  revalidatePath("/admin/users");
+}
+
 // Only an admin who already has finance_access can grant or revoke it for
 // others — otherwise any admin could self-escalate via this form.
 export async function updateFinanceAccess(formData: FormData) {

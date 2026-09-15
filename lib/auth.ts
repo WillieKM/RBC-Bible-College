@@ -19,7 +19,10 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 export async function requireRole(roles: Role[]): Promise<Profile> {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  if (profile.role !== "admin" && !roles.includes(profile.role)) redirect("/login");
+  const hasRole = profile.role === "admin"
+    || roles.includes(profile.role)
+    || (profile.secondary_role != null && roles.includes(profile.secondary_role));
+  if (!hasRole) redirect("/login");
   return profile;
 }
 

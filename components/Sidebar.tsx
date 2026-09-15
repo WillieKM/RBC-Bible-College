@@ -113,8 +113,8 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* ── Portal switcher (admin only) ── */}
-      {isAdmin && activePortal && (
+      {/* ── Portal switcher (admin: 3-way; dual-role: 2-way) ── */}
+      {isAdmin && activePortal ? (
         <div className="px-3 pt-3 pb-2 border-b border-white/8">
           <p className="mb-1.5 px-1 text-[9px] font-bold uppercase tracking-widest text-slate-600">Switch Portal</p>
           <div className="flex gap-1 rounded-lg bg-white/5 p-1">
@@ -137,7 +137,29 @@ export function Sidebar({
             ))}
           </div>
         </div>
-      )}
+      ) : profile.secondary_role && activePortal ? (
+        <div className="px-3 pt-3 pb-2 border-b border-white/8">
+          <p className="mb-1.5 px-1 text-[9px] font-bold uppercase tracking-widest text-slate-600">Switch Portal</p>
+          <div className="flex gap-1 rounded-lg bg-white/5 p-1">
+            {([profile.role, profile.secondary_role] as const).map((r) => {
+              const href = `/${r}`;
+              const label = r === "professor" ? "Prof." : r.charAt(0).toUpperCase() + r.slice(1);
+              const isActive = activePortal === r;
+              return (
+                <Link
+                  key={r}
+                  href={href}
+                  className={`flex-1 rounded-md py-1.5 text-center text-[11px] font-semibold transition-all duration-150 ${
+                    isActive ? "bg-gold text-ink shadow-sm" : "text-slate-400 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
