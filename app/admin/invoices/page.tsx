@@ -4,14 +4,9 @@ import { sendFeeReminders } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { feeForLevel } from "@/lib/fees";
 import type { Invoice, Profile, Program } from "@/lib/types";
+import { InvoiceSearchList, type InvoiceListItem } from "@/components/InvoiceSearchList";
 import Link from "next/link";
 
-function statusBadge(total: number, paid: number) {
-  const balance = total - paid;
-  if (balance <= 0) return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Paid</span>;
-  if (paid > 0) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Partial</span>;
-  return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">Unpaid</span>;
-}
 
 export default async function AdminInvoicesPage({
   searchParams,
@@ -152,34 +147,19 @@ export default async function AdminInvoicesPage({
       {/* Create invoice */}
       <CreateInvoiceForm students={studentOptions} />
 
-      {/* Invoices list */}
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">All Invoices ({invoices.length})</h2>
-      <div className="mt-3 space-y-2">
-        {invoices.length === 0 && <p className="text-sm text-slate-500">No invoices yet.</p>}
-        {invoices.map((inv) => (
-          <Link
-            key={inv.id}
-            href={`/admin/invoices/${inv.id}`}
-            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm hover:border-gold"
-          >
-            <div>
-              <p className="font-semibold text-slate-900">{inv.title}</p>
-              <p className="text-sm text-slate-500">
-                {(inv as { profiles?: { full_name: string } | null }).profiles?.full_name ?? "—"}
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-right">
-              <div>
-                <p className="text-sm font-semibold text-slate-800">{inv.currency}{inv.total_amount.toFixed(2)}</p>
-                <p className="text-xs text-slate-500">
-                  Paid {inv.currency}{inv.paid.toFixed(2)} · Bal {inv.currency}{Math.max(0, inv.balance).toFixed(2)}
-                </p>
-              </div>
-              {statusBadge(inv.total_amount, inv.paid)}
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* Invoices list with search */}
+      <InvoiceSearchList
+        invoices={invoices.map((inv): InvoiceListItem => ({
+          id: inv.id,
+          title: inv.title,
+          invoice_number: (inv as Invoice & { invoice_number?: string | null }).invoice_number ?? null,
+          total_amount: inv.total_amount,
+          paid: inv.paid,
+          balance: inv.balance,
+          currency: inv.currency,
+          profileName: (inv as { profiles?: { full_name: string } | null }).profiles?.full_name ?? null,
+        }))}
+      />
     </div>
   );
 }

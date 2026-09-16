@@ -25,7 +25,7 @@ export async function createInvoice(formData: FormData) {
   let invoiceNumber: string;
   try {
     const seq = await nextSequenceNumber(adminDb, `invoice_number_${year}`);
-    invoiceNumber = `INV-${year}-${String(seq).padStart(4, "0")}`;
+    invoiceNumber = `INV-${year}-${String(seq + 799).padStart(4, "0")}`;
   } catch (seqErr) {
     redirect(`/admin/invoices?error=${encodeURIComponent(`Sequence error: ${seqErr instanceof Error ? seqErr.message : String(seqErr)}`)}`);
   }

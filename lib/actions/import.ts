@@ -143,7 +143,7 @@ export async function bulkImportStudents(formData: FormData) {
         const fee = (row.region === "usa" ? prog.fee_usa : prog.fee_international) ?? feeForLevel(prog.program_level, row.region === "usa" ? "usa" : "international");
         if (fee && fee > 0) {
           const invSeq = await nextSequenceNumber(admin, `invoice_number_${year}`);
-          const invoiceNumber = `INV-${year}-${String(invSeq).padStart(4, "0")}`;
+          const invoiceNumber = `INV-${year}-${String(invSeq + 799).padStart(4, "0")}`;
           const currency = row.region === "usa" ? "$" : "KSh";
           await admin.from("invoices").insert({
             student_id: invited.user.id,

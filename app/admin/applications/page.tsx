@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
-import { deleteApplication } from "@/lib/actions/admin";
-import { DeleteButton } from "@/components/DeleteButton";
-import { PROGRAM_LEVEL_LABELS, FEE_SCHEDULE, ENROLLMENT_FEES } from "@/lib/fees";
+import { ApplicationSearchList, type ComputedApplication } from "@/components/ApplicationSearchList";
+import { FEE_SCHEDULE, ENROLLMENT_FEES } from "@/lib/fees";
 import type { Application, ProgramLevel } from "@/lib/types";
 
 export default async function AdminApplicationsPage({
@@ -19,193 +17,63 @@ export default async function AdminApplicationsPage({
     supabase.from("programs").select("id, name, fee_usa, fee_international, enrollment_fee_usa, enrollment_fee_international, program_level"),
   ]);
 
-  // Fetch student numbers so we can pre-fill the resend invite form
   const profileByEmail = new Map((profiles ?? []).map((p: { email: string; student_number: string | null; full_name: string }) => [p.email, p]));
   const programByName = new Map((programs ?? []).map((p) => [p.name as string, p]));
 
-  const pending = (applications ?? []).filter((a: Application) => a.status === "pending");
-  const reviewed = (applications ?? []).filter((a: Application) => a.status !== "pending");
+  // Track duplicates in pending
+  const pendingApps = (applications ?? []).filter((a: Application) => a.status === "pending");
+  const reviewedApps = (applications ?? []).filter((a: Application) => a.status !== "pending");
 
-  // Track which emails appear more than once in pending (duplicates)
   const pendingEmailCount = new Map<string, number>();
-  for (const a of pending) pendingEmailCount.set(a.email, (pendingEmailCount.get(a.email) ?? 0) + 1);
+  for (const a of pendingApps) pendingEmailCount.set(a.email, (pendingEmailCount.get(a.email) ?? 0) + 1);
+
+  function toComputed(app: Application): ComputedApplication {
+    const region = app.region === "usa" ? "usa" : "international";
+    const level = app.program_level as ProgramLevel;
+    const prog = programByName.get(app.program);
+    const programFee = (region === "usa" ? prog?.fee_usa : prog?.fee_international) ?? FEE_SCHEDULE[level]?.[region] ?? 0;
+    const enrollFee = (region === "usa" ? prog?.enrollment_fee_usa : prog?.enrollment_fee_international) ?? ENROLLMENT_FEES[level]?.[region] ?? 0;
+    const currency = region === "usa" ? "$" : "KSh";
+    const profile = profileByEmail.get(app.email);
+    return {
+      id: app.id,
+      full_name: app.full_name,
+      email: app.email,
+      phone: app.phone ?? null,
+      program: app.program,
+      program_level: app.program_level,
+      region: app.region ?? null,
+      statement: app.statement ?? null,
+      photo_url: app.photo_url ?? null,
+      status: app.status,
+      details: (app.details as Record<string, unknown>) ?? null,
+      isDuplicate: (pendingEmailCount.get(app.email) ?? 1) > 1,
+      profileStudentNumber: profile?.student_number ?? null,
+      currency,
+      programFee,
+      enrollFee,
+    };
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Applications</h1>
 
       {error && (
-        <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </div>
       )}
       {resent && (
-        <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
           New login link sent — student should receive the email shortly.
         </div>
       )}
 
-      <h2 className="mt-6 text-lg font-semibold text-slate-800">Pending ({pending.length})</h2>
-      <div className="mt-3 space-y-3">
-        {pending.length === 0 && <p className="text-sm text-slate-500">No pending applications.</p>}
-        {pending.map((app: Application) => (
-          <div key={app.id} className={`rounded-xl border bg-white p-5 shadow-sm ${(pendingEmailCount.get(app.email) ?? 1) > 1 ? "border-amber-300" : "border-slate-200"}`}>
-            {(pendingEmailCount.get(app.email) ?? 1) > 1 && (
-              <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5">
-                <span className="text-xs font-semibold text-amber-700">Duplicate — same email has multiple pending applications</span>
-                <form action={deleteApplication}>
-                  <input type="hidden" name="id" value={app.id} />
-                  <DeleteButton label="Delete this copy" pendingLabel="Deleting…" className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50" />
-                </form>
-              </div>
-            )}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-4">
-                {app.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={app.photo_url}
-                    alt={app.full_name}
-                    className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-                  />
-                ) : (
-                  <div className="flex h-20 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl font-bold text-slate-400">
-                    {app.full_name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold text-slate-900">{app.full_name}</p>
-                  <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
-                  <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
-                  <p className="text-sm text-slate-500">
-                    {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level]})`}
-                    {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
-                  </p>
-                  {(() => {
-                    const region = app.region === "usa" ? "usa" : "international";
-                    const level = app.program_level as ProgramLevel;
-                    const prog = programByName.get(app.program);
-                    const programFee = (region === "usa" ? prog?.fee_usa : prog?.fee_international) ?? FEE_SCHEDULE[level]?.[region] ?? 0;
-                    const enrollFee = (region === "usa" ? prog?.enrollment_fee_usa : prog?.enrollment_fee_international) ?? ENROLLMENT_FEES[level]?.[region] ?? 0;
-                    const currency = region === "usa" ? "$" : "KSh";
-                    return (
-                      <p className="mt-1 text-xs font-medium text-indigo-700">
-                        Will invoice: {currency}{Number(enrollFee).toLocaleString()} enrollment + {currency}{Number(programFee).toLocaleString()} program fees
-                      </p>
-                    );
-                  })()}
-                  {app.statement && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>
-                  )}
-                  {app.details && Object.keys(app.details).length > 0 && (
-                    <details className="mt-2">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-600">Full application details</summary>
-                      <dl className="mt-2 space-y-1 text-sm text-slate-600">
-                        {Object.entries(app.details).map(([key, value]) => (
-                          <div key={key} className="flex flex-wrap gap-2">
-                            <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
-                            <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </details>
-                  )}
-                </div>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <form action={reviewApplication}>
-                  <input type="hidden" name="id" value={app.id} />
-                  <input type="hidden" name="decision" value="approve" />
-                  <DeleteButton label="Approve" pendingLabel="Approving…" className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50" />
-                </form>
-                <form action={reviewApplication}>
-                  <input type="hidden" name="id" value={app.id} />
-                  <input type="hidden" name="decision" value="reject" />
-                  <DeleteButton label="Reject" pendingLabel="Rejecting…" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" />
-                </form>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Reviewed</h2>
-      <div className="mt-3 space-y-2">
-        {reviewed.length === 0 && <p className="text-sm text-slate-500">No reviewed applications yet.</p>}
-        {reviewed.map((app: Application) => {
-          const profile = profileByEmail.get(app.email);
-          return (
-            <details key={app.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
-              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                {app.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={app.photo_url} alt={app.full_name} className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-400">
-                    {app.full_name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="font-medium text-slate-800">{app.full_name}</span>
-                <span className="hidden text-slate-500 sm:inline">{app.email}</span>
-                <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                  {app.status}
-                </span>
-              </summary>
-
-              {/* Expanded details */}
-              <div className="border-t border-slate-100 px-4 py-4">
-                <div className="flex gap-4">
-                  {app.photo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={app.photo_url} alt={app.full_name} className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200" />
-                  )}
-                  <div className="flex-1 space-y-1 text-sm">
-                    <p className="text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
-                    <p className="text-slate-700">Program: {app.program}</p>
-                    <p className="text-slate-500">
-                      {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level]})`}
-                      {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
-                    </p>
-                    {app.statement && (
-                      <p className="mt-2 whitespace-pre-wrap text-slate-600">{app.statement}</p>
-                    )}
-                    {app.details && Object.keys(app.details as object).length > 0 && (
-                      <dl className="mt-2 space-y-1 text-slate-600">
-                        {Object.entries(app.details as Record<string, unknown>).map(([key, value]) => (
-                          <div key={key} className="flex flex-wrap gap-2">
-                            <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
-                            <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    )}
-                    <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3">
-                      {app.status === "approved" && (
-                        <form action={resendStudentInvite}>
-                          <input type="hidden" name="email" value={app.email} />
-                          <input type="hidden" name="full_name" value={app.full_name} />
-                          {profile?.student_number && <input type="hidden" name="student_number" value={profile.student_number} />}
-                          <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
-                        </form>
-                      )}
-                      {app.status === "rejected" && (
-                        <form action={reinstateApplication}>
-                          <input type="hidden" name="id" value={app.id} />
-                          <DeleteButton label="↩ Reinstate to pending" pendingLabel="Reinstating…" className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50" />
-                        </form>
-                      )}
-                      <form action={deleteApplication}>
-                        <input type="hidden" name="id" value={app.id} />
-                        <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
-          );
-        })}
-      </div>
+      <ApplicationSearchList
+        pending={pendingApps.map(toComputed)}
+        reviewed={reviewedApps.map(toComputed)}
+      />
     </div>
   );
 }

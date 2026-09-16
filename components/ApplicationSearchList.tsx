@@ -1,0 +1,227 @@
+"use client";
+
+import { useState } from "react";
+import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
+import { deleteApplication } from "@/lib/actions/admin";
+import { DeleteButton } from "@/components/DeleteButton";
+import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
+import type { ProgramLevel } from "@/lib/types";
+
+export type ComputedApplication = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  program: string;
+  program_level: string;
+  region: string | null;
+  statement: string | null;
+  photo_url: string | null;
+  status: string;
+  details: Record<string, unknown> | null;
+  isDuplicate: boolean;
+  profileStudentNumber: string | null;
+  currency: string;
+  programFee: number;
+  enrollFee: number;
+};
+
+function Avatar({ url, name, size }: { url: string | null; name: string; size: "sm" | "lg" }) {
+  const cls = size === "lg"
+    ? "h-20 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+    : "h-8 w-8 rounded-full object-cover ring-1 ring-slate-200";
+  const fallbackCls = size === "lg"
+    ? "flex h-20 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl font-bold text-slate-400"
+    : "flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-400";
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt={name} className={cls} />;
+  }
+  return <div className={fallbackCls}>{name.charAt(0).toUpperCase()}</div>;
+}
+
+function PendingCard({ app }: { app: ComputedApplication }) {
+  return (
+    <div className={`rounded-xl border bg-white p-5 shadow-sm ${app.isDuplicate ? "border-amber-300" : "border-slate-200"}`}>
+      {app.isDuplicate && (
+        <div className="mb-3 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5">
+          <span className="text-xs font-semibold text-amber-700">Duplicate — same email has multiple pending applications</span>
+          <form action={deleteApplication}>
+            <input type="hidden" name="id" value={app.id} />
+            <DeleteButton label="Delete this copy" pendingLabel="Deleting…" className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50" />
+          </form>
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-4">
+          <Avatar url={app.photo_url} name={app.full_name} size="lg" />
+          <div>
+            <p className="font-semibold text-slate-900">{app.full_name}</p>
+            <p className="text-sm text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
+            <p className="mt-1 text-sm text-slate-700">Program: {app.program}</p>
+            <p className="text-sm text-slate-500">
+              {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level as ProgramLevel] ?? app.program_level})`}
+              {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
+            </p>
+            <p className="mt-1 text-xs font-medium text-indigo-700">
+              Will invoice: {app.currency}{Number(app.enrollFee).toLocaleString()} enrollment + {app.currency}{Number(app.programFee).toLocaleString()} program fees
+            </p>
+            {app.statement && (
+              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{app.statement}</p>
+            )}
+            {app.details && Object.keys(app.details).length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-sm font-medium text-slate-600">Full application details</summary>
+                <dl className="mt-2 space-y-1 text-sm text-slate-600">
+                  {Object.entries(app.details).map(([key, value]) => (
+                    <div key={key} className="flex flex-wrap gap-2">
+                      <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
+                      <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <form action={reviewApplication}>
+            <input type="hidden" name="id" value={app.id} />
+            <input type="hidden" name="decision" value="approve" />
+            <DeleteButton label="Approve" pendingLabel="Approving…" className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50" />
+          </form>
+          <form action={reviewApplication}>
+            <input type="hidden" name="id" value={app.id} />
+            <input type="hidden" name="decision" value="reject" />
+            <DeleteButton label="Reject" pendingLabel="Rejecting…" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" />
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewedCard({ app }: { app: ComputedApplication }) {
+  return (
+    <details className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 text-sm">
+        <Avatar url={app.photo_url} name={app.full_name} size="sm" />
+        <span className="font-medium text-slate-800">{app.full_name}</span>
+        <span className="hidden text-slate-500 sm:inline">{app.email}</span>
+        <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-semibold ${app.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+          {app.status}
+        </span>
+      </summary>
+      <div className="border-t border-slate-100 px-4 py-4">
+        <div className="flex gap-4">
+          {app.photo_url && <Avatar url={app.photo_url} name={app.full_name} size="lg" />}
+          <div className="flex-1 space-y-1 text-sm">
+            <p className="text-slate-500">{app.email}{app.phone ? ` · ${app.phone}` : ""}</p>
+            <p className="text-slate-700">Program: {app.program}</p>
+            <p className="text-slate-500">
+              {app.program_level === "diploma" ? "RBC Diploma" : `TBCS (${PROGRAM_LEVEL_LABELS[app.program_level as ProgramLevel] ?? app.program_level})`}
+              {app.region ? ` · ${app.region === "usa" ? "USA Campus" : "Kenya / International"}` : ""}
+            </p>
+            {app.statement && (
+              <p className="mt-2 whitespace-pre-wrap text-slate-600">{app.statement}</p>
+            )}
+            {app.details && Object.keys(app.details).length > 0 && (
+              <dl className="mt-2 space-y-1 text-slate-600">
+                {Object.entries(app.details).map(([key, value]) => (
+                  <div key={key} className="flex flex-wrap gap-2">
+                    <dt className="font-medium text-slate-500">{key.replace(/_/g, " ")}:</dt>
+                    <dd>{Array.isArray(value) ? value.join(", ") : String(value ?? "")}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3">
+              {app.status === "approved" && (
+                <form action={resendStudentInvite}>
+                  <input type="hidden" name="email" value={app.email} />
+                  <input type="hidden" name="full_name" value={app.full_name} />
+                  {app.profileStudentNumber && <input type="hidden" name="student_number" value={app.profileStudentNumber} />}
+                  <DeleteButton label="Resend invite" pendingLabel="Sending…" className="text-xs text-blue-600 hover:underline disabled:opacity-50" />
+                </form>
+              )}
+              {app.status === "rejected" && (
+                <form action={reinstateApplication}>
+                  <input type="hidden" name="id" value={app.id} />
+                  <DeleteButton label="↩ Reinstate to pending" pendingLabel="Reinstating…" className="text-xs font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50" />
+                </form>
+              )}
+              <form action={deleteApplication}>
+                <input type="hidden" name="id" value={app.id} />
+                <DeleteButton label="Delete" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+export function ApplicationSearchList({
+  pending,
+  reviewed,
+}: {
+  pending: ComputedApplication[];
+  reviewed: ComputedApplication[];
+}) {
+  const [query, setQuery] = useState("");
+
+  function matches(app: ComputedApplication) {
+    const q = query.toLowerCase();
+    return (
+      app.full_name.toLowerCase().includes(q) ||
+      app.email.toLowerCase().includes(q) ||
+      app.program.toLowerCase().includes(q) ||
+      app.status.toLowerCase().includes(q) ||
+      (app.region === "usa" ? "usa campus" : "international").includes(q)
+    );
+  }
+
+  const filteredPending = query.trim() ? pending.filter(matches) : pending;
+  const filteredReviewed = query.trim() ? reviewed.filter(matches) : reviewed;
+  const total = pending.length + reviewed.length;
+  const filteredTotal = filteredPending.length + filteredReviewed.length;
+
+  return (
+    <>
+      <div className="mt-4 flex items-center gap-2">
+        <input
+          type="search"
+          placeholder="Search by name, email, program, or status…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full max-w-sm rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-gold"
+        />
+        {query && (
+          <button onClick={() => setQuery("")} className="text-xs text-slate-400 hover:text-slate-600">
+            Clear
+          </button>
+        )}
+        {query && (
+          <span className="text-xs text-slate-400">{filteredTotal} of {total}</span>
+        )}
+      </div>
+
+      <h2 className="mt-6 text-lg font-semibold text-slate-800">Pending ({filteredPending.length})</h2>
+      <div className="mt-3 space-y-3">
+        {filteredPending.length === 0 && (
+          <p className="text-sm text-slate-500">{query ? "No matching pending applications." : "No pending applications."}</p>
+        )}
+        {filteredPending.map((app) => <PendingCard key={app.id} app={app} />)}
+      </div>
+
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Reviewed</h2>
+      <div className="mt-3 space-y-2">
+        {filteredReviewed.length === 0 && (
+          <p className="text-sm text-slate-500">{query ? "No matching reviewed applications." : "No reviewed applications yet."}</p>
+        )}
+        {filteredReviewed.map((app) => <ReviewedCard key={app.id} app={app} />)}
+      </div>
+    </>
+  );
+}

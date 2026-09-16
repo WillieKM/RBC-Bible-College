@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { submitApplication } from "@/lib/actions/applications";
 import { Declaration } from "@/components/Declaration";
@@ -50,6 +50,20 @@ function SubmitButton() {
 
 export function ApplyForm({ presetRegion }: { presetRegion: Region | null }) {
   const [region, setRegion] = useState<Region>(presetRegion ?? "usa");
+  // null = loading, true = outside US, false = inside US or unknown
+  const [usaBlocked, setUsaBlocked] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (presetRegion) return; // region is locked by URL param — no need to check
+    fetch("/api/geo")
+      .then((r) => r.json())
+      .then((d: { country: string | null }) => {
+        const outsideUs = d.country !== null && d.country !== "US";
+        setUsaBlocked(outsideUs);
+        if (outsideUs) setRegion("international");
+      })
+      .catch(() => setUsaBlocked(false)); // fail open
+  }, [presetRegion]);
 
   return (
     <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">
@@ -69,17 +83,22 @@ export function ApplyForm({ presetRegion }: { presetRegion: Region | null }) {
         <div>
           <p className={labelClass}>Which campus / region are you applying from? *</p>
           <div className="mt-2 flex gap-3">
-            <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+            <label className={`flex flex-1 items-center justify-center rounded-lg border px-3 py-2 text-sm ${
+              usaBlocked
+                ? "cursor-not-allowed border-slate-700 bg-slate-900 text-slate-600"
+                : "cursor-pointer border-slate-700 bg-ink text-slate-200 has-checked:border-gold has-checked:text-gold"
+            }`} title={usaBlocked ? "USA Campus is only available to applicants located in the United States." : undefined}>
               <input
                 type="radio"
                 name="region"
                 value="usa"
                 required
                 checked={region === "usa"}
-                onChange={() => setRegion("usa")}
+                onChange={() => { if (!usaBlocked) setRegion("usa"); }}
+                disabled={!!usaBlocked}
                 className="sr-only"
               />
-              USA Campus
+              USA Campus{usaBlocked ? " (US residents only)" : ""}
             </label>
             <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
               <input
@@ -94,6 +113,11 @@ export function ApplyForm({ presetRegion }: { presetRegion: Region | null }) {
               Kenya / Other (International)
             </label>
           </div>
+          {usaBlocked && (
+            <p className="mt-1.5 text-xs text-amber-400">
+              USA Campus applications are only accepted from within the United States. You have been redirected to International.
+            </p>
+          )}
         </div>
       )}
 

@@ -375,7 +375,7 @@ export async function reviewApplication(formData: FormData) {
     if (programFee && programFee > 0) {
       const invYear = new Date().getFullYear();
       const invSeq = await nextSequenceNumber(admin, `invoice_number_${invYear}`);
-      const invoiceNumber = `INV-${invYear}-${String(invSeq).padStart(4, "0")}`;
+      const invoiceNumber = `INV-${invYear}-${String(invSeq + 799).padStart(4, "0")}`;
       await admin.from("invoices").insert({
         student_id: approvedUserId,
         title: `${application.program} — Program Fees`,
@@ -389,7 +389,7 @@ export async function reviewApplication(formData: FormData) {
     if (enrollFeeAmt > 0) {
       const envYear = new Date().getFullYear();
       const envSeq = await nextSequenceNumber(admin, `invoice_number_${envYear}`);
-      const envInvoiceNumber = `INV-${envYear}-${String(envSeq).padStart(4, "0")}`;
+      const envInvoiceNumber = `INV-${envYear}-${String(envSeq + 799).padStart(4, "0")}`;
       await admin.from("invoices").insert({
         student_id: approvedUserId,
         title: `${application.program} — Enrollment Fee`,

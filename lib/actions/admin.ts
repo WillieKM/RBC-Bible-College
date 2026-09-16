@@ -333,7 +333,7 @@ export async function inviteUser(formData: FormData) {
 
         if (feeAmount > 0) {
           const { data: seqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
-          const invoiceNumber = `INV-${year}-${String(seqData ?? 1).padStart(4, "0")}`;
+          const invoiceNumber = `INV-${year}-${String((seqData ?? 1) + 799).padStart(4, "0")}`;
           await admin.from("invoices").insert({
             student_id: created.user.id,
             title: `${prog.name} — Program Fees`,
@@ -347,7 +347,7 @@ export async function inviteUser(formData: FormData) {
         const enrollFeeAmt = (ENROLLMENT_FEES[level] ?? ENROLLMENT_FEES.diploma)[regionKey];
         if (enrollFeeAmt > 0) {
           const { data: envSeqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
-          const envInvoiceNumber = `INV-${year}-${String(envSeqData ?? 1).padStart(4, "0")}`;
+          const envInvoiceNumber = `INV-${year}-${String((envSeqData ?? 1) + 799).padStart(4, "0")}`;
           await admin.from("invoices").insert({
             student_id: created.user.id,
             title: `${prog.name} — Enrollment Fee`,

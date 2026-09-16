@@ -145,9 +145,9 @@ export default async function AdminZoomPage({
                   passcode={(group as { id: string; title: string; zoom_url: string | null; zoom_passcode: string | null }).zoom_passcode ?? null}
                   studentsLabel={
                     group.id === "diploma"
-                      ? "All Diploma students"
+                      ? "All Diploma & Doctorate students"
                       : group.id === "bachelors_doctorate"
-                      ? "All Bachelor's & Doctorate students"
+                      ? "All Bachelor's & Master's students"
                       : "All enrolled students"
                   }
                 />
