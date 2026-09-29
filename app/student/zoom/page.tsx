@@ -5,10 +5,27 @@ export default async function StudentZoomPage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  const { data: sessionsRaw } = await supabase
+  // Resolve program level so we only show sessions for this student's audience
+  let programLevel: string | null = null;
+  if (profile.program_id) {
+    const { data: prog } = await supabase
+      .from("programs")
+      .select("program_level")
+      .eq("id", profile.program_id)
+      .single();
+    programLevel = prog?.program_level ?? null;
+  }
+
+  let zoomQuery = supabase
     .from("zoom_sessions")
-    .select("id, title, description, zoom_url, recording_url, send_at, last_sent_at, recurrence, active")
+    .select("id, title, description, zoom_url, recording_url, send_at, last_sent_at, recurrence, active, target_audience")
     .order("created_at", { ascending: false });
+
+  if (programLevel) {
+    zoomQuery = zoomQuery.or(`target_audience.eq.all,target_audience.eq.${programLevel}`);
+  }
+
+  const { data: sessionsRaw } = await zoomQuery;
 
   const sessions = (sessionsRaw ?? []) as {
     id: string;

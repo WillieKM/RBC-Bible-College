@@ -8,18 +8,33 @@ export default async function ModuleViewerPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRole(["student"]);
+  const profile = await requireRole(["student"]);
   const { id } = await params;
   const supabase = await createClient();
 
+  // Resolve program level to enforce audience access control
+  let programLevel: string | null = null;
+  if (profile.program_id) {
+    const { data: prog } = await supabase
+      .from("programs")
+      .select("program_level")
+      .eq("id", profile.program_id)
+      .single();
+    programLevel = prog?.program_level ?? null;
+  }
+
   const { data: module } = await supabase
     .from("module_files")
-    .select("id, title, description, sent_at")
+    .select("id, title, description, sent_at, send_audience")
     .eq("id", id)
     .not("sent_at", "is", null)
     .single();
 
   if (!module) notFound();
+
+  // Block access if this module targets a different program level
+  const audience = module.send_audience as string | null;
+  if (audience && audience !== "all" && audience !== programLevel) notFound();
 
   // #toolbar=0&navpanes=0 suppresses the browser PDF toolbar in Chrome/Edge/Safari
   const viewerSrc = `/api/module-pdf/${id}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;

@@ -12,19 +12,39 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  // Check role so professors/admins can access unreleased modules
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  // Load profile: role + program_id for audience check
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, program_id")
+    .eq("id", user.id)
+    .single();
   const isProfessorOrAdmin = profile?.role === "professor" || profile?.role === "admin";
 
   const { id } = await params;
   const admin = createAdminClient();
 
   // Professors/admins see all modules; students only see released ones
-  let query = admin.from("module_files").select("file_url, file_name, sent_at").eq("id", id);
+  let query = admin.from("module_files").select("file_url, file_name, sent_at, send_audience").eq("id", id);
   if (!isProfessorOrAdmin) query = query.not("sent_at", "is", null);
   const { data: module } = await query.single();
 
   if (!module?.file_url) return new NextResponse("Not found", { status: 404 });
+
+  // For students, verify the module's audience matches their program level
+  if (!isProfessorOrAdmin && module.send_audience && module.send_audience !== "all") {
+    let programLevel: string | null = null;
+    if (profile?.program_id) {
+      const { data: prog } = await admin
+        .from("programs")
+        .select("program_level")
+        .eq("id", profile.program_id)
+        .single();
+      programLevel = prog?.program_level ?? null;
+    }
+    if (module.send_audience !== programLevel) {
+      return new NextResponse("Not found", { status: 404 });
+    }
+  }
 
   // Proxy the PDF from storage so the raw Supabase URL is never exposed
   let res: Response;
