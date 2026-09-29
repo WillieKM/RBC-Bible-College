@@ -6,8 +6,8 @@ const SCHOOL_ACCENT = "#d4af37";
 
 // ─── Payment constants — update these when details change ─────────────────
 const ZELLE_CASHAPP    = process.env.PAYMENT_ZELLE_CASHAPP || "+1 (206) 326-8094";
-const MPESA_PAYBILL    = process.env.MPESA_PAYBILL         || "247247";
-const MPESA_ACCOUNT    = process.env.MPESA_ACCOUNT         || "0729249697";
+const MPESA_PAYBILL    = process.env.MPESA_PAYBILL         || "542542";
+const MPESA_ACCOUNT    = process.env.MPESA_ACCOUNT         || "249679";
 
 // User- and staff-entered text (names, statements, feedback, etc.) is interpolated
 // directly into these HTML email bodies, so it must be escaped to avoid HTML/markup
@@ -141,7 +141,7 @@ export async function sendApplicationDecisionEmail(opts: {
            : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:8px 0;">
                 <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.07em;">How to Pay — Lipa na M-Pesa</p>
                 <p style="margin:0 0 2px;font-size:14px;color:#1e293b;"><strong>Paybill:</strong> <span style="font-family:monospace;font-weight:700;">${esc(MPESA_PAYBILL)}</span></p>
-                <p style="margin:0;font-size:14px;color:#1e293b;"><strong>A/C Number:</strong> <span style="font-family:monospace;font-weight:700;">${esc(MPESA_ACCOUNT)}</span></p>
+                <p style="margin:0;font-size:14px;color:#1e293b;"><strong>A/C Number:</strong> <span style="font-family:monospace;font-weight:700;">${esc(MPESA_ACCOUNT)} (RBTC)</span></p>
               </div>`
          }`
       : "";

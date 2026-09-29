@@ -39,8 +39,8 @@ function FeesBlock({ level, region }: { level: ProgramLevel | null; region: Regi
       {region === "international" ? (
         <div className="mt-4 border-t border-gold/20 pt-3 text-center">
           <p className="font-semibold text-gold">Lipa na M-Pesa</p>
-          <p className="mt-1">Paybill: <strong>247247</strong></p>
-          <p>A/C Number: <strong>0729249697</strong></p>
+          <p className="mt-1">Paybill: <strong>542542</strong></p>
+          <p>A/C Number: <strong>249679 (RBTC)</strong></p>
         </div>
       ) : (
         <div className="mt-4 border-t border-gold/20 pt-3 text-center">

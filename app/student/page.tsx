@@ -6,7 +6,7 @@ import Link from "next/link";
 // Payment details — set matching env vars in Vercel to override
 const ZELLE_CASHAPP = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
 const MPESA_PAYBILL = process.env.MPESA_PAYBILL         || "542542";
-const MPESA_ACCOUNT = process.env.MPESA_ACCOUNT         || "03009422856350";
+const MPESA_ACCOUNT = process.env.MPESA_ACCOUNT         || "249679";
 
 export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
@@ -122,7 +122,7 @@ export default async function StudentHomePage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-slate-600 w-32">Account Number:</span>
-                      <span className="font-mono font-bold text-lg text-slate-900">{MPESA_ACCOUNT}</span>
+                      <span className="font-mono font-bold text-lg text-slate-900">{MPESA_ACCOUNT} <span className="text-sm font-semibold text-slate-500">(RBTC)</span></span>
                     </div>
                     <p className="text-slate-500 text-xs pt-1">Use your name and student ID as your payment reference note.</p>
                   </div>
