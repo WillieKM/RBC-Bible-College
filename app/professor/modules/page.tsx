@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import type { ModuleFile } from "@/lib/types";
 
@@ -6,9 +6,9 @@ const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default async function ProfessorModulesPage() {
   await requireRole(["professor"]);
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data } = await supabase
+  const { data } = await admin
     .from("module_files")
     .select("*")
     .order("sent_at", { ascending: false, nullsFirst: false });

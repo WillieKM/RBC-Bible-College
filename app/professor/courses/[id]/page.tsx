@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { createAssignment, addCourseMaterial, deleteCourseMaterial, saveAttendance, sendProfessorMessage } from "@/lib/actions/professor";
 import { postDiscussion, deleteDiscussion } from "@/lib/actions/discussions";
@@ -14,16 +14,17 @@ export default async function ProfessorCoursePage({
 }) {
   const profile = await requireRole(["professor"]);
   const { id } = await params;
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { data: course } = await supabase.from("courses").select("*").eq("id", id).single();
+  // Use admin client to bypass RLS for professor reads
+  const { data: course } = await admin.from("courses").select("*").eq("id", id).single();
   if (!course || course.professor_id !== profile.id) notFound();
 
   const [{ data: assignments }, { data: materials }, { data: enrollments }, { data: discussions }] = await Promise.all([
-    supabase.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
-    supabase.from("course_materials").select("*").eq("course_id", id).order("created_at", { ascending: false }),
-    supabase.from("enrollments").select("*, profiles(full_name)").eq("course_id", id),
-    supabase.from("course_discussions").select("*, profiles(full_name, role)").eq("course_id", id).is("parent_id", null).order("created_at", { ascending: true }),
+    admin.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
+    admin.from("course_materials").select("*").eq("course_id", id).order("created_at", { ascending: false }),
+    admin.from("enrollments").select("*, profiles(full_name)").eq("course_id", id),
+    admin.from("course_discussions").select("*, profiles(full_name, role)").eq("course_id", id).is("parent_id", null).order("created_at", { ascending: true }),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);

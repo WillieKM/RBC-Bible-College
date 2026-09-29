@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -11,15 +12,17 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const { id } = await params;
+  // Check role so professors/admins can access unreleased modules
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const isProfessorOrAdmin = profile?.role === "professor" || profile?.role === "admin";
 
-  // Only released (sent_at not null) modules are accessible to students
-  const { data: module } = await supabase
-    .from("module_files")
-    .select("file_url, file_name, sent_at")
-    .eq("id", id)
-    .not("sent_at", "is", null)
-    .single();
+  const { id } = await params;
+  const admin = createAdminClient();
+
+  // Professors/admins see all modules; students only see released ones
+  let query = admin.from("module_files").select("file_url, file_name, sent_at").eq("id", id);
+  if (!isProfessorOrAdmin) query = query.not("sent_at", "is", null);
+  const { data: module } = await query.single();
 
   if (!module?.file_url) return new NextResponse("Not found", { status: 404 });
 
