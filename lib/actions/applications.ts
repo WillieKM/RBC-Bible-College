@@ -19,6 +19,7 @@ import { DEGREE_PROGRAM_LEVELS, ENROLLMENT_FEES, feeForLevel } from "@/lib/fees"
 import { nextSequenceNumber } from "@/lib/sequences";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { headers } from "next/headers";
 import { after } from "next/server";
 
@@ -56,6 +57,16 @@ export async function submitApplication(formData: FormData) {
   const source = String(formData.get("source") || "").trim();
   const region = String(formData.get("region") || "").trim() || null;
   const returnTo = source === "tbcs" ? "/apply/degree" : "/apply";
+  try {
+    return await _submitApplicationInner(formData, source, region, returnTo);
+  } catch (err) {
+    if (isRedirectError(err)) throw err; // let Next.js handle redirect() calls normally
+    const msg = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
+    redirect(`${returnTo}?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+async function _submitApplicationInner(formData: FormData, source: string, region: string | null, returnTo: string) {
 
   // Honeypot: a real applicant never fills this hidden field. Pretend to
   // succeed so bots don't learn to avoid it, but skip all real processing.
@@ -215,25 +226,30 @@ export async function submitApplication(formData: FormData) {
   const capturedProfessor = programProfessor;
   const capturedProfessorId = programRow?.professor_id;
 
-  after(async () => {
-    await Promise.allSettled([
-      sendApplicationConfirmationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram, region: capturedRegion }),
-      sendNewApplicationEmail({ fullName: capturedFullName, email: capturedEmail, phone: capturedPhone || null, program: capturedProgram, statement }),
-      capturedProfessorId && capturedProfessor?.email
-        ? sendNewApplicationToProfessorEmail({
-            to: capturedProfessor.email,
-            professorName: capturedProfessor.full_name,
-            fullName: capturedFullName,
-            email: capturedEmail,
-            phone: capturedPhone || null,
-            program: capturedProgram,
-          })
-        : Promise.resolve(),
-      capturedSource === "tbcs"
-        ? sendAccreditationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram })
-        : Promise.resolve(),
-    ]);
-  });
+  const emailTasks = () => Promise.allSettled([
+    sendApplicationConfirmationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram, region: capturedRegion }),
+    sendNewApplicationEmail({ fullName: capturedFullName, email: capturedEmail, phone: capturedPhone || null, program: capturedProgram, statement }),
+    capturedProfessorId && capturedProfessor?.email
+      ? sendNewApplicationToProfessorEmail({
+          to: capturedProfessor.email,
+          professorName: capturedProfessor.full_name,
+          fullName: capturedFullName,
+          email: capturedEmail,
+          phone: capturedPhone || null,
+          program: capturedProgram,
+        })
+      : Promise.resolve(),
+    capturedSource === "tbcs"
+      ? sendAccreditationEmail({ to: capturedEmail, fullName: capturedFullName, program: capturedProgram })
+      : Promise.resolve(),
+  ]);
+
+  try {
+    after(emailTasks);
+  } catch {
+    // after() not supported; fire emails without blocking the redirect
+    void emailTasks();
+  }
 
   const params = new URLSearchParams({
     name: fullName,
