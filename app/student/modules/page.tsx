@@ -6,13 +6,31 @@ import type { ModuleFile } from "@/lib/types";
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default async function StudentModulesPage() {
-  await requireRole(["student"]);
+  const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  const { data } = await supabase
+  // Resolve the student's program level so we can filter modules correctly
+  let programLevel: string | null = null;
+  if (profile.program_id) {
+    const { data: prog } = await supabase
+      .from("programs")
+      .select("program_level")
+      .eq("id", profile.program_id)
+      .single();
+    programLevel = prog?.program_level ?? null;
+  }
+
+  // Show modules sent to "all" or specifically to this student's program level
+  let query = supabase
     .from("module_files")
     .select("*")
     .order("sent_at", { ascending: false, nullsFirst: false });
+
+  if (programLevel) {
+    query = query.or(`send_audience.eq.all,send_audience.eq.${programLevel},send_audience.is.null`);
+  }
+
+  const { data } = await query;
 
   const modules = (data ?? []) as ModuleFile[];
   const now = Date.now();
