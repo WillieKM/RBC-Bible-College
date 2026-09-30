@@ -185,7 +185,7 @@ export async function createCourse(formData: FormData) {
 
 export async function updateCourse(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const id = String(formData.get("id"));
   const title = String(formData.get("title") || "").trim();
@@ -262,15 +262,26 @@ export async function adminDeleteAssignment(formData: FormData) {
 
 export async function deleteCourse(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   await supabase.from("courses").delete().eq("id", id);
   revalidatePath("/admin/courses");
+  redirect("/admin/courses");
+}
+
+export async function assignProfessor(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = createAdminClient();
+  const courseId = String(formData.get("course_id"));
+  const professorId = String(formData.get("professor_id") || "") || null;
+  await supabase.from("courses").update({ professor_id: professorId }).eq("id", courseId);
+  revalidatePath("/admin/courses");
+  redirect("/admin/courses");
 }
 
 export async function enrollStudent(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const courseId = String(formData.get("course_id"));
   const studentId = String(formData.get("student_id"));
   if (!studentId) return;
@@ -281,7 +292,7 @@ export async function enrollStudent(formData: FormData) {
 
 export async function bulkEnrollStudents(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const courseId = String(formData.get("course_id"));
   const studentIds = formData.getAll("student_ids[]").map(String).filter(Boolean);
   if (studentIds.length === 0) return;
@@ -297,7 +308,7 @@ export async function bulkEnrollStudents(formData: FormData) {
 
 export async function unenrollStudent(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const courseId = String(formData.get("course_id"));
   const enrollmentId = String(formData.get("enrollment_id"));
 
