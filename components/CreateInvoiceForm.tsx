@@ -20,6 +20,12 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
   const selected = students.find((s) => s.id === studentId) ?? null;
   const currency = selected?.currency ?? "$";
 
+  // Is this student already fully invoiced?
+  const alreadyFullyInvoiced =
+    selected != null &&
+    selected.fee != null &&
+    selected.existingTotal >= selected.fee;
+
   function handleStudentChange(id: string) {
     setStudentId(id);
     const student = students.find((s) => s.id === id);
@@ -30,7 +36,19 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
     <form action={createInvoice} className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="font-semibold text-slate-800">Create Invoice</h2>
 
-      {selected && selected.existingCount > 0 && (
+      {selected && alreadyFullyInvoiced && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-800">
+          <p className="font-semibold">⚠ Already fully invoiced</p>
+          <p className="mt-0.5">
+            {selected.label.split(" — ")[0]} has {selected.existingCount} invoice{selected.existingCount !== 1 ? "s" : ""} totaling{" "}
+            <strong>{selected.currency}{selected.existingTotal.toFixed(2)}</strong>, which already covers the full tuition of{" "}
+            <strong>{selected.currency}{selected.fee!.toFixed(2)}</strong>.
+            Creating another invoice will over-bill this student.
+          </p>
+        </div>
+      )}
+
+      {selected && !alreadyFullyInvoiced && selected.existingCount > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {selected.label.split(" — ")[0]} already has {selected.existingCount} invoice{selected.existingCount !== 1 ? "s" : ""} totaling {selected.currency}{selected.existingTotal.toFixed(2)}. Double-check before adding another.
         </div>
