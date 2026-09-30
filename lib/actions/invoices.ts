@@ -8,7 +8,6 @@ import { nextSequenceNumber } from "@/lib/sequences";
 import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 
 export async function createInvoice(formData: FormData) {
   const adminProfile = await requireFinanceAccess();
@@ -48,52 +47,6 @@ export async function createInvoice(formData: FormData) {
       targetType: "invoice",
       targetId: invoice.id,
       details: { student_id: studentId, title, total_amount: totalAmount, invoice_number: invoiceNumber! },
-    });
-
-    const { data: studentProfile } = await adminDb
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", studentId)
-      .maybeSingle();
-
-    // Fall back to auth user email if profile email is null
-    let recipientEmail = studentProfile?.email ?? null;
-    if (!recipientEmail) {
-      const { data: authUser } = await adminDb.auth.admin.getUserById(studentId);
-      recipientEmail = authUser?.user?.email ?? null;
-    }
-    const recipientName = studentProfile?.full_name ?? "Student";
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const emailTo = recipientEmail;
-    const emailName = recipientName;
-    const capturedInvoiceId = invoice.id;
-    const capturedTitle = title;
-    const capturedActorId = adminProfile.id;
-    const capturedActorName = adminProfile.full_name;
-
-    after(async () => {
-      if (!emailTo) {
-        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_skipped", targetType: "invoice", targetId: capturedInvoiceId, details: { reason: "no_email_found", profile: JSON.stringify(studentProfile) } });
-        return;
-      }
-      try {
-        await sendInvoiceEmail({
-          to: emailTo,
-          studentName: emailName,
-          invoiceTitle: capturedTitle,
-          invoiceId: capturedInvoiceId,
-          totalAmount,
-          amountPaid: 0,
-          balance: totalAmount,
-          payments: [],
-          notes,
-          portalUrl: `${baseUrl}/student/invoices`,
-        });
-        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_sent", targetType: "invoice", targetId: capturedInvoiceId, details: { to: emailTo } });
-      } catch (err) {
-        void writeAuditLog({ actorId: capturedActorId, actorName: capturedActorName, action: "invoice_email_failed", targetType: "invoice", targetId: capturedInvoiceId, details: { to: emailTo, error: err instanceof Error ? err.message : String(err) } });
-      }
     });
 
     revalidatePath("/admin/invoices");
