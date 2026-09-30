@@ -240,11 +240,12 @@ export async function adminCreateAssignment(formData: FormData) {
   const description = String(formData.get("description") || "").trim() || null;
   const dueDate = String(formData.get("due_date") || "") || null;
   const pointsPossible = formData.get("points_possible") ? Number(formData.get("points_possible")) : null;
+  const approvedBy = String(formData.get("approved_by") || "") || null;
   if (!title || !courseId) return;
 
   await supabase
     .from("assignments")
-    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible });
+    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible, approved_by: approvedBy });
 
   revalidatePath(`/admin/courses/${courseId}`);
   redirect(`/admin/courses/${courseId}`);

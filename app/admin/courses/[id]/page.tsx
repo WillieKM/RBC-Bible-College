@@ -104,22 +104,34 @@ export default async function AdminCourseDetailPage({
       {/* ── Assignments ── */}
       <h2 className="mt-8 text-lg font-semibold text-slate-800">Assignments</h2>
       <div className="mt-3 space-y-2">
-        {(assignments ?? []).map((a: Assignment) => (
-          <div key={a.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm">
-            <div>
-              <p className="font-medium text-slate-800">{a.title}</p>
-              <p className="text-xs text-slate-400">
-                {a.due_date ? `Due ${new Date(a.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "No due date"}
-                {a.points_possible ? ` · ${a.points_possible} pts` : ""}
-              </p>
+        {(assignments ?? []).map((a: Assignment) => {
+          const approver = a.approved_by
+            ? (professors ?? []).find((p: Profile) => p.id === a.approved_by)
+            : null;
+          return (
+            <div key={a.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-slate-800">{a.title}</p>
+                  {approver && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
+                      ✓ Approved by {approver.full_name}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400">
+                  {a.due_date ? `Due ${new Date(a.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "No due date"}
+                  {a.points_possible ? ` · ${a.points_possible} pts` : ""}
+                </p>
+              </div>
+              <form action={adminDeleteAssignment}>
+                <input type="hidden" name="id" value={a.id} />
+                <input type="hidden" name="course_id" value={course.id} />
+                <button className="text-sm font-medium text-red-600 hover:underline">Delete</button>
+              </form>
             </div>
-            <form action={adminDeleteAssignment}>
-              <input type="hidden" name="id" value={a.id} />
-              <input type="hidden" name="course_id" value={course.id} />
-              <button className="text-sm font-medium text-red-600 hover:underline">Delete</button>
-            </form>
-          </div>
-        ))}
+          );
+        })}
         {(assignments ?? []).length === 0 && <p className="text-sm text-slate-500">No assignments yet.</p>}
       </div>
 
@@ -136,6 +148,15 @@ export default async function AdminCourseDetailPage({
         <div>
           <label className="block text-sm font-medium text-slate-700">Points</label>
           <input name="points_possible" type="number" min="0" placeholder="100" className="mt-1 w-20 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Approved by professor</label>
+          <select name="approved_by" defaultValue="" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <option value="">Not yet approved</option>
+            {(professors ?? []).map((p: Profile) => (
+              <option key={p.id} value={p.id}>{p.full_name}</option>
+            ))}
+          </select>
         </div>
         <div className="w-full">
           <label className="block text-sm font-medium text-slate-700">Description</label>

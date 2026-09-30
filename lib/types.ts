@@ -89,6 +89,7 @@ export interface Assignment {
   description: string | null;
   due_date: string | null;
   points_possible: number | null;
+  approved_by: string | null;
   created_at: string;
 }
 

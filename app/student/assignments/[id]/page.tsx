@@ -18,7 +18,7 @@ export default async function StudentAssignmentPage({
   const { submitted } = await searchParams;
   const supabase = await createClient();
 
-  const { data: assignment } = await supabase.from("assignments").select("*, courses(*)").eq("id", id).single();
+  const { data: assignment } = await supabase.from("assignments").select("*, courses(*), profiles!assignments_approved_by_fkey(full_name)").eq("id", id).single();
   if (!assignment) notFound();
 
   // Confirm enrollment
@@ -44,7 +44,14 @@ export default async function StudentAssignmentPage({
       <Link href={`/student/courses/${assignment.course_id}`} className="text-sm text-gold-dark hover:underline">
         ← Back to {assignment.courses?.title}
       </Link>
-      <h1 className="mt-2 text-2xl font-bold text-slate-900">{assignment.title}</h1>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <h1 className="text-2xl font-bold text-slate-900">{assignment.title}</h1>
+        {assignment.approved_by && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
+            ✓ Approved by {(assignment.profiles as unknown as { full_name: string } | null)?.full_name ?? "Professor"}
+          </span>
+        )}
+      </div>
       {assignment.description && <p className="mt-1 text-slate-600">{assignment.description}</p>}
       <p className="mt-1 text-sm text-slate-500">
         {assignment.due_date

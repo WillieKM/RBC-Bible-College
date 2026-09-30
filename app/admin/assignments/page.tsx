@@ -1,24 +1,26 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import Link from "next/link";
 
 export default async function AdminAssignmentsPage() {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
-  const { data: assignments } = await supabase
-    .from("assignments")
-    .select("*, courses(title, code, profiles(full_name))")
-    .order("due_date", { ascending: true });
-
-  const { data: submissionCounts } = await supabase
-    .from("submissions")
-    .select("assignment_id");
+  const [{ data: assignments }, { data: submissionCounts }, { data: professors }] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("*, courses(title, code, profiles(full_name))")
+      .order("due_date", { ascending: true }),
+    supabase.from("submissions").select("assignment_id"),
+    supabase.from("profiles").select("id, full_name").eq("role", "professor"),
+  ]);
 
   const countMap = new Map<string, number>();
   for (const s of submissionCounts ?? []) {
     countMap.set(s.assignment_id, (countMap.get(s.assignment_id) ?? 0) + 1);
   }
+
+  const professorMap = new Map((professors ?? []).map((p) => [p.id, p.full_name]));
 
   const now = new Date();
 
@@ -34,6 +36,7 @@ export default async function AdminAssignmentsPage() {
               <th className="px-4 py-3 text-left font-medium text-slate-600">Assignment</th>
               <th className="px-4 py-3 text-left font-medium text-slate-600">Course</th>
               <th className="px-4 py-3 text-left font-medium text-slate-600">Professor</th>
+              <th className="px-4 py-3 text-center font-medium text-slate-600">Approval</th>
               <th className="px-4 py-3 text-center font-medium text-slate-600">Due</th>
               <th className="px-4 py-3 text-center font-medium text-slate-600">Points</th>
               <th className="px-4 py-3 text-center font-medium text-slate-600">Submissions</th>
@@ -45,6 +48,7 @@ export default async function AdminAssignmentsPage() {
               const dueDate = a.due_date ? new Date(a.due_date) : null;
               const overdue = dueDate && dueDate < now;
               const submissions = countMap.get(a.id) ?? 0;
+              const approverName = a.approved_by ? professorMap.get(a.approved_by) : null;
 
               return (
                 <tr key={a.id} className="hover:bg-slate-50">
@@ -56,10 +60,7 @@ export default async function AdminAssignmentsPage() {
                   </td>
                   <td className="px-4 py-3">
                     {course ? (
-                      <Link
-                        href={`/admin/courses/${a.course_id}`}
-                        className="font-medium text-gold-dark hover:underline"
-                      >
+                      <Link href={`/admin/courses/${a.course_id}`} className="font-medium text-gold-dark hover:underline">
                         {course.title}
                         {course.code ? <span className="ml-1 text-slate-400 font-normal">({course.code})</span> : null}
                       </Link>
@@ -69,6 +70,15 @@ export default async function AdminAssignmentsPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {course?.profiles?.full_name ?? <span className="text-slate-300">Unassigned</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {approverName ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
+                        ✓ {approverName}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-300">Pending</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {dueDate ? (
@@ -94,7 +104,7 @@ export default async function AdminAssignmentsPage() {
           </tbody>
         </table>
         {(assignments ?? []).length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">No assignments yet. Professors create them from their course pages.</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-400">No assignments yet.</p>
         )}
       </div>
     </div>
