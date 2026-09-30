@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { submitApplication } from "@/lib/actions/applications";
 import { Declaration } from "@/components/Declaration";
@@ -48,22 +48,8 @@ function SubmitButton() {
   );
 }
 
-export function ApplyForm({ presetRegion }: { presetRegion: Region | null }) {
-  const [region, setRegion] = useState<Region>(presetRegion ?? "usa");
-  // null = loading, true = outside US, false = inside US or unknown
-  const [usaBlocked, setUsaBlocked] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (presetRegion) return; // region is locked by URL param — no need to check
-    fetch("/api/geo")
-      .then((r) => r.json())
-      .then((d: { country: string | null }) => {
-        const outsideUs = d.country !== null && d.country !== "US";
-        setUsaBlocked(outsideUs);
-        if (outsideUs) setRegion("international");
-      })
-      .catch(() => setUsaBlocked(false)); // fail open
-  }, [presetRegion]);
+export function ApplyForm({ presetRegion, usaBlocked }: { presetRegion: Region | null; usaBlocked: boolean }) {
+  const [region, setRegion] = useState<Region>(presetRegion ?? (usaBlocked ? "international" : "usa"));
 
   return (
     <form action={submitApplication} encType="multipart/form-data" className="group mt-6 space-y-4">

@@ -1,6 +1,7 @@
 import { ApplyDegreeForm } from "@/components/ApplyDegreeForm";
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 export default async function ApplyDegreePage({
   searchParams,
@@ -9,6 +10,10 @@ export default async function ApplyDegreePage({
 }) {
   const { error, notice, region } = await searchParams;
   const presetRegion = region === "usa" || region === "international" ? region : null;
+
+  const hdrs = await headers();
+  const country = hdrs.get("x-vercel-ip-country");
+  const usaBlocked = country !== null && country !== "US";
   const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
 
   return (
@@ -45,7 +50,7 @@ export default async function ApplyDegreePage({
           </div>
         )}
 
-        <ApplyDegreeForm presetRegion={presetRegion} />
+        <ApplyDegreeForm presetRegion={presetRegion} usaBlocked={usaBlocked} />
 
         <p className="mt-6 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">

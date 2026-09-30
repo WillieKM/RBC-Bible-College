@@ -1,6 +1,7 @@
 import { ApplyForm } from "@/components/ApplyForm";
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 export default async function ApplyPage({
   searchParams,
@@ -10,6 +11,11 @@ export default async function ApplyPage({
   const { error, notice, region } = await searchParams;
   const presetRegion = region === "usa" || region === "international" ? region : null;
   const regionLabel = presetRegion === "usa" ? "USA Campus" : presetRegion === "international" ? "Kenya / International" : null;
+
+  // Server-side geo: block USA Campus for visitors outside the US
+  const hdrs = await headers();
+  const country = hdrs.get("x-vercel-ip-country");
+  const usaBlocked = country !== null && country !== "US";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4 py-12">
@@ -37,7 +43,7 @@ export default async function ApplyPage({
           </div>
         )}
 
-        <ApplyForm presetRegion={presetRegion} />
+        <ApplyForm presetRegion={presetRegion} usaBlocked={usaBlocked} />
 
         <p className="mt-6 text-center text-sm text-slate-400">
           <Link href="/" className="text-gold hover:underline">

@@ -79,6 +79,15 @@ async function _submitApplicationInner(formData: FormData, source: string, regio
     redirect(`/apply/success?${params.toString()}`);
   }
 
+  // Server-side geo enforcement: reject USA applications from non-US IPs
+  if (region === "usa") {
+    const headerList = await headers();
+    const country = headerList.get("x-vercel-ip-country");
+    if (country !== null && country !== "US") {
+      redirect(`${returnTo}?error=${encodeURIComponent("USA Campus applications are only accepted from within the United States.")}`);
+    }
+  }
+
   const ip = await getClientIp();
   const adminClient = createAdminClient();
 

@@ -52,8 +52,8 @@ function FeesBlock({ level, region }: { level: ProgramLevel | null; region: Regi
   );
 }
 
-export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null }) {
-  const [region, setRegion] = useState<Region>(presetRegion ?? "international");
+export function ApplyDegreeForm({ presetRegion, usaBlocked }: { presetRegion: Region | null; usaBlocked: boolean }) {
+  const [region, setRegion] = useState<Region>(presetRegion ?? (usaBlocked ? "international" : "international"));
   const [program, setProgram] = useState("");
   const level = program ? (DEGREE_PROGRAM_LEVELS[program] ?? "bachelors") : null;
 
@@ -75,17 +75,22 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
         <div>
           <p className={labelClass}>Which campus / region are you applying from? *</p>
           <div className="mt-2 flex gap-3">
-            <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
+            <label className={`flex flex-1 items-center justify-center rounded-lg border px-3 py-2 text-sm ${
+              usaBlocked
+                ? "cursor-not-allowed border-slate-700 bg-slate-900 text-slate-600"
+                : "cursor-pointer border-slate-700 bg-ink text-slate-200 has-checked:border-gold has-checked:text-gold"
+            }`}>
               <input
                 type="radio"
                 name="region"
                 value="usa"
                 required
                 checked={region === "usa"}
-                onChange={() => setRegion("usa")}
+                onChange={() => { if (!usaBlocked) setRegion("usa"); }}
+                disabled={usaBlocked}
                 className="sr-only"
               />
-              USA Campus
+              USA Campus{usaBlocked ? " (US residents only)" : ""}
             </label>
             <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-ink px-3 py-2 text-sm text-slate-200 has-checked:border-gold has-checked:text-gold">
               <input
@@ -100,6 +105,11 @@ export function ApplyDegreeForm({ presetRegion }: { presetRegion: Region | null 
               Kenya / Other (International)
             </label>
           </div>
+          {usaBlocked && (
+            <p className="mt-1.5 text-xs text-amber-400">
+              USA Campus applications are only accepted from within the United States. You have been redirected to International.
+            </p>
+          )}
         </div>
       )}
 
