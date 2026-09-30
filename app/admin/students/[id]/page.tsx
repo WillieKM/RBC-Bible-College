@@ -19,12 +19,14 @@ export default async function AdminStudentDetailPage({
     { data: enrollments },
     { data: invoicesRaw },
     { data: authUser },
+    { data: pendingProofs },
   ] = await Promise.all([
     admin.from("profiles").select("*").eq("id", id).single(),
     admin.from("programs").select("id, name, fee_international, fee_usa"),
     admin.from("enrollments").select("*, courses(id, title, code, credits, program_id)").eq("student_id", id),
     admin.from("invoices").select("*, payments(amount)").eq("student_id", id).order("created_at", { ascending: false }),
     admin.auth.admin.getUserById(id),
+    admin.from("payment_proofs").select("id, amount, reference, payment_date, invoice_id").eq("student_id", id).eq("reviewed", false),
   ]);
 
   const lastSignIn = authUser?.user?.last_sign_in_at ?? null;
@@ -267,6 +269,32 @@ export default async function AdminStudentDetailPage({
           </form>
         </div>
       </div>
+
+      {/* Pending payment proofs banner */}
+      {(pendingProofs ?? []).length > 0 && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-blue-800">
+                {(pendingProofs ?? []).length} unreviewed payment proof{(pendingProofs ?? []).length !== 1 ? "s" : ""}
+              </p>
+              <div className="mt-1 space-y-0.5">
+                {(pendingProofs ?? []).map((proof) => (
+                  <p key={proof.id} className="text-xs text-blue-700">
+                    {currency}{proof.amount.toLocaleString()} · Ref: <span className="font-mono">{proof.reference}</span> · {proof.payment_date}
+                  </p>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/admin/invoices/proofs"
+              className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Review proofs →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Financial summary */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
