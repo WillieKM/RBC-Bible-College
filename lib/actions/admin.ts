@@ -137,7 +137,7 @@ export async function enrollProgramInModules(formData: FormData) {
 
 export async function createCourse(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const title = String(formData.get("title") || "").trim();
   const code = String(formData.get("code") || "").trim() || null;
@@ -147,7 +147,7 @@ export async function createCourse(formData: FormData) {
   const professorId = String(formData.get("professor_id") || "") || null;
   if (!title) return;
 
-  const { data: course } = await supabase
+  const { data: course, error } = await supabase
     .from("courses")
     .insert({
       title,
@@ -160,7 +160,12 @@ export async function createCourse(formData: FormData) {
     .select("id")
     .single();
 
-  if (programId && course) {
+  if (error || !course) {
+    console.error("createCourse error:", error);
+    return;
+  }
+
+  if (programId) {
     const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
     if (students && students.length > 0) {
       await supabase
@@ -228,7 +233,7 @@ export async function updateCourse(formData: FormData) {
 
 export async function adminCreateAssignment(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const courseId = String(formData.get("course_id"));
   const title = String(formData.get("title") || "").trim();
@@ -247,7 +252,7 @@ export async function adminCreateAssignment(formData: FormData) {
 
 export async function adminDeleteAssignment(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const courseId = String(formData.get("course_id"));
   await supabase.from("assignments").delete().eq("id", id);
