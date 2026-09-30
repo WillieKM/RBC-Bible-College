@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { deletePrayerRequest } from "@/lib/actions/prayers";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -6,7 +6,7 @@ import type { PrayerRequest } from "@/lib/types";
 
 export default async function AdminPrayersPage() {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: requests }, { data: counts }] = await Promise.all([
     supabase

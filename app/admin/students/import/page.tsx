@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { CsvImportForm } from "@/components/CsvImportForm";
 import type { Program } from "@/lib/types";
@@ -23,7 +23,7 @@ export default async function BulkImportPage({
 }) {
   await requireRole(["admin"]);
   const params = await searchParams;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: programs } = await supabase.from("programs").select("name").order("name");
 
   const hasResults = params.added !== undefined || params.skipped !== undefined;

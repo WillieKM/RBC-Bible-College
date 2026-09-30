@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { ApplicationSearchList, type ComputedApplication } from "@/components/ApplicationSearchList";
 import { FEE_SCHEDULE, ENROLLMENT_FEES } from "@/lib/fees";
 import type { Application, ProgramLevel } from "@/lib/types";
@@ -9,7 +9,7 @@ export default async function AdminApplicationsPage({
   searchParams: Promise<{ error?: string; resent?: string }>;
 }) {
   const { error, resent } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: applications }, { data: profiles }, { data: programs }] = await Promise.all([
     supabase.from("applications").select("*").order("created_at", { ascending: false }),

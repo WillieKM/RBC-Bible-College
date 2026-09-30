@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -11,7 +11,7 @@ export default async function AdminStudentsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }, { data: authData }] = await Promise.all([

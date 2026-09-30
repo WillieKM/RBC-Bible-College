@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createEvent, deleteEvent } from "@/lib/actions/calendar";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { CalendarEvent } from "@/lib/types";
@@ -12,7 +12,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default async function AdminCalendarPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: events } = await supabase
     .from("events")
     .select("*")

@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createAnnouncement, deleteAnnouncement } from "@/lib/actions/announcements";
 import { sendBulkEmail } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Announcement } from "@/lib/types";
 
 export default async function AdminAnnouncementsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const [{ data: announcements }, { data: professors }] = await Promise.all([
     supabase.from("announcements").select("*, profiles(full_name)").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name").eq("role", "professor").order("full_name"),

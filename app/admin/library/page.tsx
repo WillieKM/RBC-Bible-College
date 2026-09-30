@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { saveLibraryResource, deleteLibraryResource } from "@/lib/actions/library";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { LibraryResource } from "@/lib/types";
@@ -10,7 +10,7 @@ export default async function AdminLibraryPage({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const params = await searchParams;
 
   const { data } = await supabase

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { markProofReviewed } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
@@ -100,7 +100,7 @@ function RegionSection({
 }
 
 export default async function AdminProofsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: proofsRaw } = await supabase
     .from("payment_proofs")

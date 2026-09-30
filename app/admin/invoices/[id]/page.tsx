@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { addPayment, deletePayment, deleteInvoice, sendInvoice } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
 import { feeForLevel } from "@/lib/fees";
@@ -14,7 +14,7 @@ export default async function AdminInvoiceDetailPage({
   searchParams: Promise<{ email_status?: string }>;
 }) {
   const [{ id }, { email_status }] = await Promise.all([params, searchParams]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: invoice } = await supabase
     .from("invoices")

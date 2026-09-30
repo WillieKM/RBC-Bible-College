@@ -43,7 +43,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
       label: "Community",
       links: [
         { href: "/admin/prayers", label: "Prayer Board" },
-        { href: "/admin/announcements", label: "Notices" },
+        { href: "/admin/announcements", label: "Announcements" },
         { href: "/admin/library", label: "Library" },
         { href: "/admin/calendar", label: "Calendar" },
         { href: "/admin/handbook", label: "Handbook" },

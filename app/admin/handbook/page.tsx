@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { saveHandbookPage, deleteHandbookPage } from "@/lib/actions/handbook";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { HandbookPage } from "@/lib/types";
@@ -18,7 +18,7 @@ export default async function AdminHandbookPage({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const params = await searchParams;
 
   const { data } = await supabase

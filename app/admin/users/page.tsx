@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
 import { InviteUserForm } from "@/components/InviteUserForm";
@@ -6,7 +6,7 @@ import { UserSearchList } from "@/components/UserSearchList";
 import type { Profile, Program } from "@/lib/types";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   const [viewer, { data: profiles }, { data: programs }, { data: authUsers }] = await Promise.all([

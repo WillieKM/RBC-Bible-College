@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import type { Profile } from "@/lib/types";
 import Link from "next/link";
@@ -14,7 +14,7 @@ function letterGrade(pct: number | null) {
 
 export default async function AdminProgressPage() {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [
     { data: students },

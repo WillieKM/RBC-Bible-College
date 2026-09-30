@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
@@ -11,7 +10,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
+type SupabaseClient = ReturnType<typeof createAdminClient>;
 
 export async function enrollStudentInProgramModules(supabase: SupabaseClient, studentId: string, programId: string) {
   const { data: modules } = await supabase.from("courses").select("id").eq("program_id", programId);
@@ -29,7 +28,7 @@ export async function enrollStudentInProgramModules(supabase: SupabaseClient, st
 
 export async function createProgram(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const name = String(formData.get("name") || "").trim();
   const programLevel = String(formData.get("program_level") || "diploma");
@@ -41,7 +40,7 @@ export async function createProgram(formData: FormData) {
 
 export async function deleteProgram(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   await supabase.from("programs").delete().eq("id", id);
   revalidatePath("/admin/programs");
@@ -49,7 +48,7 @@ export async function deleteProgram(formData: FormData) {
 
 export async function assignProgramProfessor(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const professorId = String(formData.get("professor_id") || "") || null;
 
@@ -60,7 +59,7 @@ export async function assignProgramProfessor(formData: FormData) {
 
 export async function updateProgramFee(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
 
   function parseFee(key: string): number | null {
@@ -105,7 +104,7 @@ export async function updateUserProfile(formData: FormData) {
 
 export async function updateStudentProgram(formData: FormData) {
   await requireFinanceAccess();
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const programId = String(formData.get("program_id") || "") || null;
 
@@ -122,7 +121,7 @@ export async function updateStudentProgram(formData: FormData) {
 
 export async function enrollProgramInModules(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const programId = String(formData.get("program_id"));
 
   const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
@@ -363,7 +362,7 @@ export async function inviteUser(formData: FormData) {
   if (role === "student" && programId) {
     void (async () => {
       try {
-        const supabase = await createClient();
+        const supabase = createAdminClient();
         await enrollStudentInProgramModules(supabase, created.user.id, programId);
 
         const { data: prog } = await admin
@@ -413,7 +412,7 @@ export async function inviteUser(formData: FormData) {
 
 export async function updateUserRole(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const role = String(formData.get("role"));
   if (!["admin", "professor", "student"].includes(role)) return;
@@ -436,7 +435,7 @@ export async function updateSecondaryRole(formData: FormData) {
 // others — otherwise any admin could self-escalate via this form.
 export async function updateFinanceAccess(formData: FormData) {
   await requireFinanceAccess();
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const financeAccess = formData.get("finance_access") === "1";
 
@@ -547,7 +546,7 @@ export async function updateStudentProfile(formData: FormData) {
 
 export async function updatePaymentStatus(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const status = String(formData.get("payment_status"));
   if (!["unpaid", "partial", "paid"].includes(status)) return;
@@ -557,7 +556,7 @@ export async function updatePaymentStatus(formData: FormData) {
 
 export async function markProgramComplete(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const id = String(formData.get("id"));
   const undo = formData.get("undo") === "1";
 
@@ -584,7 +583,7 @@ export async function markProgramComplete(formData: FormData) {
 
 export async function sendBulkEmail(formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const title = String(formData.get("title") || "").trim();
   const body = String(formData.get("body") || "").trim();
   const target = String(formData.get("target") || "students");

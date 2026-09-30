@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { CreateInvoiceForm, type InvoiceStudentOption } from "@/components/CreateInvoiceForm";
 import { sendFeeReminders } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -14,7 +14,7 @@ export default async function AdminInvoicesPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error: pageError } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: invoicesRaw }, { data: students }, { data: programs }] = await Promise.all([
     supabase.from("invoices").select("*, profiles(full_name, email, region, program_id), payments(amount)").order("created_at", { ascending: false }),

@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApplyLinks } from "@/components/ApplyLinks";
 import Link from "next/link";
 
 export default async function AdminHomePage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const admin = createAdminClient();
 
   const [

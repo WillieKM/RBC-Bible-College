@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
 import { PROGRAM_LEVEL_LABELS, feeForLevel, formatFee } from "@/lib/fees";
 import type { Course, Profile, Program } from "@/lib/types";
@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 
 export default async function AdminProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: program }, { data: modules }, { data: students }, { data: professors }, { data: allStudents }] = await Promise.all([
     supabase.from("programs").select("*").eq("id", id).single(),

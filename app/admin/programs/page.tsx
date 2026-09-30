@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createAdminClient } from "@/lib/supabase/admin";
 import { createProgram, deleteProgram } from "@/lib/actions/admin";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
 import { TypeToConfirmButton } from "@/components/TypeToConfirmButton";
@@ -6,7 +6,7 @@ import type { Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
 export default async function AdminProgramsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: programs }, { data: students }, { data: courses }, { data: professors }] = await Promise.all([
     supabase.from("programs").select("*").order("name", { ascending: true }),
