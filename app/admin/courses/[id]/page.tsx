@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { enrollStudent, bulkEnrollStudents, unenrollStudent, updateCourse } from "@/lib/actions/admin";
-import type { Course, Profile, Program } from "@/lib/types";
+import { enrollStudent, bulkEnrollStudents, unenrollStudent, updateCourse, adminCreateAssignment, adminDeleteAssignment } from "@/lib/actions/admin";
+import type { Assignment, Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,12 +15,13 @@ export default async function AdminCourseDetailPage({
   const { data: course } = await supabase.from("courses").select("*").eq("id", id).single();
   if (!course) notFound();
 
-  const [{ data: enrollments }, { data: students }, { data: programs }, { data: professors }, { data: otherModules }] = await Promise.all([
+  const [{ data: enrollments }, { data: students }, { data: programs }, { data: professors }, { data: otherModules }, { data: assignments }] = await Promise.all([
     supabase.from("enrollments").select("*, profiles(*)").eq("course_id", id),
     supabase.from("profiles").select("*").eq("role", "student"),
     supabase.from("programs").select("*").order("name", { ascending: true }),
     supabase.from("profiles").select("*").eq("role", "professor"),
     supabase.from("courses").select("*").neq("id", id).order("code", { ascending: true }),
+    supabase.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
   ]);
 
   const enrolledIds = new Set((enrollments ?? []).map((e) => e.student_id));
@@ -100,7 +101,52 @@ export default async function AdminCourseDetailPage({
         </button>
       </form>
 
-      <h2 className="mt-6 text-lg font-semibold text-slate-800">Enrolled Students</h2>
+      {/* ── Assignments ── */}
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Assignments</h2>
+      <div className="mt-3 space-y-2">
+        {(assignments ?? []).map((a: Assignment) => (
+          <div key={a.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm">
+            <div>
+              <p className="font-medium text-slate-800">{a.title}</p>
+              <p className="text-xs text-slate-400">
+                {a.due_date ? `Due ${new Date(a.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "No due date"}
+                {a.points_possible ? ` · ${a.points_possible} pts` : ""}
+              </p>
+            </div>
+            <form action={adminDeleteAssignment}>
+              <input type="hidden" name="id" value={a.id} />
+              <input type="hidden" name="course_id" value={course.id} />
+              <button className="text-sm font-medium text-red-600 hover:underline">Delete</button>
+            </form>
+          </div>
+        ))}
+        {(assignments ?? []).length === 0 && <p className="text-sm text-slate-500">No assignments yet.</p>}
+      </div>
+
+      <form action={adminCreateAssignment} className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <input type="hidden" name="course_id" value={course.id} />
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Title</label>
+          <input name="title" required placeholder="Week 1 Reading" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Due date</label>
+          <input name="due_date" type="date" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Points</label>
+          <input name="points_possible" type="number" min="0" placeholder="100" className="mt-1 w-20 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div className="w-full">
+          <label className="block text-sm font-medium text-slate-700">Description</label>
+          <textarea name="description" rows={2} placeholder="Optional instructions…" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+          Add Assignment
+        </button>
+      </form>
+
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">Enrolled Students</h2>
       <div className="mt-3 space-y-2">
         {(enrollments ?? []).map((e) => (
           <div key={e.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">

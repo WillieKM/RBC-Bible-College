@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { GradebookExport } from "@/components/GradebookExport";
 import Link from "next/link";
 
 function letterGrade(pct: number | null) {
@@ -63,8 +64,38 @@ export default async function GradeBookPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">Grade Book</h1>
-      <p className="mt-1 text-sm text-slate-500">All students and grades across your courses.</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Grade Book</h1>
+          <p className="mt-1 text-sm text-slate-500">All students and grades across your courses.</p>
+        </div>
+        <GradebookExport
+          courses={(courses ?? []).map((c) => ({
+            id: c.id,
+            title: c.title,
+            code: c.code ?? null,
+            assignments: (assignments ?? [])
+              .filter((a) => a.course_id === c.id)
+              .map((a) => ({ id: a.id, title: a.title, pointsPossible: a.points_possible })),
+            students: (enrollments ?? [])
+              .filter((e) => e.course_id === c.id)
+              .map((e) => {
+                const student = e.profiles as unknown as { id: string; full_name: string } | null;
+                if (!student) return null;
+                const sg = gradeMap.get(student.id);
+                return {
+                  name: student.full_name,
+                  grades: Object.fromEntries(
+                    (assignments ?? [])
+                      .filter((a) => a.course_id === c.id)
+                      .map((a) => [a.id, sg?.get(a.id) ?? null])
+                  ),
+                };
+              })
+              .filter(Boolean) as { name: string; grades: Record<string, number | null> }[],
+          }))}
+        />
+      </div>
 
       <div className="mt-6 space-y-10">
         {(courses ?? []).map((course) => {
@@ -123,9 +154,9 @@ export default async function GradeBookPage() {
                                   {grade != null ? (
                                     <span className="font-semibold text-green-700">{grade}</span>
                                   ) : submitted ? (
-                                    <span className="text-amber-500" title="Submitted — awaiting grade">●</span>
+                                    <span className="text-amber-600 text-xs font-semibold" title="Submitted — awaiting grade">Pending</span>
                                   ) : (
-                                    <span className="text-slate-200">—</span>
+                                    <span className="text-slate-300 text-xs">—</span>
                                   )}
                                 </td>
                               );
@@ -144,7 +175,7 @@ export default async function GradeBookPage() {
                   </table>
                   <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-400">
                     <span className="font-semibold text-green-700">number</span> = graded &nbsp;·&nbsp;
-                    <span className="text-amber-500">●</span> = submitted, awaiting grade &nbsp;·&nbsp;
+                    <span className="font-semibold text-amber-600">Pending</span> = submitted, awaiting grade &nbsp;·&nbsp;
                     <span className="text-slate-300">—</span> = not submitted
                   </div>
                 </div>

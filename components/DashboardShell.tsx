@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Profile, Notification } from "@/lib/types";
 import { Sidebar, type NavGroup } from "@/components/Sidebar";
 import { PageTransition } from "@/components/PageTransition";
+import { BottomNav } from "@/components/BottomNav";
 
 export async function DashboardShell({
   profile,
@@ -50,10 +51,14 @@ export async function DashboardShell({
           </div>
         )}
 
-        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 max-w-5xl w-full mx-auto">
+        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 max-w-5xl w-full mx-auto pb-20 lg:pb-8">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
+
+      {(activePortal === "student" || activePortal === "professor") && (
+        <BottomNav portal={activePortal} />
+      )}
     </div>
   );
 }

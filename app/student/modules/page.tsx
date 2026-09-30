@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { ModuleSearch } from "@/components/ModuleSearch";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
 
@@ -45,10 +46,15 @@ export default async function StudentModulesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Your full module history. Current modules are active; past modules are kept for review.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Your full module history. Current modules are active; past modules are kept for review.
+          </p>
+        </div>
+        <ModuleSearch />
+      </div>
 
       {modules.length === 0 && (
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
@@ -63,7 +69,7 @@ export default async function StudentModulesPage() {
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Current</h2>
           <div className="space-y-3">
             {current.map((m) => (
-              <div key={m.id} className="rounded-xl border border-gold/40 bg-white p-5 shadow-sm">
+              <div key={m.id} className="rounded-xl border border-gold/40 bg-white p-5 shadow-sm" data-module-title={m.title.toLowerCase()}>
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -99,7 +105,7 @@ export default async function StudentModulesPage() {
           </h2>
           <div className="space-y-2">
             {past.map((m) => (
-              <div key={m.id} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 opacity-75 transition-opacity hover:opacity-100">
+              <div key={m.id} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4" data-module-title={m.title.toLowerCase()}>
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-600">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

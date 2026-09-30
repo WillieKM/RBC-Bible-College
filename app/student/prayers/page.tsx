@@ -42,9 +42,11 @@ export default async function StudentPrayersPage() {
           name="body"
           required
           rows={3}
+          maxLength={1000}
           placeholder="Lord, I ask for prayer regarding…"
           className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-gold"
         />
+        <p className="mt-1 text-xs text-slate-400">Maximum 1,000 characters.</p>
         <div className="mt-3 flex items-center justify-between">
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" name="is_anonymous" className="rounded accent-gold" />

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { submitPaymentProof } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
+import { PaymentProofForm } from "@/components/PaymentProofForm";
 import type { Invoice, Payment } from "@/lib/types";
 
 export default async function StudentInvoicesPage({
@@ -21,6 +22,14 @@ export default async function StudentInvoicesPage({
 
   // Currency symbol based on the student's region
   const currency = profile.region === "usa" ? "$" : "KSh";
+  const isUSA = profile.region === "usa";
+
+  // Format currency — omit .00 for whole numbers
+  function fmt(amount: number) {
+    return amount % 1 === 0
+      ? `${currency}${amount.toLocaleString()}`
+      : `${currency}${amount.toFixed(2)}`;
+  }
 
   const invoices = (invoicesRaw ?? []).map((inv: Invoice & { payments: Payment[] }) => {
     const paid = (inv.payments ?? []).reduce((s, p) => s + p.amount, 0);
@@ -54,19 +63,36 @@ export default async function StudentInvoicesPage({
         <p className="mt-6 text-sm text-slate-500">No invoices have been issued yet.</p>
       ) : (
         <>
+          {/* Payment instructions */}
+          <div className="mt-5 rounded-xl border border-gold/30 bg-amber-50 px-5 py-4">
+            <p className="text-sm font-semibold text-slate-800">How to pay</p>
+            {isUSA ? (
+              <div className="mt-2 text-sm text-slate-700">
+                <p>Send payment via <strong>CashApp or Zelle</strong></p>
+                <p className="mt-0.5 font-semibold text-gold-dark">+1 (206) 326-8094</p>
+              </div>
+            ) : (
+              <div className="mt-2 text-sm text-slate-700">
+                <p>Lipa na <strong>M-Pesa Paybill</strong></p>
+                <p className="mt-0.5">Paybill: <strong>542542</strong> · A/C: <strong>249679 (RBTC)</strong></p>
+              </div>
+            )}
+            <p className="mt-2 text-xs text-slate-500">After paying, tap <strong>"I Have Paid"</strong> on your invoice below to submit proof. The finance team will verify within 1–2 business days.</p>
+          </div>
+
           {/* Summary */}
           <div className="mt-5 grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
               <p className="text-xs font-medium text-slate-500">Total Fees</p>
-              <p className="mt-1 text-xl font-bold text-slate-900">{currency}{totalOwed.toFixed(2)}</p>
+              <p className="mt-1 text-xl font-bold text-slate-900">{fmt(totalOwed)}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
               <p className="text-xs font-medium text-green-600">Paid</p>
-              <p className="mt-1 text-xl font-bold text-green-700">{currency}{totalPaid.toFixed(2)}</p>
+              <p className="mt-1 text-xl font-bold text-green-700">{fmt(totalPaid)}</p>
             </div>
             <div className={`rounded-xl border p-4 text-center shadow-sm ${totalBalance > 0 ? "border-red-100 bg-red-50" : "border-green-100 bg-green-50"}`}>
               <p className={`text-xs font-medium ${totalBalance > 0 ? "text-red-500" : "text-green-600"}`}>Balance Due</p>
-              <p className={`mt-1 text-xl font-bold ${totalBalance > 0 ? "text-red-600" : "text-green-700"}`}>{currency}{totalBalance.toFixed(2)}</p>
+              <p className={`mt-1 text-xl font-bold ${totalBalance > 0 ? "text-red-600" : "text-green-700"}`}>{fmt(totalBalance)}</p>
             </div>
           </div>
 
@@ -93,15 +119,15 @@ export default async function StudentInvoicesPage({
                   <div className="grid grid-cols-3 divide-x divide-slate-100 text-center">
                     <div className="px-4 py-3">
                       <p className="text-xs text-slate-500">Total</p>
-                      <p className="font-bold text-slate-900">{currency}{inv.total_amount.toFixed(2)}</p>
+                      <p className="font-bold text-slate-900 tabular-nums">{fmt(inv.total_amount)}</p>
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-xs text-green-600">Paid</p>
-                      <p className="font-bold text-green-700">{currency}{inv.paid.toFixed(2)}</p>
+                      <p className="font-bold text-green-700 tabular-nums">{fmt(inv.paid)}</p>
                     </div>
                     <div className="px-4 py-3">
                       <p className={`text-xs ${isPaid ? "text-green-600" : "text-red-500"}`}>Balance</p>
-                      <p className={`font-bold ${isPaid ? "text-green-700" : "text-red-600"}`}>{currency}{Math.max(0, inv.balance).toFixed(2)}</p>
+                      <p className={`font-bold tabular-nums ${isPaid ? "text-green-700" : "text-red-600"}`}>{fmt(Math.max(0, inv.balance))}</p>
                     </div>
                   </div>
 
@@ -119,62 +145,11 @@ export default async function StudentInvoicesPage({
 
                   {/* Submit payment proof */}
                   {!isPaid && (
-                    <details className="border-t border-slate-100">
-                      <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-gold-dark hover:text-gold list-none flex items-center gap-2">
-                        <span>+</span> I&apos;ve paid — submit proof
-                      </summary>
-                      <form action={submitPaymentProof} encType="multipart/form-data" className="px-5 pb-5 pt-2 space-y-3">
-                        <input type="hidden" name="invoice_id" value={inv.id} />
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">Amount paid ({currency})</label>
-                            <input
-                              name="amount"
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              required
-                              defaultValue={Math.max(0, inv.balance).toFixed(2)}
-                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">Date paid</label>
-                            <input
-                              name="payment_date"
-                              type="date"
-                              required
-                              defaultValue={new Date().toISOString().slice(0, 10)}
-                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-slate-600 mb-1">M-Pesa transaction code</label>
-                          <input
-                            name="reference"
-                            type="text"
-                            required
-                            placeholder="e.g. QHX2KXXXXX"
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-slate-600 mb-1">Screenshot (optional)</label>
-                          <input
-                            name="screenshot"
-                            type="file"
-                            accept="image/*,.pdf"
-                            className="w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gold/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gold-dark"
-                          />
-                        </div>
-                        <DeleteButton
-                          label="Submit Proof"
-                          pendingLabel="Submitting…"
-                          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
-                        />
-                      </form>
-                    </details>
+                    <PaymentProofForm
+                      invoiceId={inv.id}
+                      balance={Math.max(0, inv.balance)}
+                      isUSA={isUSA}
+                    />
                   )}
 
                   {/* Payment history */}
@@ -185,7 +160,7 @@ export default async function StudentInvoicesPage({
                         {inv.payments.map((p) => (
                           <div key={p.id} className="flex justify-between text-sm">
                             <span className="text-slate-600 capitalize">{p.payment_date} · {p.method}{p.reference ? ` — ${p.reference}` : ""}</span>
-                            <span className="font-semibold text-green-700">{currency}{p.amount.toFixed(2)}</span>
+                            <span className="font-semibold text-green-700 tabular-nums">{fmt(p.amount)}</span>
                           </div>
                         ))}
                       </div>

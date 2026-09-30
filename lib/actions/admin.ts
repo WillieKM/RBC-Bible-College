@@ -9,6 +9,7 @@ import type { ProgramLevel } from "@/lib/types";
 import { createInviteLink } from "@/lib/actions/invite";
 import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 type SupabaseClient = ReturnType<typeof createClient> extends Promise<infer T> ? T : never;
 
@@ -174,6 +175,7 @@ export async function createCourse(formData: FormData) {
   revalidatePath("/admin/courses");
   revalidatePath("/admin/programs");
   revalidatePath(`/admin/programs/${programId}`);
+  redirect("/admin/courses");
 }
 
 export async function updateCourse(formData: FormData) {
@@ -222,6 +224,35 @@ export async function updateCourse(formData: FormData) {
   revalidatePath("/admin/courses");
   revalidatePath("/admin/programs");
   revalidatePath(`/admin/programs/${programId}`);
+}
+
+export async function adminCreateAssignment(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+
+  const courseId = String(formData.get("course_id"));
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim() || null;
+  const dueDate = String(formData.get("due_date") || "") || null;
+  const pointsPossible = formData.get("points_possible") ? Number(formData.get("points_possible")) : null;
+  if (!title || !courseId) return;
+
+  await supabase
+    .from("assignments")
+    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible });
+
+  revalidatePath(`/admin/courses/${courseId}`);
+  redirect(`/admin/courses/${courseId}`);
+}
+
+export async function adminDeleteAssignment(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const courseId = String(formData.get("course_id"));
+  await supabase.from("assignments").delete().eq("id", id);
+  revalidatePath(`/admin/courses/${courseId}`);
+  redirect(`/admin/courses/${courseId}`);
 }
 
 export async function deleteCourse(formData: FormData) {

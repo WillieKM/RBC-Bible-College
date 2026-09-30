@@ -2,16 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { submitAssignment } from "@/lib/actions/student";
 import { resolveSignedFileUrl } from "@/lib/storage";
+import { SubmitAssignmentButton } from "@/components/SubmitAssignmentButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export default async function StudentAssignmentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ submitted?: string }>;
 }) {
   const profile = await requireRole(["student"]);
   const { id } = await params;
+  const { submitted } = await searchParams;
   const supabase = await createClient();
 
   const { data: assignment } = await supabase.from("assignments").select("*, courses(*)").eq("id", id).single();
@@ -43,9 +47,17 @@ export default async function StudentAssignmentPage({
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{assignment.title}</h1>
       {assignment.description && <p className="mt-1 text-slate-600">{assignment.description}</p>}
       <p className="mt-1 text-sm text-slate-500">
-        {assignment.due_date ? `Due ${assignment.due_date}` : "No due date"}
+        {assignment.due_date
+          ? new Date(assignment.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+          : "No due date"}
         {assignment.points_possible ? ` · ${assignment.points_possible} pts` : ""}
       </p>
+
+      {submitted && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 font-medium">
+          ✓ Your work was received. Your professor will review it and give you a grade — you&apos;ll get an email when it&apos;s ready.
+        </div>
+      )}
 
       {submission?.grade !== null && submission?.grade !== undefined && (
         <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-5">
@@ -94,11 +106,16 @@ export default async function StudentAssignmentPage({
             </a>
           )}
         </div>
-        <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
-          {submission ? "Resubmit" : "Submit"}
-        </button>
+        <SubmitAssignmentButton isResubmit={!!submission} />
         {submission && (
-          <p className="text-xs text-slate-400">Last submitted {new Date(submission.submitted_at).toLocaleString()}</p>
+          <p className="text-xs text-slate-400">
+            Last submitted {new Date(submission.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        )}
+        {!submission && (
+          <p className="text-xs text-slate-400">
+            After you submit, your professor will review your work and give you a grade. You&apos;ll receive an email when it&apos;s ready.
+          </p>
         )}
       </form>
     </div>

@@ -38,23 +38,39 @@ export default async function ModuleViewerPage({
 
   // #toolbar=0&navpanes=0 suppresses the browser PDF toolbar in Chrome/Edge/Safari
   const viewerSrc = `/api/module-pdf/${id}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+  const downloadSrc = `/api/module-pdf/${id}`;
 
   return (
     <div className="-m-6 flex h-[calc(100vh-64px)] flex-col">
       {/* Slim header bar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-2.5">
-        <Link href="/student/modules" className="text-sm text-gold-dark hover:underline">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-2.5 gap-3">
+        <Link href="/student/modules" className="shrink-0 text-sm text-gold-dark hover:underline">
           ← Modules
         </Link>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-slate-800">{module.title}</p>
+        <div className="text-center min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-800 truncate">{module.title}</p>
           {module.description && (
-            <p className="text-xs text-slate-400">{module.description}</p>
+            <p className="text-xs text-slate-400 truncate">{module.description}</p>
           )}
         </div>
-        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-          Read only
-        </span>
+        <a
+          href={downloadSrc}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-gold hover:text-gold-dark"
+          aria-label="Open PDF in new tab"
+        >
+          Open ↗
+        </a>
+      </div>
+
+      {/* Mobile fallback notice */}
+      <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700 lg:hidden">
+        If the PDF does not appear below,{" "}
+        <a href={downloadSrc} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
+          tap here to open it
+        </a>
+        .
       </div>
 
       {/* Embedded PDF — never opens as a raw browser tab */}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { PrintButton } from "@/components/PrintButton";
 import type { Assignment, Submission } from "@/lib/types";
 
 export default async function StudentTranscriptPage() {
@@ -52,9 +53,19 @@ export default async function StudentTranscriptPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">Transcript</h1>
-      <p className="text-sm text-slate-500">{program ? program.name : "No program assigned"}</p>
-      {profile.student_number && <p className="text-sm text-slate-500">Student ID: {profile.student_number}</p>}
+      <div className="flex items-center justify-between gap-4 print:hidden">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Transcript</h1>
+          <p className="text-sm text-slate-500">{program ? program.name : "No program assigned"}</p>
+        </div>
+        <PrintButton />
+      </div>
+      <div className="hidden print:block">
+        <h1 className="text-2xl font-bold">Transcript</h1>
+        <p className="text-sm text-slate-500">{program ? program.name : "No program assigned"}</p>
+      </div>
+      <p className="text-sm text-slate-500 print:block hidden">{profile.full_name}</p>
+      {profile.student_number && <p className="text-sm text-slate-500 mt-0.5">Student ID: {profile.student_number}</p>}
       {profile.completed_at && (
         <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700">
           ✓ Program completed {new Date(profile.completed_at).toLocaleDateString()}
@@ -64,11 +75,19 @@ export default async function StudentTranscriptPage() {
       {/* Overall summary */}
       {overallTotal > 0 && (
         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-slate-800">Overall Performance</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {overallEarned} / {overallTotal} points · {overallPct}% · Grade: <strong>{letterGrade(overallPct)}</strong>
-          </p>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-slate-800">Cumulative Performance</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {overallEarned} / {overallTotal} points · {overallPct}%
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-3xl font-bold text-slate-900">{letterGrade(overallPct)}</span>
+              <p className="text-xs text-slate-400">Overall grade</p>
+            </div>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-gold" style={{ width: `${overallPct ?? 0}%` }} />
           </div>
         </div>
@@ -81,7 +100,11 @@ export default async function StudentTranscriptPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
               <div>
                 <p className="font-semibold text-slate-900">{course.title}</p>
-                {course.code && <p className="text-xs text-slate-400">{course.code}</p>}
+                <p className="text-xs text-slate-400">
+                  {course.code ? `${course.code}` : ""}
+                  {course.code && (course as { credits?: number | null }).credits ? " · " : ""}
+                  {(course as { credits?: number | null }).credits ? `${(course as { credits?: number | null }).credits} credits` : ""}
+                </p>
               </div>
               <div className="text-right">
                 {pct !== null ? (

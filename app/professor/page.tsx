@@ -34,7 +34,7 @@ export default async function ProfessorHomePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
+      <h1 className="text-2xl font-bold text-slate-900">My Dashboard</h1>
 
       {isNewProfessor && (
         <div className="mt-4 rounded-xl border-2 border-gold/50 bg-amber-50 px-6 py-5">
@@ -75,7 +75,7 @@ export default async function ProfessorHomePage() {
         </div>
       )}
 
-      <h2 className="mt-6 text-lg font-semibold text-slate-800">Modules</h2>
+      <h2 className="mt-6 text-lg font-semibold text-slate-800">My Courses</h2>
       {(() => {
         type CourseWithRelations = Course & { programs?: { name: string } | null };
         const NO_PROGRAM = "No program assigned";

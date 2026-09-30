@@ -10,7 +10,7 @@ export default async function ProfessorZoomPage() {
     .select("id, title, description, zoom_url, recording_url, send_at, last_sent_at, recurrence, active")
     .order("created_at", { ascending: false });
 
-  const sessions = (sessionsRaw ?? []) as {
+  type ZoomSession = {
     id: string;
     title: string;
     description: string | null;
@@ -18,9 +18,40 @@ export default async function ProfessorZoomPage() {
     recording_url: string | null;
     send_at: string | null;
     last_sent_at: string | null;
-    recurrence: string;
+    recurrence: string | null;
     active: boolean;
-  }[];
+  };
+
+  const sessions = (sessionsRaw ?? []) as ZoomSession[];
+
+  function formatSessionTime(dateStr: string | null) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return d.toLocaleString(undefined, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+  }
+
+  function addToCalendarUrl(session: ZoomSession) {
+    if (!session.send_at) return null;
+    const start = new Date(session.send_at);
+    const end = new Date(start.getTime() + 90 * 60 * 1000);
+    const fmt = (d: Date) =>
+      d.toISOString().replace(/[-:]/g, "").replace(".000", "");
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: session.title,
+      dates: `${fmt(start)}/${fmt(end)}`,
+      details: session.description ?? "",
+      location: session.zoom_url,
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  }
 
   const upcoming = sessions.filter((s) => s.active && !s.last_sent_at);
   const past = sessions.filter((s) => s.last_sent_at || !s.active);
@@ -36,29 +67,40 @@ export default async function ProfessorZoomPage() {
         <div className="mt-6">
           <h2 className="text-base font-semibold text-slate-800">Upcoming Sessions</h2>
           <div className="mt-3 space-y-3">
-            {upcoming.map((s) => (
-              <div key={s.id} className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-slate-900">{s.title}</p>
-                    {s.description && <p className="mt-0.5 text-sm text-slate-600">{s.description}</p>}
-                    {s.send_at && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        {new Date(s.send_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                      </p>
-                    )}
+            {upcoming.map((s) => {
+              const calUrl = addToCalendarUrl(s);
+              return (
+                <div key={s.id} className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-900">{s.title}</p>
+                      {s.description && <p className="mt-0.5 text-sm text-slate-600">{s.description}</p>}
+                      {s.send_at && (
+                        <p className="mt-1 text-xs text-slate-500">{formatSessionTime(s.send_at)}</p>
+                      )}
+                      {s.recurrence && (
+                        <span className="mt-1.5 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 capitalize">
+                          {s.recurrence}
+                        </span>
+                      )}
+                      {calUrl && (
+                        <a href={calUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">
+                          + Add to Google Calendar
+                        </a>
+                      )}
+                    </div>
+                    <a
+                      href={s.zoom_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      Join →
+                    </a>
                   </div>
-                  <a
-                    href={s.zoom_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                  >
-                    Join →
-                  </a>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -110,7 +152,7 @@ export default async function ProfessorZoomPage() {
                 {s.last_sent_at && (
                   <p className="text-xs text-slate-400">{new Date(s.last_sent_at).toLocaleDateString()}</p>
                 )}
-                <p className="mt-0.5 text-xs text-slate-400 italic">Recording not yet uploaded</p>
+                <p className="mt-0.5 text-xs text-slate-400 italic">Recording will be posted within 24 hours of the session.</p>
               </div>
             ))}
           </div>

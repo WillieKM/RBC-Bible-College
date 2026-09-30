@@ -69,7 +69,9 @@ export default async function ProfessorAssignmentPage({
       <h1 className="mt-2 text-2xl font-bold text-slate-900">{assignment.title}</h1>
       {assignment.description && <p className="mt-1 text-slate-600">{assignment.description}</p>}
       <p className="mt-1 text-sm text-slate-500">
-        {assignment.due_date ? `Due ${assignment.due_date}` : "No due date"}
+        {assignment.due_date
+          ? `Due ${new Date(assignment.due_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
+          : "No due date"}
         {assignment.points_possible ? ` · ${assignment.points_possible} pts` : ""}
       </p>
 
@@ -112,7 +114,7 @@ export default async function ProfessorAssignmentPage({
                   <div className="mt-4 border-t border-slate-100 pt-4">
                     {/* Grade with AI — works for text submissions and Google Docs links */}
                     {(s.content || s.file_url?.startsWith("http")) && (
-                      <form action={gradeWithAI} className="mb-3">
+                      <form action={gradeWithAI} className="mb-3 flex items-center gap-2">
                         <input type="hidden" name="submission_id" value={s.id} />
                         <input type="hidden" name="assignment_id" value={assignment.id} />
                         <DeleteButton
@@ -120,9 +122,9 @@ export default async function ProfessorAssignmentPage({
                           pendingLabel="Grading…"
                           className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
                         />
-                        {!s.content && (
-                          <span className="ml-2 text-xs text-slate-400">(text submission required)</span>
-                        )}
+                        <span className="text-xs text-slate-400" title="AI reads the student's text and suggests a grade. You must review and save it — it is not final.">
+                          AI suggests a grade — you review and save. Not final.
+                        </span>
                       </form>
                     )}
 
@@ -149,9 +151,9 @@ export default async function ProfessorAssignmentPage({
                         <label className="block text-sm font-medium text-slate-700">
                           Feedback {isAiTarget && <span className="text-blue-600">(AI suggested)</span>}
                         </label>
-                        <input
+                        <textarea
                           name="feedback"
-                          type="text"
+                          rows={4}
                           defaultValue={feedbackDefault}
                           className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${isAiTarget ? "border-blue-300 bg-blue-50" : "border-slate-300"}`}
                         />

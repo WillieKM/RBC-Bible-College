@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { formatRelativeDue } from "@/lib/format";
 import type { Assignment } from "@/lib/types";
 import Link from "next/link";
 
@@ -23,7 +24,7 @@ const STATUS_LABEL: Record<Status, string> = {
   submitted: "Submitted",
   overdue: "Overdue",
   "due-soon": "Due Soon",
-  pending: "Not Started",
+  pending: "To Do",
 };
 
 const STATUS_CLASS: Record<Status, string> = {
@@ -90,11 +91,6 @@ export default async function StudentAssignmentsPage() {
     return s === "graded" || s === "submitted";
   }).length;
 
-  function formatDue(due: string | null) {
-    if (!due) return "No due date";
-    return `Due ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -143,7 +139,7 @@ export default async function StudentAssignmentsPage() {
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASS[status]}`}>
                           {STATUS_LABEL[status]}
                         </span>
-                        <span className="text-xs text-slate-400">{formatDue(a.due_date)}</span>
+                        <span className="text-xs text-slate-400">{formatRelativeDue(a.due_date)}</span>
                       </div>
                     </Link>
                   );

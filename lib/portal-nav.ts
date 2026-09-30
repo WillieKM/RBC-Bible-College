@@ -24,6 +24,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
       links: [
         { href: "/admin/programs", label: "Programs" },
         { href: "/admin/courses", label: "Courses" },
+        { href: "/admin/assignments", label: "Assignments" },
         { href: "/admin/modules", label: "Modules" },
       ],
     },
@@ -74,6 +75,7 @@ export function studentNavGroups(profile: Profile): NavGroup[] {
         { href: "/student/zoom", label: "Zoom & Recordings" },
         { href: "/student/transcript", label: "Transcript" },
         { href: "/student/attendance", label: "Attendance" },
+        { href: "/student/calendar", label: "Calendar" },
       ],
     },
     {
@@ -83,10 +85,9 @@ export function studentNavGroups(profile: Profile): NavGroup[] {
     {
       label: "Community",
       links: [
-        { href: "/student/announcements", label: "Notices" },
+        { href: "/student/announcements", label: "Announcements" },
         { href: "/student/prayers", label: "Prayer Board" },
         { href: "/student/library", label: "Library" },
-        { href: "/student/calendar", label: "Calendar" },
         { href: "/student/handbook", label: "Handbook" },
       ],
     },
@@ -125,7 +126,7 @@ export function professorNavGroups(): NavGroup[] {
     {
       label: "Community",
       links: [
-        { href: "/professor/announcements", label: "Notices" },
+        { href: "/professor/announcements", label: "Announcements" },
         { href: "/professor/prayers", label: "Prayer Board" },
         { href: "/professor/library", label: "Library" },
         { href: "/professor/calendar", label: "Calendar" },

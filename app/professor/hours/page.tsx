@@ -19,6 +19,9 @@ export default async function ProfessorHoursPage() {
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-slate-900">My Hours</h1>
       <p className="mt-1 text-sm text-slate-500">Hours logged and approved by the administration.</p>
+      <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        Teaching hours are recorded by the administration. If you believe there is an error in your logged hours, please contact the admin.
+      </div>
 
       {/* Summary */}
       <div className="mt-4 grid grid-cols-3 gap-4">

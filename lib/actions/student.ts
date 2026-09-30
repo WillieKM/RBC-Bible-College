@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { sendNewSubmissionEmail } from "@/lib/email";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function submitAssignment(formData: FormData) {
   const profile = await requireRole(["student"]);
@@ -65,4 +66,5 @@ export async function submitAssignment(formData: FormData) {
   revalidatePath("/student/assignments");
   revalidatePath(`/professor/assignments/${assignmentId}`);
   revalidatePath("/professor/assignments");
+  redirect(`/student/assignments/${assignmentId}?submitted=1`);
 }
