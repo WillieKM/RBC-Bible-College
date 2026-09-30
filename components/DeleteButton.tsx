@@ -7,16 +7,18 @@ export function DeleteButton({
   pendingLabel,
   className,
   confirmMessage,
+  disabled: externalDisabled,
 }: {
   label: string;
   pendingLabel?: string;
   className?: string;
   confirmMessage?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
     <button
-      disabled={pending}
+      disabled={pending || externalDisabled}
       className={className}
       onClick={
         confirmMessage

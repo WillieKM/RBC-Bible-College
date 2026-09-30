@@ -26,11 +26,14 @@ export default async function AdminInvoicesPage({
     (programs ?? []).map((p: Pick<Program, "id" | "name" | "program_level" | "fee_international" | "fee_usa">) => [p.id, p])
   );
 
-  const existingByStudent = new Map<string, { count: number; total: number }>();
-  for (const inv of (invoicesRaw ?? []) as { student_id: string; total_amount: number }[]) {
-    const entry = existingByStudent.get(inv.student_id) ?? { count: 0, total: 0 };
+  type ExistingInvoiceSummary = { id: string; title: string; total_amount: number; paid: number };
+  const existingByStudent = new Map<string, { count: number; total: number; invoices: ExistingInvoiceSummary[] }>();
+  for (const inv of (invoicesRaw ?? []) as { id: string; title: string; student_id: string; total_amount: number; payments: { amount: number }[] }[]) {
+    const entry = existingByStudent.get(inv.student_id) ?? { count: 0, total: 0, invoices: [] };
+    const paid = (inv.payments ?? []).reduce((s, p) => s + p.amount, 0);
     entry.count += 1;
     entry.total += inv.total_amount;
+    entry.invoices.push({ id: inv.id, title: inv.title, total_amount: inv.total_amount, paid });
     existingByStudent.set(inv.student_id, entry);
   }
 
@@ -50,6 +53,7 @@ export default async function AdminInvoicesPage({
         currency,
         existingCount: existing?.count ?? 0,
         existingTotal: existing?.total ?? 0,
+        existingInvoices: existing?.invoices ?? [],
       };
     }
   );

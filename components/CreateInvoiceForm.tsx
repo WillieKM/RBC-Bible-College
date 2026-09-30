@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createInvoice } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
+import Link from "next/link";
 
 export type InvoiceStudentOption = {
   id: string;
@@ -11,6 +12,7 @@ export type InvoiceStudentOption = {
   currency: string;
   existingCount: number;
   existingTotal: number;
+  existingInvoices: { id: string; title: string; total_amount: number; paid: number }[];
 };
 
 export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption[] }) {
@@ -18,15 +20,17 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
   const [amount, setAmount] = useState("");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [confirmedAdditional, setConfirmedAdditional] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selected = students.find((s) => s.id === studentId) ?? null;
   const currency = selected?.currency ?? "$";
-
+  const hasExisting = (selected?.existingCount ?? 0) > 0;
   const alreadyFullyInvoiced =
-    selected != null &&
-    selected.fee != null &&
-    selected.existingTotal >= selected.fee;
+    selected != null && selected.fee != null && selected.existingTotal >= selected.fee;
+
+  // Reset confirmation whenever the selected student changes
+  useEffect(() => { setConfirmedAdditional(false); }, [studentId]);
 
   const filtered = search.trim()
     ? students.filter((s) => s.label.toLowerCase().includes(search.toLowerCase()))
@@ -39,7 +43,6 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
     setOpen(false);
   }
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -50,33 +53,17 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Create button is disabled when student has existing invoices and hasn't confirmed
+  const createBlocked = hasExisting && !confirmedAdditional;
+
   return (
     <form action={createInvoice} className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="font-semibold text-slate-800">Create Invoice</h2>
-
-      {selected && alreadyFullyInvoiced && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-800">
-          <p className="font-semibold">⚠ Already fully invoiced</p>
-          <p className="mt-0.5">
-            {selected.label.split(" — ")[0]} has {selected.existingCount} invoice{selected.existingCount !== 1 ? "s" : ""} totaling{" "}
-            <strong>{selected.currency}{selected.existingTotal.toFixed(2)}</strong>, which already covers the full tuition of{" "}
-            <strong>{selected.currency}{selected.fee!.toFixed(2)}</strong>.
-            Creating another invoice will over-bill this student.
-          </p>
-        </div>
-      )}
-
-      {selected && !alreadyFullyInvoiced && selected.existingCount > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {selected.label.split(" — ")[0]} already has {selected.existingCount} invoice{selected.existingCount !== 1 ? "s" : ""} totaling {selected.currency}{selected.existingTotal.toFixed(2)}. Double-check before adding another.
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-3">
         {/* Searchable student picker */}
         <div className="flex-1 min-w-48" ref={containerRef}>
           <label className="block text-sm font-medium text-slate-700">Student</label>
-          {/* Hidden real value sent with the form */}
           <input type="hidden" name="student_id" value={studentId} required />
           <div className="relative mt-1">
             <input
@@ -140,7 +127,7 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
             className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
           {selected?.fee != null && (
-            <p className="mt-1 text-xs text-slate-400">Standard program fee — edit if billing a different amount.</p>
+            <p className="mt-1 text-xs text-slate-400">Standard fee — edit if billing differently.</p>
           )}
         </div>
       </div>
@@ -149,11 +136,60 @@ export function CreateInvoiceForm({ students }: { students: InvoiceStudentOption
         <label className="block text-sm font-medium text-slate-700">Notes (optional)</label>
         <textarea name="notes" rows={2} placeholder="Payment instructions, due date, etc." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
       </div>
+
+      {/* Existing invoice guard — shown when student already has invoices */}
+      {selected && hasExisting && (
+        <div className={`rounded-lg border px-4 py-3 text-sm ${alreadyFullyInvoiced ? "border-red-300 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+          <p className={`font-semibold ${alreadyFullyInvoiced ? "text-red-800" : "text-amber-800"}`}>
+            {alreadyFullyInvoiced ? "⚠ Already fully invoiced" : "⚠ Existing invoices found"}
+          </p>
+          <p className={`mt-1 text-xs ${alreadyFullyInvoiced ? "text-red-700" : "text-amber-700"}`}>
+            {selected.label.split(" — ")[0]} already has {selected.existingCount} invoice{selected.existingCount !== 1 ? "s" : ""}:
+          </p>
+          <ul className="mt-2 space-y-1">
+            {selected.existingInvoices.map((inv) => {
+              const balance = inv.total_amount - inv.paid;
+              const isPaid = balance <= 0;
+              return (
+                <li key={inv.id} className="flex items-center justify-between rounded-md bg-white px-3 py-1.5 text-xs border border-slate-100">
+                  <span className="font-medium text-slate-700">{inv.title}</span>
+                  <span className="flex items-center gap-2 text-slate-500">
+                    {currency}{inv.total_amount.toLocaleString()}
+                    <span className={`rounded-full px-1.5 py-0.5 font-semibold ${isPaid ? "bg-green-100 text-green-700" : inv.paid > 0 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
+                      {isPaid ? "Paid" : inv.paid > 0 ? "Partial" : "Unpaid"}
+                    </span>
+                    <Link href={`/admin/invoices/${inv.id}`} target="_blank" className="text-gold-dark underline hover:no-underline">
+                      Open →
+                    </Link>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={confirmedAdditional}
+              onChange={(e) => setConfirmedAdditional(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-gold"
+            />
+            <span className={`text-xs font-medium ${alreadyFullyInvoiced ? "text-red-800" : "text-amber-800"}`}>
+              Yes, this is an <strong>additional</strong> charge — not a duplicate of the above.
+            </span>
+          </label>
+        </div>
+      )}
+
       <DeleteButton
         label="Create Invoice"
         pendingLabel="Creating…"
-        className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
+        disabled={createBlocked}
+        className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-40 disabled:cursor-not-allowed"
       />
+      {createBlocked && (
+        <p className="text-xs text-slate-400">Tick the confirmation box above to enable.</p>
+      )}
     </form>
   );
 }
