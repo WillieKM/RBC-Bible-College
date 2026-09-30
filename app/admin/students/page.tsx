@@ -1,5 +1,4 @@
 ﻿import { createAdminClient } from "@/lib/supabase/admin";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Course, Profile, Program } from "@/lib/types";

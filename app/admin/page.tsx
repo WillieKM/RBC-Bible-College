@@ -1,5 +1,4 @@
 ﻿import { createAdminClient } from "@/lib/supabase/admin";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { ApplyLinks } from "@/components/ApplyLinks";
 import Link from "next/link";
 

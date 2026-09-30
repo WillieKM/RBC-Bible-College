@@ -1,5 +1,4 @@
 ﻿import { createAdminClient } from "@/lib/supabase/admin";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
 import { InviteUserForm } from "@/components/InviteUserForm";
 import { UserSearchList } from "@/components/UserSearchList";
