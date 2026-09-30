@@ -17,7 +17,7 @@ export default async function AdminInvoicesPage({
   const supabase = await createClient();
 
   const [{ data: invoicesRaw }, { data: students }, { data: programs }] = await Promise.all([
-    supabase.from("invoices").select("*, profiles(full_name, email, region), payments(amount)").order("created_at", { ascending: false }),
+    supabase.from("invoices").select("*, profiles(full_name, email, region, program_id), payments(amount)").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name, email, program_id, region").eq("role", "student").order("full_name"),
     supabase.from("programs").select("id, name, program_level, fee_international, fee_usa"),
   ]);
@@ -55,12 +55,15 @@ export default async function AdminInvoicesPage({
   );
 
   const invoices = (invoicesRaw ?? []).map((inv: Invoice & {
-    profiles: { full_name: string; email: string; region: string | null } | null;
+    profiles: { full_name: string; email: string; region: string | null; program_id: string | null } | null;
     payments: { amount: number }[];
   }) => {
     const paid = (inv.payments ?? []).reduce((s, p) => s + p.amount, 0);
     const currency = inv.profiles?.region === "usa" ? "$" : "KSh";
-    return { ...inv, paid, balance: inv.total_amount - paid, currency };
+    const programName = inv.profiles?.program_id
+      ? (programMap.get(inv.profiles.program_id) as { name: string } | undefined)?.name ?? null
+      : null;
+    return { ...inv, paid, balance: inv.total_amount - paid, currency, programName };
   });
 
   // Financial summary — split by currency since USD and KSh can't be summed
@@ -158,6 +161,7 @@ export default async function AdminInvoicesPage({
           balance: inv.balance,
           currency: inv.currency,
           profileName: (inv as { profiles?: { full_name: string } | null }).profiles?.full_name ?? null,
+          programName: inv.programName ?? null,
         }))}
       />
     </div>
