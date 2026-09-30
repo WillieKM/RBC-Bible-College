@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createCourse, deleteCourse } from "@/lib/actions/admin";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 
 export default async function AdminCoursesPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: courses }, { data: professors }, { data: programs }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
