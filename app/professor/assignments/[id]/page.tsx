@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { gradeSubmission } from "@/lib/actions/professor";
 import { gradeWithAI } from "@/lib/actions/ai-grading";
@@ -17,7 +17,7 @@ export default async function ProfessorAssignmentPage({
   const profile = await requireRole(["professor"]);
   const { id } = await params;
   const { ai_grade, ai_feedback, ai_for, ai_error } = await searchParams;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: assignment } = await supabase
     .from("assignments")

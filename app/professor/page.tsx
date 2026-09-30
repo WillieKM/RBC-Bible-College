@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import type { Course } from "@/lib/types";
 import Link from "next/link";
 
 export default async function ProfessorHomePage() {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: courses } = await supabase
     .from("courses")

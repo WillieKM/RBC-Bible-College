@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import Link from "next/link";
 
@@ -13,7 +13,7 @@ function letterGrade(pct: number | null) {
 
 export default async function GradeBookPage() {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: courses } = await supabase
     .from("courses")
