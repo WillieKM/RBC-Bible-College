@@ -7,7 +7,7 @@ export const FEE_SCHEDULE: Record<ProgramLevel, { usa: number; international: nu
   diploma:   { usa: 1750,  international: 60000  },
   bachelors: { usa: 2300,  international: 120000 },
   masters:   { usa: 2500,  international: 150000 },
-  doctorate: { usa: 2400,  international: 175000 },
+  doctorate: { usa: 2700,  international: 175000 },
 };
 
 export const ENROLLMENT_FEES: Record<ProgramLevel, { usa: number; international: number }> = {

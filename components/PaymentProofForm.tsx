@@ -27,6 +27,7 @@ export function PaymentProofForm({
   isUSA: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState(isUSA ? "CashApp" : "M-Pesa");
 
   return (
     <div className="border-t border-slate-100">
@@ -59,6 +60,25 @@ export function PaymentProofForm({
 
           <input type="hidden" name="invoice_id" value={invoiceId} />
 
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Payment method</label>
+            <select
+              name="payment_method"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              {isUSA ? (
+                <>
+                  <option value="CashApp">CashApp</option>
+                  <option value="Zelle">Zelle</option>
+                </>
+              ) : (
+                <option value="M-Pesa">M-Pesa</option>
+              )}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -88,13 +108,19 @@ export function PaymentProofForm({
 
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
-              {isUSA ? "Zelle / CashApp reference number" : "M-Pesa transaction code"}
+              {paymentMethod} reference / confirmation number
             </label>
             <input
               name="reference"
               type="text"
               required
-              placeholder={isUSA ? "e.g. Zelle confirmation number" : "e.g. QHX2KXXXXX"}
+              placeholder={
+                paymentMethod === "CashApp"
+                  ? "e.g. $cashtag or transaction ID"
+                  : paymentMethod === "Zelle"
+                  ? "e.g. Zelle confirmation number"
+                  : "e.g. QHX2KXXXXX"
+              }
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
             />
           </div>

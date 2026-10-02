@@ -19,6 +19,9 @@ export default async function AdminHomePage() {
     { data: invoiceRows },
     { data: paymentRows },
     { count: completedCount },
+    { data: allStudents },
+    { data: allPrograms },
+    { data: authUsersData },
   ] = await Promise.all([
     supabase.from("applications").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("programs").select("*", { count: "exact", head: true }),
@@ -54,6 +57,9 @@ export default async function AdminHomePage() {
     admin.from("invoices").select("id, total_amount, profiles(region)"),
     admin.from("payments").select("invoice_id, amount"),
     admin.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student").not("completed_at", "is", null),
+    supabase.from("profiles").select("id, program_id").eq("role", "student"),
+    supabase.from("programs").select("id, name").order("name", { ascending: true }),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 
   // Invoices/payments are billed in different currencies depending on the
@@ -77,6 +83,24 @@ export default async function AdminHomePage() {
 
   const outstandingUsa = Math.max(0, billedUsa - collectedUsa);
   const outstandingIntl = Math.max(0, billedIntl - collectedIntl);
+
+  // Per-program login stats
+  const lastLoginByStudentId = new Map(
+    (authUsersData?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null])
+  );
+  const programLoginStats = new Map<string, { name: string; total: number; loggedIn: number; neverLoggedIn: number }>();
+  for (const prog of (allPrograms ?? []) as { id: string; name: string }[]) {
+    programLoginStats.set(prog.id, { name: prog.name, total: 0, loggedIn: 0, neverLoggedIn: 0 });
+  }
+  for (const s of (allStudents ?? []) as { id: string; program_id: string | null }[]) {
+    if (!s.program_id) continue;
+    const stat = programLoginStats.get(s.program_id);
+    if (!stat) continue;
+    stat.total++;
+    if (lastLoginByStudentId.get(s.id)) stat.loggedIn++;
+    else stat.neverLoggedIn++;
+  }
+  const sortedProgramStats = [...programLoginStats.values()].filter((p) => p.total > 0).sort((a, b) => b.total - a.total);
 
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -140,6 +164,49 @@ export default async function AdminHomePage() {
           </svg>
           Download Excel (.csv)
         </a>
+      </div>
+
+      {/* Per-program login breakdown */}
+      <h2 className="mt-10 text-lg font-semibold text-slate-800">Student Login Activity by Program</h2>
+      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Program</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Enrolled</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Logged In</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Never Logged In</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sortedProgramStats.map((stat) => (
+                <tr key={stat.name} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 font-medium text-slate-800">{stat.name}</td>
+                  <td className="px-4 py-3 text-right text-slate-600 tabular-nums">{stat.total}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <span className="font-semibold text-green-700">{stat.loggedIn}</span>
+                    {stat.total > 0 && (
+                      <span className="ml-1 text-xs text-slate-400">({Math.round((stat.loggedIn / stat.total) * 100)}%)</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {stat.neverLoggedIn > 0 ? (
+                      <span className="font-semibold text-amber-600">{stat.neverLoggedIn}</span>
+                    ) : (
+                      <span className="text-slate-400">0</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {sortedProgramStats.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-4 text-center text-sm text-slate-400">No programs with enrolled students yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Management section */}

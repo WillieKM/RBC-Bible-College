@@ -180,11 +180,13 @@ export async function submitPaymentProof(formData: FormData) {
 
   const invoiceId = String(formData.get("invoice_id") || "").trim();
   const amount = parseFloat(String(formData.get("amount") || "0"));
-  const reference = String(formData.get("reference") || "").trim();
+  const rawReference = String(formData.get("reference") || "").trim();
+  const paymentMethod = String(formData.get("payment_method") || "").trim();
+  const reference = paymentMethod ? `${paymentMethod}: ${rawReference}` : rawReference;
   const paymentDate = String(formData.get("payment_date") || new Date().toISOString().slice(0, 10));
 
-  if (!invoiceId || isNaN(amount) || amount <= 0 || !reference) {
-    redirect(`/student/invoices?proof_error=${encodeURIComponent("Please fill in the amount, date, and M-Pesa transaction code.")}`);
+  if (!invoiceId || isNaN(amount) || amount <= 0 || !rawReference) {
+    redirect(`/student/invoices?proof_error=${encodeURIComponent("Please fill in the amount, date, and payment reference.")}`);
   }
 
   // Verify the invoice belongs to this student
