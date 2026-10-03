@@ -163,7 +163,6 @@ async function _submitApplicationInner(formData: FormData, source: string, regio
     .from("applications")
     .select("status")
     .eq("email", email)
-    .in("status", ["pending", "approved"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -173,6 +172,9 @@ async function _submitApplicationInner(formData: FormData, source: string, regio
   }
   if (existing?.status === "approved") {
     redirect(`${returnTo}?notice=${encodeURIComponent("An application with this email has already been approved. Check your inbox for login details, or contact admissions if you need help.")}`);
+  }
+  if (existing?.status === "rejected") {
+    redirect(`${returnTo}?notice=${encodeURIComponent("A previous application from this email was not accepted. Please contact admissions directly if you wish to be reconsidered.")}`);
   }
 
   const details: Record<string, unknown> = {};
@@ -320,7 +322,7 @@ export async function reviewApplication(formData: FormData) {
       const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
       const existingAuth = (authList?.users ?? []).find((u) => u.email === application.email);
       if (!existingAuth) {
-        redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message)}`);
+        redirect(`/admin/applications?error=${encodeURIComponent(`${application.email} already has an auth account but we couldn't retrieve it. This is likely a duplicate application — delete it instead of approving, or check the Supabase dashboard.`)}`);
       }
       approvedUserId = existingAuth.id;
     } else {

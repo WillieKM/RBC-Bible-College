@@ -8,11 +8,11 @@ import { getNavGroups } from "@/lib/portal-nav";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; pw_saved?: string; error?: string; details_saved?: string }>;
+  searchParams: Promise<{ saved?: string; pw_saved?: string; error?: string; details_saved?: string; require_photo?: string }>;
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  const { saved, pw_saved, error, details_saved } = await searchParams;
+  const { saved, pw_saved, error, details_saved, require_photo } = await searchParams;
 
   return (
     <DashboardShell
@@ -23,6 +23,13 @@ export default async function SettingsPage({
       <div className="max-w-lg">
         <h1 className="text-2xl font-bold text-slate-900">Profile Settings</h1>
         <p className="mt-1 text-sm text-slate-500">Update your name, photo, or password.</p>
+
+        {require_photo && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-semibold">Profile photo required</p>
+            <p className="mt-0.5">Please upload a profile photo before accessing your student portal.</p>
+          </div>
+        )}
 
         {saved && (
           <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">

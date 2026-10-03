@@ -84,16 +84,22 @@ function PendingCard({ app }: { app: ComputedApplication }) {
             )}
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <form action={reviewApplication}>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="flex gap-2">
+            <form action={reviewApplication}>
+              <input type="hidden" name="id" value={app.id} />
+              <input type="hidden" name="decision" value="approve" />
+              <DeleteButton label="Approve" pendingLabel="Approving…" className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50" />
+            </form>
+            <form action={reviewApplication}>
+              <input type="hidden" name="id" value={app.id} />
+              <input type="hidden" name="decision" value="reject" />
+              <DeleteButton label="Reject" pendingLabel="Rejecting…" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" />
+            </form>
+          </div>
+          <form action={deleteApplication}>
             <input type="hidden" name="id" value={app.id} />
-            <input type="hidden" name="decision" value="approve" />
-            <DeleteButton label="Approve" pendingLabel="Approving…" className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50" />
-          </form>
-          <form action={reviewApplication}>
-            <input type="hidden" name="id" value={app.id} />
-            <input type="hidden" name="decision" value="reject" />
-            <DeleteButton label="Reject" pendingLabel="Rejecting…" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" />
+            <DeleteButton label="Delete silently" pendingLabel="Deleting…" className="text-xs text-slate-400 hover:text-red-500 disabled:opacity-50" />
           </form>
         </div>
       </div>
