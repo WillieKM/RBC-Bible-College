@@ -82,10 +82,22 @@ export default async function AdminProgressPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">Student Progress</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Grade average, attendance rate, and outstanding balance for every student.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Student Progress</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Grade average, attendance rate, and outstanding balance for every student.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a href="/api/export/grades" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            Export Grades CSV
+          </a>
+          <a href="/api/export/attendance" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            Export Attendance CSV
+          </a>
+        </div>
+      </div>
 
       {list.length === 0 && <p className="mt-6 text-sm text-slate-500">No students yet.</p>}
 

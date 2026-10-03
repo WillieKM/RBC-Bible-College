@@ -40,6 +40,7 @@ export default async function AdminAssignmentsPage() {
               <th className="px-4 py-3 text-center font-medium text-slate-600">Due</th>
               <th className="px-4 py-3 text-center font-medium text-slate-600">Points</th>
               <th className="px-4 py-3 text-center font-medium text-slate-600">Submissions</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -97,6 +98,11 @@ export default async function AdminAssignmentsPage() {
                     <span className={`font-semibold ${submissions > 0 ? "text-green-700" : "text-slate-300"}`}>
                       {submissions}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/admin/assignments/${a.id}`} className="text-xs text-gold-dark hover:underline">
+                      Grade →
+                    </Link>
                   </td>
                 </tr>
               );

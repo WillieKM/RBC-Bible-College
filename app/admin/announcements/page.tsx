@@ -57,9 +57,27 @@ export default async function AdminAnnouncementsPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700">Send to</label>
             <select name="target" defaultValue="students" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <optgroup label="Students">
+              <optgroup label="All Students / Staff">
                 <option value="students">All students</option>
-                <option value="all">Everyone</option>
+                <option value="professors">All professors</option>
+                <option value="all">Everyone (students + professors)</option>
+              </optgroup>
+              <optgroup label="By Program Level">
+                <option value="level:doctorate">Doctorate students</option>
+                <option value="level:masters">Masters students</option>
+                <option value="level:bachelors">Bachelor&apos;s students</option>
+                <option value="level:diploma">Diploma students</option>
+              </optgroup>
+              <optgroup label="By Payment Status">
+                <option value="payment:unpaid">Unpaid students</option>
+                <option value="payment:partial">Partial-payment students</option>
+              </optgroup>
+              <optgroup label="By Region">
+                <option value="region:usa">USA students</option>
+                <option value="region:international">International students</option>
+              </optgroup>
+              <optgroup label="By Login Status">
+                <option value="login:never">Never logged in</option>
               </optgroup>
               {(professors ?? []).length > 0 && (
                 <optgroup label="Specific Professor">

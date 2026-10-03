@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { updateStudentProfile, updatePaymentStatus, markProgramComplete, sendDirectMessage } from "@/lib/actions/admin";
+import { updateStudentProfile, updatePaymentStatus, markProgramComplete, sendDirectMessage, resendInvite, saveAdminNotes } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Assignment, Course, Invoice, Payment, Program, Submission } from "@/lib/types";
 import Link from "next/link";
@@ -86,17 +86,29 @@ export default async function AdminStudentDetailPage({
         <Link href="/admin/students" className="text-sm text-gold-dark hover:underline">← Students</Link>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">{student.full_name}</h1>
         <p className="text-sm text-slate-500">{student.email}</p>
-        <p className="mt-1 text-xs font-medium">
-          {lastSignIn ? (
-            <span className="text-slate-400">
-              Last login:{" "}
-              {new Date(lastSignIn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}{" "}
-              at {new Date(lastSignIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          ) : (
-            <span className="text-amber-600">Never logged in</span>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <p className="text-xs font-medium">
+            {lastSignIn ? (
+              <span className="text-slate-400">
+                Last login:{" "}
+                {new Date(lastSignIn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}{" "}
+                at {new Date(lastSignIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            ) : (
+              <span className="text-amber-600">Never logged in</span>
+            )}
+          </p>
+          {student.email && (
+            <form action={resendInvite}>
+              <input type="hidden" name="email" value={student.email} />
+              <DeleteButton
+                label="Resend Login Link"
+                pendingLabel="Sending…"
+                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-gold hover:text-gold-dark disabled:opacity-50"
+              />
+            </form>
           )}
-        </p>
+        </div>
       </div>
 
       {/* Edit profile */}
@@ -368,6 +380,27 @@ export default async function AdminStudentDetailPage({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Admin notes */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="font-semibold text-slate-800">Admin Notes</h2>
+        <p className="mt-0.5 text-xs text-slate-400">Internal notes — not visible to the student.</p>
+        <form action={saveAdminNotes} className="mt-4 space-y-3">
+          <input type="hidden" name="id" value={student.id} />
+          <textarea
+            name="admin_notes"
+            defaultValue={(student as Record<string, unknown>).admin_notes as string ?? ""}
+            rows={4}
+            placeholder="Add private notes about this student…"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+          />
+          <DeleteButton
+            label="Save Notes"
+            pendingLabel="Saving…"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          />
+        </form>
       </div>
 
       {/* Direct message */}

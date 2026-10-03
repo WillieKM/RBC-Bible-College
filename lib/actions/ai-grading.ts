@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 
 async function fetchGoogleDocsText(url: string): Promise<string | null> {
@@ -22,11 +23,15 @@ async function fetchGoogleDocsText(url: string): Promise<string | null> {
 }
 
 export async function gradeWithAI(formData: FormData) {
-  await requireRole(["professor"]);
-  const supabase = await createClient();
+  const caller = await requireRole(["professor", "admin"]);
+  const isAdmin = caller.role === "admin";
+  const supabase = isAdmin ? createAdminClient() : await createClient();
 
   const submissionId = String(formData.get("submission_id") || "");
   const assignmentId = String(formData.get("assignment_id") || "");
+  const baseRoute = isAdmin
+    ? `/admin/assignments/${assignmentId}`
+    : `/professor/assignments/${assignmentId}`;
 
   const { data: submission } = await supabase
     .from("submissions")
@@ -42,18 +47,18 @@ export async function gradeWithAI(formData: FormData) {
       textContent = await fetchGoogleDocsText(submission.file_url);
       if (!textContent) {
         redirect(
-          `/professor/assignments/${assignmentId}?ai_error=Could+not+read+the+Google+Doc+%E2%80%94+make+sure+sharing+is+set+to+%22Anyone+with+the+link%22`
+          `${baseRoute}?ai_error=Could+not+read+the+Google+Doc+%E2%80%94+make+sure+sharing+is+set+to+%22Anyone+with+the+link%22`
         );
       }
     } else {
       redirect(
-        `/professor/assignments/${assignmentId}?ai_error=AI+can+only+read+Google+Docs+links+automatically.+Ask+the+student+to+also+paste+their+response+as+text.`
+        `${baseRoute}?ai_error=AI+can+only+read+Google+Docs+links+automatically.+Ask+the+student+to+also+paste+their+response+as+text.`
       );
     }
   }
 
   if (!textContent || !submission) {
-    redirect(`/professor/assignments/${assignmentId}?ai_error=No+text+content+found+to+grade`);
+    redirect(`${baseRoute}?ai_error=No+text+content+found+to+grade`);
   }
 
   const assignment = submission.assignments as unknown as {
@@ -100,11 +105,11 @@ Grade this submission.`,
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     redirect(
-      `/professor/assignments/${assignmentId}?ai_error=${encodeURIComponent(`AI grading failed: ${msg}`)}`
+      `${baseRoute}?ai_error=${encodeURIComponent(`AI grading failed: ${msg}`)}`
     );
   }
 
   redirect(
-    `/professor/assignments/${assignmentId}?ai_grade=${grade!}&ai_feedback=${encodeURIComponent(feedback!)}&ai_for=${submissionId}`
+    `${baseRoute}?ai_grade=${grade!}&ai_feedback=${encodeURIComponent(feedback!)}&ai_for=${submissionId}`
   );
 }

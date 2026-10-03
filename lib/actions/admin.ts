@@ -620,16 +620,41 @@ export async function sendBulkEmail(formData: FormData) {
   const target = String(formData.get("target") || "students");
   if (!title || !body) return;
 
-  let query = supabase.from("profiles").select("email");
-  if (target === "students") query = query.eq("role", "student");
-  else if (target === "professors") query = query.eq("role", "professor");
-  else if (target.startsWith("prof:")) query = query.eq("id", target.slice(5));
-  else query = query.in("role", ["student", "professor"]);
+  let emails: string[] = [];
 
-  const { data: recipients } = await query;
-  if (!recipients || recipients.length === 0) return;
+  if (target === "login:never") {
+    const [{ data: studentProfiles }, { data: authData }] = await Promise.all([
+      supabase.from("profiles").select("id, email").eq("role", "student"),
+      supabase.auth.admin.listUsers({ perPage: 1000 }),
+    ]);
+    const loggedInIds = new Set(
+      (authData?.users ?? []).filter((u) => u.last_sign_in_at).map((u) => u.id)
+    );
+    emails = (studentProfiles ?? []).filter((s) => !loggedInIds.has(s.id)).map((s) => s.email);
+  } else if (target.startsWith("level:")) {
+    const level = target.slice(6);
+    const { data: progs } = await supabase.from("programs").select("id").eq("program_level", level);
+    const progIds = (progs ?? []).map((p) => p.id as string);
+    if (progIds.length > 0) {
+      const { data: recipients } = await supabase.from("profiles").select("email").eq("role", "student").in("program_id", progIds);
+      emails = (recipients ?? []).map((r) => r.email);
+    }
+  } else {
+    let query = supabase.from("profiles").select("email");
+    if (target === "students") query = query.eq("role", "student");
+    else if (target === "professors") query = query.eq("role", "professor");
+    else if (target.startsWith("prof:")) query = query.eq("id", target.slice(5));
+    else if (target === "all") query = query.in("role", ["student", "professor"]);
+    else if (target.startsWith("payment:")) query = query.eq("role", "student").eq("payment_status", target.slice(8));
+    else if (target.startsWith("region:")) query = query.eq("role", "student").eq("region", target.slice(7));
+    else query = query.in("role", ["student", "professor"]);
 
-  await sendBulkAnnouncementEmail({ to: recipients.map((r) => r.email), title, body });
+    const { data: recipients } = await query;
+    emails = (recipients ?? []).map((r) => r.email);
+  }
+
+  if (emails.length === 0) return;
+  await sendBulkAnnouncementEmail({ to: emails, title, body });
   revalidatePath("/admin/announcements");
 }
 
@@ -700,4 +725,29 @@ export async function sendDirectMessage(formData: FormData) {
     details: { subject, to: profile.email, student_name: profile.full_name },
   });
   revalidatePath(`/admin/students/${studentId}`);
+}
+
+export async function saveAdminNotes(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const id = String(formData.get("id") || "").trim();
+  const notes = String(formData.get("admin_notes") || "").trim();
+  if (!id) return;
+  await admin.from("profiles").update({ admin_notes: notes } as Record<string, unknown>).eq("id", id);
+  revalidatePath(`/admin/students/${id}`);
+}
+
+export async function adminGradeSubmission(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const submissionId = String(formData.get("submission_id") || "");
+  const assignmentId = String(formData.get("assignment_id") || "");
+  const gradeRaw = formData.get("grade");
+  const feedback = String(formData.get("feedback") || "").trim() || null;
+  if (!submissionId || gradeRaw === null) return;
+  const grade = Number(gradeRaw);
+  await admin.from("submissions")
+    .update({ grade, feedback, graded_at: new Date().toISOString() })
+    .eq("id", submissionId);
+  revalidatePath(`/admin/assignments/${assignmentId}`);
 }

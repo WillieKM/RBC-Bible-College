@@ -27,6 +27,8 @@ export interface Profile {
   highest_education: string | null;
   marital_status: string | null;
   statement: string | null;
+  // Internal admin notes (not visible to student) — requires: ALTER TABLE profiles ADD COLUMN IF NOT EXISTS admin_notes text;
+  admin_notes: string | null;
 }
 
 export interface Program {
