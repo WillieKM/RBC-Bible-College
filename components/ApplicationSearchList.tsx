@@ -20,6 +20,7 @@ export type ComputedApplication = {
   status: string;
   details: Record<string, unknown> | null;
   isDuplicate: boolean;
+  priorReviewedStatuses: string[];
   profileStudentNumber: string | null;
   currency: string;
   programFee: number;
@@ -50,6 +51,17 @@ function PendingCard({ app }: { app: ComputedApplication }) {
             <input type="hidden" name="id" value={app.id} />
             <DeleteButton label="Delete this copy" pendingLabel="Deleting…" className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50" />
           </form>
+        </div>
+      )}
+      {app.priorReviewedStatuses.length > 0 && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <span className="font-semibold">⚠ This email already has reviewed application(s): </span>
+          {app.priorReviewedStatuses.map((s, i) => (
+            <span key={i} className={`inline-block rounded-full px-1.5 py-0.5 font-semibold ${s === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"} ${i > 0 ? "ml-1" : ""}`}>
+              {s}
+            </span>
+          ))}
+          <span className="ml-1">— this is likely a duplicate application.</span>
         </div>
       )}
       <div className="flex items-start justify-between gap-4">

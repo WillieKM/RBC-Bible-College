@@ -27,6 +27,14 @@ export default async function AdminApplicationsPage({
   const pendingEmailCount = new Map<string, number>();
   for (const a of pendingApps) pendingEmailCount.set(a.email, (pendingEmailCount.get(a.email) ?? 0) + 1);
 
+  // Map email → reviewed statuses so pending cards can warn about prior applications
+  const reviewedStatusesByEmail = new Map<string, string[]>();
+  for (const a of reviewedApps) {
+    const list = reviewedStatusesByEmail.get(a.email) ?? [];
+    list.push(a.status);
+    reviewedStatusesByEmail.set(a.email, list);
+  }
+
   function toComputed(app: Application): ComputedApplication {
     const region = app.region === "usa" ? "usa" : "international";
     const level = app.program_level as ProgramLevel;
@@ -48,6 +56,7 @@ export default async function AdminApplicationsPage({
       status: app.status,
       details: (app.details as Record<string, unknown>) ?? null,
       isDuplicate: (pendingEmailCount.get(app.email) ?? 1) > 1,
+      priorReviewedStatuses: reviewedStatusesByEmail.get(app.email) ?? [],
       profileStudentNumber: profile?.student_number ?? null,
       currency,
       programFee,
