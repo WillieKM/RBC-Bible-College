@@ -2,8 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import type { LibraryResource } from "@/lib/types";
 
-export default async function StudentLibraryPage() {
+export default async function StudentLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireRole(["student"]);
+  const { q } = await searchParams;
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -12,7 +17,16 @@ export default async function StudentLibraryPage() {
     .order("category")
     .order("title");
 
-  const resources = (data ?? []) as LibraryResource[];
+  const allResources = (data ?? []) as LibraryResource[];
+  const query = (q ?? "").toLowerCase().trim();
+  const resources = query
+    ? allResources.filter(
+        (r) =>
+          r.title.toLowerCase().includes(query) ||
+          (r.description ?? "").toLowerCase().includes(query) ||
+          r.category.toLowerCase().includes(query)
+      )
+    : allResources;
 
   const grouped = new Map<string, LibraryResource[]>();
   for (const r of resources) {
@@ -28,8 +42,26 @@ export default async function StudentLibraryPage() {
         Curated books, articles, and resources to support your studies.
       </p>
 
-      {resources.length === 0 ? (
+      <form method="GET" className="mt-4">
+        <input
+          name="q"
+          type="search"
+          defaultValue={q ?? ""}
+          placeholder="Search by title, category, or keyword…"
+          className="w-full max-w-sm rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+        />
+      </form>
+      {query && (
+        <p className="mt-2 text-sm text-slate-500">
+          {resources.length} result{resources.length !== 1 ? "s" : ""} for &ldquo;{q}&rdquo; —{" "}
+          <a href="/student/library" className="text-gold-dark hover:underline">clear</a>
+        </p>
+      )}
+
+      {resources.length === 0 && allResources.length === 0 ? (
         <p className="mt-8 text-sm text-slate-400">No resources have been added yet. Check back soon.</p>
+      ) : resources.length === 0 ? (
+        <p className="mt-8 text-sm text-slate-400">No resources match &ldquo;{q}&rdquo;.</p>
       ) : (
         <div className="mt-6 space-y-8">
           {[...grouped.entries()].map(([category, items]) => (

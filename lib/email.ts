@@ -1036,6 +1036,51 @@ export async function sendDirectMessageEmail(opts: {
   );
 }
 
+// ─── Assignment submission confirmation (sent to student on submit) ──────────
+
+export async function sendSubmissionConfirmationEmail(opts: {
+  to: string;
+  studentName: string;
+  assignmentTitle: string;
+  courseTitle: string;
+  reviewUrl: string;
+}) {
+  await send(
+    opts.to,
+    `Submission received: ${opts.assignmentTitle}`,
+    wrap(
+      "Assignment Submitted",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(opts.studentName)}</strong>,</p>
+       <p style="font-size:15px;color:#1e293b;">We&apos;ve received your submission for <strong>${esc(opts.assignmentTitle)}</strong> in <strong>${esc(opts.courseTitle)}</strong>.</p>
+       <p style="font-size:14px;color:#475569;">Your professor will grade it soon. You&apos;ll receive another email once your grade is posted.</p>
+       <div style="margin:20px 0;text-align:center;">
+         <a href="${opts.reviewUrl}" style="background:#d4af37;color:#14110c;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">View Submission →</a>
+       </div>
+       <p style="font-size:12px;color:#94a3b8;">If you need to resubmit, simply visit your assignment page before the deadline.</p>`
+    )
+  );
+}
+
+// ─── Student inquiry to admin ─────────────────────────────────────────────────
+
+export async function sendStudentInquiryEmail(opts: {
+  adminEmails: string[];
+  studentName: string;
+  studentEmail: string;
+  subject: string;
+  body: string;
+}) {
+  const html = wrap(
+    `Student Inquiry: ${opts.subject}`,
+    `<p style="font-size:15px;color:#475569;"><strong>${esc(opts.studentName)}</strong> (<a href="mailto:${esc(opts.studentEmail)}" style="color:#d4af37;">${esc(opts.studentEmail)}</a>) sent a message:</p>
+     <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:16px 0;font-size:15px;color:#1e293b;white-space:pre-wrap;">${esc(opts.body)}</div>
+     <p style="font-size:13px;color:#94a3b8;">Reply directly to ${esc(opts.studentEmail)} to respond.</p>`
+  );
+  for (const email of opts.adminEmails) {
+    await send(email, `[Student Inquiry] ${opts.subject}`, html);
+  }
+}
+
 // ─── Zoom session reminder (sent a short time before the session) ─────────────
 
 export async function sendZoomReminderEmail(opts: {

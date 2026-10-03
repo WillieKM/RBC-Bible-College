@@ -25,9 +25,14 @@ export default async function ProfessorCoursePage({
   const [{ data: assignments }, { data: materials }, { data: enrollments }, { data: discussions }] = await Promise.all([
     admin.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
     admin.from("course_materials").select("*").eq("course_id", id).order("created_at", { ascending: false }),
-    admin.from("enrollments").select("*, profiles(full_name)").eq("course_id", id),
+    admin.from("enrollments").select("*, profiles(id, full_name, student_number)").eq("course_id", id),
     admin.from("course_discussions").select("*, profiles(full_name, role)").eq("course_id", id).is("parent_id", null).order("created_at", { ascending: true }),
   ]);
+
+  const assignmentIds = (assignments ?? []).map((a) => a.id);
+  const { data: submissions } = assignmentIds.length > 0
+    ? await admin.from("submissions").select("assignment_id, student_id, grade").in("assignment_id", assignmentIds)
+    : { data: [] as { assignment_id: string; student_id: string; grade: number | null }[] };
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -176,6 +181,61 @@ export default async function ProfessorCoursePage({
         </div>
       </section>
 
+      {/* ── Enrolled Students ── */}
+      <section id="students">
+        <h2 className="text-lg font-semibold text-slate-800">Enrolled Students</h2>
+        {(enrollments ?? []).length === 0 ? (
+          <p className="mt-3 text-sm text-slate-500">No students enrolled yet.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600">Student</th>
+                  <th className="px-4 py-3 text-center font-medium text-slate-600">Submitted</th>
+                  <th className="px-4 py-3 text-center font-medium text-slate-600">Graded</th>
+                  <th className="px-4 py-3 text-center font-medium text-slate-600">Avg Grade</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {(enrollments ?? []).map((e) => {
+                  const student = e.profiles as unknown as { id: string; full_name: string; student_number: string | null } | null;
+                  if (!student) return null;
+                  const studentSubs = (submissions ?? []).filter((s) => s.student_id === student.id);
+                  const submitted = studentSubs.length;
+                  const graded = studentSubs.filter((s) => s.grade != null);
+                  const totalPts = graded.reduce((sum, s) => {
+                    const asn = (assignments ?? []).find((a) => a.id === s.assignment_id);
+                    return sum + (asn?.points_possible ?? 0);
+                  }, 0);
+                  const earnedPts = graded.reduce((sum, s) => sum + (s.grade ?? 0), 0);
+                  const avgPct = totalPts > 0 ? Math.round((earnedPts / totalPts) * 100) : null;
+                  return (
+                    <tr key={e.student_id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-800">{student.full_name}</p>
+                        {student.student_number && <p className="text-xs text-slate-400">{student.student_number}</p>}
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-600">{submitted} / {(assignments ?? []).length}</td>
+                      <td className="px-4 py-3 text-center text-slate-600">{graded.length} / {submitted}</td>
+                      <td className="px-4 py-3 text-center">
+                        {avgPct !== null ? (
+                          <span className={`font-semibold ${avgPct >= 70 ? "text-green-700" : avgPct >= 50 ? "text-amber-600" : "text-red-600"}`}>
+                            {avgPct}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* ── Message Students ── */}
       <section id="message">
         <h2 className="text-lg font-semibold text-slate-800">Message Students</h2>
@@ -186,9 +246,10 @@ export default async function ProfessorCoursePage({
               <label className="block text-sm font-medium text-slate-700">To</label>
               <select name="student_id" className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All enrolled students</option>
-                {(enrollments ?? []).map((e) => (
-                  <option key={e.student_id} value={e.student_id}>{e.profiles?.full_name}</option>
-                ))}
+                {(enrollments ?? []).map((e) => {
+                  const s = e.profiles as unknown as { id: string; full_name: string } | null;
+                  return <option key={e.student_id} value={e.student_id}>{s?.full_name}</option>;
+                })}
               </select>
             </div>
             <div className="flex-1 min-w-48">
@@ -217,7 +278,7 @@ export default async function ProfessorCoursePage({
             today={today}
             enrollments={(enrollments ?? []).map((e) => ({
               student_id: e.student_id,
-              profiles: e.profiles as { full_name: string } | null,
+              profiles: e.profiles as unknown as { full_name: string } | null,
             }))}
           />
         )}

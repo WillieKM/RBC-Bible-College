@@ -1,8 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { sendNewSubmissionEmail } from "@/lib/email";
+import { sendNewSubmissionEmail, sendSubmissionConfirmationEmail, sendStudentInquiryEmail } from "@/lib/email";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -62,9 +63,41 @@ export async function submitAssignment(formData: FormData) {
     });
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  void sendSubmissionConfirmationEmail({
+    to: profile.email,
+    studentName: profile.full_name,
+    assignmentTitle: assignment.title,
+    courseTitle: assignment.courses?.title ?? "",
+    reviewUrl: `${baseUrl}/student/assignments/${assignmentId}`,
+  });
+
   revalidatePath(`/student/assignments/${assignmentId}`);
   revalidatePath("/student/assignments");
   revalidatePath(`/professor/assignments/${assignmentId}`);
   revalidatePath("/professor/assignments");
   redirect(`/student/assignments/${assignmentId}?submitted=1`);
+}
+
+export async function sendStudentInquiry(formData: FormData) {
+  const profile = await requireRole(["student"]);
+  const subject = String(formData.get("subject") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  if (!subject || !body) redirect("/student/contact?error=missing");
+
+  const admin = createAdminClient();
+  const { data: admins } = await admin.from("profiles").select("email").eq("role", "admin");
+  const adminEmails = (admins ?? []).map((a) => a.email).filter(Boolean) as string[];
+
+  if (adminEmails.length > 0) {
+    await sendStudentInquiryEmail({
+      adminEmails,
+      studentName: profile.full_name,
+      studentEmail: profile.email,
+      subject,
+      body,
+    });
+  }
+
+  redirect("/student/contact?sent=1");
 }

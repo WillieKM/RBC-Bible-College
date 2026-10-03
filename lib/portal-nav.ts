@@ -97,6 +97,7 @@ export function studentNavGroups(profile: Profile): NavGroup[] {
       links: [
         { href: "/student/id-card", label: "ID Card" },
         ...(profile.completed_at ? [{ href: "/student/certificate", label: "Certificate" }] : []),
+        { href: "/student/contact", label: "Contact Admin" },
         { href: "/settings", label: "Settings" },
       ],
     },

@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { submitPaymentProof } from "@/lib/actions/invoices";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PaymentProofForm } from "@/components/PaymentProofForm";
+import { PrintButton } from "@/components/PrintButton";
 import type { Invoice, Payment } from "@/lib/types";
 
 export default async function StudentInvoicesPage({
@@ -46,7 +47,10 @@ export default async function StudentInvoicesPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900">My Invoices</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900">My Invoices</h1>
+        <PrintButton />
+      </div>
 
       {proof_sent && (
         <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
