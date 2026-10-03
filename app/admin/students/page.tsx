@@ -1,5 +1,5 @@
 ﻿import { createAdminClient } from "@/lib/supabase/admin";
-import { updatePaymentStatus, markProgramComplete } from "@/lib/actions/admin";
+import { updatePaymentStatus, markProgramComplete, syncStudentEnrollment } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default async function AdminStudentsPage({
   const supabase = createAdminClient();
   const admin = createAdminClient();
 
-  const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }, { data: authData }] = await Promise.all([
+  const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }, { data: authData }, { data: allEnrollments }] = await Promise.all([
     supabase.from("profiles").select("*").eq("role", "student").order("full_name", { ascending: true }),
     supabase.from("programs").select("*"),
     supabase.from("courses").select("id, program_id, credits"),
@@ -21,11 +21,13 @@ export default async function AdminStudentsPage({
     supabase.from("assignments").select("id, course_id"),
     supabase.from("submissions").select("assignment_id, student_id, grade"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
+    supabase.from("enrollments").select("student_id"),
   ]);
 
   const lastLoginMap = new Map(
     (authData?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null])
   );
+  const enrolledStudentIds = new Set((allEnrollments ?? []).map((e) => e.student_id));
 
   const programMap = new Map((programs ?? []).map((p: Program) => [p.id, p]));
 
@@ -198,6 +200,14 @@ export default async function AdminStudentsPage({
                       </select>
                       <DeleteButton label="Save" pendingLabel="…" className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-50" />
                     </form>
+                    {/* Sync enrollment if they have a program but no enrollments */}
+                    {student.program_id && !enrolledStudentIds.has(student.id) && (
+                      <form action={syncStudentEnrollment}>
+                        <input type="hidden" name="student_id" value={student.id} />
+                        <input type="hidden" name="program_id" value={student.program_id} />
+                        <DeleteButton label="⚠ Sync Courses" pendingLabel="Syncing…" className="text-xs font-semibold text-amber-600 hover:text-amber-800 disabled:opacity-50" />
+                      </form>
+                    )}
                     {/* Completion */}
                     <form action={markProgramComplete}>
                       <input type="hidden" name="id" value={student.id} />

@@ -132,6 +132,16 @@ export async function enrollProgramInModules(formData: FormData) {
   revalidatePath(`/admin/programs/${programId}`);
 }
 
+export async function syncStudentEnrollment(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = createAdminClient();
+  const studentId = String(formData.get("student_id"));
+  const programId = String(formData.get("program_id"));
+  if (!studentId || !programId) return;
+  await enrollStudentInProgramModules(supabase, studentId, programId);
+  revalidatePath("/admin/students");
+}
+
 // ─── Courses ────────────────────────────────────────────────────────────
 
 export async function createCourse(formData: FormData) {

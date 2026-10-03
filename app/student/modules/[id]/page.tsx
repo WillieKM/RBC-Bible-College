@@ -64,19 +64,37 @@ export default async function ModuleViewerPage({
         </a>
       </div>
 
-      {/* Mobile fallback notice */}
-      <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700 lg:hidden">
-        If the PDF does not appear below,{" "}
-        <a href={downloadSrc} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
-          tap here to open it
+      {/* Mobile: skip the iframe entirely — Android doesn't render PDFs in iframes */}
+      <div className="lg:hidden flex flex-1 flex-col items-center justify-center gap-4 bg-slate-100 px-6 py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div>
+          <p className="font-semibold text-slate-800">{module.title}</p>
+          <p className="mt-1 text-sm text-slate-500">Tap below to open the PDF in your browser.</p>
+        </div>
+        <a
+          href={downloadSrc}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl bg-gold px-6 py-3 text-sm font-bold text-ink hover:bg-gold-dark active:scale-95 transition-all"
+        >
+          Open PDF ↗
         </a>
-        .
+        <a
+          href={`${downloadSrc}?dl=1`}
+          className="text-xs text-slate-500 underline"
+        >
+          Download instead
+        </a>
       </div>
 
-      {/* Embedded PDF — never opens as a raw browser tab */}
+      {/* Desktop: embedded PDF viewer */}
       <iframe
         src={viewerSrc}
-        className="flex-1 w-full border-0 bg-slate-100"
+        className="hidden lg:flex flex-1 w-full border-0 bg-slate-100"
         title={module.title}
         sandbox="allow-scripts allow-same-origin"
       />
