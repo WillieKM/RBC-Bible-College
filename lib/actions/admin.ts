@@ -142,6 +142,27 @@ export async function syncStudentEnrollment(formData: FormData) {
   revalidatePath("/admin/students");
 }
 
+export async function adminSaveAttendance(formData: FormData) {
+  await requireRole(["admin"]);
+  const supabase = createAdminClient();
+  const courseId = String(formData.get("course_id"));
+  const sessionDate = String(formData.get("session_date"));
+  if (!courseId || !sessionDate) return;
+
+  const { data: enrollments } = await supabase.from("enrollments").select("student_id").eq("course_id", courseId);
+  if (!enrollments) return;
+
+  const rows = enrollments.map((e) => ({
+    course_id: courseId,
+    student_id: e.student_id,
+    session_date: sessionDate,
+    present: formData.get(`present_${e.student_id}`) === "on",
+  }));
+
+  await supabase.from("attendance").upsert(rows, { onConflict: "course_id,student_id,session_date" });
+  revalidatePath(`/admin/attendance/${courseId}`);
+}
+
 // ─── Courses ────────────────────────────────────────────────────────────
 
 export async function createCourse(formData: FormData) {

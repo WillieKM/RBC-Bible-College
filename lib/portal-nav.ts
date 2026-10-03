@@ -15,6 +15,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
         { href: "/admin/students", label: "Students" },
         { href: "/admin/students/import", label: "Import" },
         { href: "/admin/progress", label: "Progress" },
+        { href: "/admin/attendance", label: "Attendance" },
         { href: "/admin/users", label: "Users" },
         { href: "/admin/invites", label: "Invites" },
       ],
