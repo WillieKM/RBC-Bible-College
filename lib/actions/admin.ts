@@ -492,6 +492,32 @@ export async function syncApplicationPhoto(formData: FormData) {
   revalidatePath("/admin/applications");
 }
 
+export async function mergeApplicationToProfile(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const applicationId = String(formData.get("application_id"));
+
+  const [{ data: app }, { data: profile }] = await Promise.all([
+    admin.from("applications").select("email, photo_url, phone, region, statement").eq("id", applicationId).single(),
+    admin.from("profiles").select("avatar_url, phone, region, statement").eq("email", String(formData.get("email"))).single(),
+  ]);
+
+  if (!app || !profile) return;
+
+  const patch: Record<string, unknown> = {};
+  if (!profile.avatar_url && app.photo_url) patch.avatar_url = app.photo_url;
+  if (!profile.phone && app.phone) patch.phone = app.phone;
+  if (!profile.region && app.region) patch.region = app.region;
+  if (!profile.statement && app.statement) patch.statement = app.statement;
+
+  if (Object.keys(patch).length > 0) {
+    await admin.from("profiles").update(patch).eq("email", app.email);
+  }
+
+  await admin.from("applications").delete().eq("id", applicationId);
+  revalidatePath("/admin/applications");
+}
+
 export async function resendInvite(formData: FormData) {
   await requireRole(["admin"]);
   const email = String(formData.get("email") || "").trim();

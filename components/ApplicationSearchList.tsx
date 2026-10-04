@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
-import { deleteApplication, syncApplicationPhoto } from "@/lib/actions/admin";
+import { deleteApplication, mergeApplicationToProfile } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -58,18 +58,15 @@ function PendingCard({ app }: { app: ComputedApplication }) {
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           <div className="flex items-start justify-between gap-3">
             <span>
-              <span className="font-semibold">⚠ This email already has an active student account</span>
-              {" "}({app.profileStudentNumber}) — approving will fail. Delete silently instead.
-              {!app.profileHasPhoto && app.photo_url && (
-                <span className="ml-1 font-semibold text-amber-700">Their profile has no photo — sync it from this application first.</span>
-              )}
+              <span className="font-semibold">⚠ Active account exists</span>
+              {" "}({app.profileStudentNumber}) — cannot approve.
+              {" "}Use <span className="font-semibold">Merge &amp; Delete</span> to fill any missing fields (photo, phone, region) from this application into their profile, then remove this record.
             </span>
-            {!app.profileHasPhoto && app.photo_url && (
-              <form action={syncApplicationPhoto} className="shrink-0">
-                <input type="hidden" name="application_id" value={app.id} />
-                <DeleteButton label="Sync photo →" pendingLabel="Syncing…" className="rounded bg-amber-100 px-2 py-1 font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50" />
-              </form>
-            )}
+            <form action={mergeApplicationToProfile} className="shrink-0">
+              <input type="hidden" name="application_id" value={app.id} />
+              <input type="hidden" name="email" value={app.email} />
+              <DeleteButton label="Merge & Delete" pendingLabel="Merging…" className="rounded bg-red-100 px-2 py-1 font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50 whitespace-nowrap" />
+            </form>
           </div>
         </div>
       )}
