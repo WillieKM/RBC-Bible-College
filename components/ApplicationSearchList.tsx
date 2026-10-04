@@ -53,7 +53,13 @@ function PendingCard({ app }: { app: ComputedApplication }) {
           </form>
         </div>
       )}
-      {app.priorReviewedStatuses.length > 0 && (
+      {app.profileStudentNumber && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <span className="font-semibold">⚠ This email already has an active student account</span>
+          {" "}({app.profileStudentNumber}) — approving will fail. Delete silently instead.
+        </div>
+      )}
+      {!app.profileStudentNumber && app.priorReviewedStatuses.length > 0 && (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           <span className="font-semibold">⚠ This email already has reviewed application(s): </span>
           {app.priorReviewedStatuses.map((s, i) => (
