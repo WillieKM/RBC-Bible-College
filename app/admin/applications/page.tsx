@@ -57,6 +57,7 @@ export default async function AdminApplicationsPage({
       details: (app.details as Record<string, unknown>) ?? null,
       isDuplicate: (pendingEmailCount.get(app.email) ?? 1) > 1,
       priorReviewedStatuses: reviewedStatusesByEmail.get(app.email) ?? [],
+      hasExistingProfile: !!profile,
       profileStudentNumber: profile?.student_number ?? null,
       profileHasPhoto: !!(profile?.avatar_url),
       currency,
