@@ -1081,6 +1081,40 @@ export async function sendStudentInquiryEmail(opts: {
   }
 }
 
+// ─── New assignment notification (admin → enrolled students) ─────────────────
+
+export async function sendNewAssignmentEmail(opts: {
+  to: string[];
+  studentNames: string[];
+  courseTitle: string;
+  assignmentTitle: string;
+  dueDate: string | null;
+  assignmentUrl: string;
+}) {
+  const dueLine = opts.dueDate
+    ? `<p style="font-size:14px;color:#475569;">Due: <strong>${esc(new Date(opts.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}</strong></p>`
+    : "";
+  for (let i = 0; i < opts.to.length; i++) {
+    const name = opts.studentNames[i] ?? "Student";
+    await send(
+      opts.to[i],
+      `New Assignment: ${opts.assignmentTitle}`,
+      wrap(
+        "New Assignment Posted",
+        `<p style="font-size:15px;color:#475569;">Hi <strong>${esc(name)}</strong>,</p>
+         <p style="font-size:15px;color:#1e293b;">A new assignment has been posted in <strong>${esc(opts.courseTitle)}</strong>:</p>
+         <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:16px 0;">
+           <p style="font-size:17px;font-weight:700;color:#1e293b;margin:0;">${esc(opts.assignmentTitle)}</p>
+           ${dueLine}
+         </div>
+         <div style="margin:20px 0;text-align:center;">
+           <a href="${opts.assignmentUrl}" style="background:#d4af37;color:#14110c;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">View Assignment →</a>
+         </div>`
+      )
+    );
+  }
+}
+
 // ─── Zoom session reminder (sent a short time before the session) ─────────────
 
 export async function sendZoomReminderEmail(opts: {

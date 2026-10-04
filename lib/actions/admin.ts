@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail, sendNewAssignmentEmail } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -516,6 +516,60 @@ export async function mergeApplicationToProfile(formData: FormData) {
 
   await admin.from("applications").delete().eq("id", applicationId);
   revalidatePath("/admin/applications");
+}
+
+export async function adminCreateAssignment(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+
+  const courseId = String(formData.get("course_id") || "").trim();
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim() || null;
+  const dueDateRaw = String(formData.get("due_date") || "").trim();
+  const pointsRaw = formData.get("points_possible");
+  const notifyTarget = String(formData.get("notify_target") || "none");
+  const notifyStudentId = String(formData.get("notify_student_id") || "").trim();
+
+  if (!courseId || !title) { redirect("/admin/assignments?error=Course+and+title+are+required"); }
+
+  const { data: assignment, error } = await admin
+    .from("assignments")
+    .insert({
+      course_id: courseId,
+      title,
+      description,
+      due_date: dueDateRaw || null,
+      points_possible: pointsRaw ? Number(pointsRaw) : null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !assignment) { redirect(`/admin/assignments?error=${encodeURIComponent(error?.message ?? "Failed to create assignment")}`); }
+
+  // Send email notification if requested
+  if (notifyTarget !== "none") {
+    const { data: course } = await admin.from("courses").select("title").eq("id", courseId).single();
+    const courseTitle = (course?.title ?? "");
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const assignmentUrl = `${baseUrl}/student/assignments/${assignment.id}`;
+
+    if (notifyTarget === "individual" && notifyStudentId) {
+      const { data: student } = await admin.from("profiles").select("email, full_name").eq("id", notifyStudentId).single();
+      if (student) {
+        void sendNewAssignmentEmail({ to: [student.email], studentNames: [student.full_name], courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+      }
+    } else if (notifyTarget === "all") {
+      const { data: enrollments } = await admin.from("enrollments").select("profiles(email, full_name)").eq("course_id", courseId);
+      const recipients = (enrollments ?? [])
+        .map((e) => e.profiles as unknown as { email: string; full_name: string } | null)
+        .filter(Boolean) as { email: string; full_name: string }[];
+      if (recipients.length > 0) {
+        void sendNewAssignmentEmail({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+      }
+    }
+  }
+
+  redirect(`/admin/assignments/${assignment.id}`);
 }
 
 export async function mergeStudentProfiles(formData: FormData) {

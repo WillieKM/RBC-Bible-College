@@ -1,18 +1,26 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { adminCreateAssignment } from "@/lib/actions/admin";
+import { AdminAssignmentForm } from "@/components/AdminAssignmentForm";
 import Link from "next/link";
 
-export default async function AdminAssignmentsPage() {
+export default async function AdminAssignmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; }>;
+}) {
   await requireRole(["admin"]);
+  const { error } = await searchParams;
   const supabase = createAdminClient();
 
-  const [{ data: assignments }, { data: submissionCounts }, { data: professors }] = await Promise.all([
+  const [{ data: assignments }, { data: submissionCounts }, { data: professors }, { data: courses }] = await Promise.all([
     supabase
       .from("assignments")
       .select("*, courses(title, code, profiles(full_name))")
       .order("due_date", { ascending: true }),
     supabase.from("submissions").select("assignment_id"),
     supabase.from("profiles").select("id, full_name").eq("role", "professor"),
+    supabase.from("courses").select("id, title, code, program_id, programs(name)").order("title"),
   ]);
 
   const countMap = new Map<string, number>();
@@ -21,15 +29,30 @@ export default async function AdminAssignmentsPage() {
   }
 
   const professorMap = new Map((professors ?? []).map((p) => [p.id, p.full_name]));
-
   const now = new Date();
+
+  type CourseOption = { id: string; title: string; code: string | null; programs: { name: string } | null };
+  const courseOptions = (courses ?? []).map((c) => ({
+    id: c.id,
+    title: c.title as string,
+    code: c.code as string | null,
+    programName: (c.programs as unknown as { name: string } | null)?.name ?? null,
+  }));
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Assignments</h1>
-      <p className="mt-1 text-sm text-slate-500">All assignments across every course, including those created by professors.</p>
+      <p className="mt-1 text-sm text-slate-500">All assignments across every course. Create new ones here or via a course page.</p>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
+
+      {/* Create assignment form */}
+      <AdminAssignmentForm courses={courseOptions} action={adminCreateAssignment} />
+
+      {/* Assignment table */}
+      <div className="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-100 bg-slate-50">
             <tr>
