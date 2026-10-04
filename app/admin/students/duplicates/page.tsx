@@ -30,7 +30,7 @@ export default async function DuplicateProfilesPage({
   type ProfileRow = NonNullable<typeof allProfiles>[number];
   const duplicateGroups: ProfileRow[][] = [];
   for (const [, group] of byEmail) {
-    if (group.length < 2) continue;
+    if (!group || group.length < 2) continue;
     // Only flag if in the same program (or either has no program)
     const programs = new Set(group.map((p) => (p.programs as unknown as { name: string } | null)?.name ?? null));
     const sameProgram = programs.size === 1; // all null counts as same
