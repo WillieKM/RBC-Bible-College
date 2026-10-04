@@ -294,12 +294,15 @@ export async function reviewApplication(formData: FormData) {
     // below silently half-fails but the application still gets marked approved.
     const { data: existingProfile } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, role, student_number")
       .eq("email", application.email)
       .maybeSingle();
 
     if (existingProfile) {
-      redirect(`/admin/applications?error=${encodeURIComponent(`${application.email} already has an account. This looks like a duplicate application — delete it instead of approving.`)}`);
+      const profileDesc = existingProfile.role
+        ? `a ${existingProfile.role} profile${existingProfile.student_number ? ` (${existingProfile.student_number})` : ""}`
+        : "a profile with no role";
+      redirect(`/admin/applications?error=${encodeURIComponent(`${application.email} already exists as ${profileDesc}. Delete this application silently — do not approve.`)}`);
     }
 
     // generateLink creates the user and returns the link without sending Supabase's
