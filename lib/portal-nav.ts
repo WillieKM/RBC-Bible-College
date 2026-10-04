@@ -14,6 +14,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
       links: [
         { href: "/admin/students", label: "Students" },
         { href: "/admin/students/import", label: "Import" },
+        { href: "/admin/students/duplicates", label: "Duplicates" },
         { href: "/admin/progress", label: "Progress" },
         { href: "/admin/attendance", label: "Attendance" },
         { href: "/admin/attendance/report", label: "Att. Report" },

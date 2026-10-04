@@ -518,6 +518,48 @@ export async function mergeApplicationToProfile(formData: FormData) {
   revalidatePath("/admin/applications");
 }
 
+export async function mergeStudentProfiles(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const keepId = String(formData.get("keep_id"));
+  const deleteId = String(formData.get("delete_id"));
+  if (!keepId || !deleteId || keepId === deleteId) return;
+
+  // Fetch both profiles to merge fields
+  const [{ data: keep }, { data: del }] = await Promise.all([
+    admin.from("profiles").select("avatar_url, phone, region, statement, program_id, student_number").eq("id", keepId).single(),
+    admin.from("profiles").select("avatar_url, phone, region, statement, program_id, student_number").eq("id", deleteId).single(),
+  ]);
+
+  if (!keep || !del) return;
+
+  // Patch kept profile with any missing fields from the deleted one
+  const patch: Record<string, unknown> = {};
+  if (!keep.avatar_url && del.avatar_url) patch.avatar_url = del.avatar_url;
+  if (!keep.phone && del.phone) patch.phone = del.phone;
+  if (!keep.region && del.region) patch.region = del.region;
+  if (!keep.statement && del.statement) patch.statement = del.statement;
+  if (!keep.program_id && del.program_id) patch.program_id = del.program_id;
+  if (!keep.student_number && del.student_number) patch.student_number = del.student_number;
+
+  // Reassign related records to the kept profile
+  await Promise.all([
+    admin.from("enrollments").update({ student_id: keepId }).eq("student_id", deleteId),
+    admin.from("submissions").update({ student_id: keepId }).eq("student_id", deleteId),
+    admin.from("invoices").update({ student_id: keepId }).eq("student_id", deleteId),
+    admin.from("attendance").update({ student_id: keepId }).eq("student_id", deleteId),
+  ]);
+
+  if (Object.keys(patch).length > 0) {
+    await admin.from("profiles").update(patch).eq("id", keepId);
+  }
+
+  // Delete the duplicate profile (auth user is intentionally left — contact Supabase dashboard to remove)
+  await admin.from("profiles").delete().eq("id", deleteId);
+  revalidatePath("/admin/students/duplicates");
+  revalidatePath("/admin/students");
+}
+
 export async function resendInvite(formData: FormData) {
   await requireRole(["admin"]);
   const email = String(formData.get("email") || "").trim();
