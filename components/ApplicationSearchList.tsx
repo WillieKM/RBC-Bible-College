@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { reviewApplication, resendStudentInvite, reinstateApplication } from "@/lib/actions/applications";
-import { deleteApplication } from "@/lib/actions/admin";
+import { deleteApplication, syncApplicationPhoto } from "@/lib/actions/admin";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -22,6 +22,7 @@ export type ComputedApplication = {
   isDuplicate: boolean;
   priorReviewedStatuses: string[];
   profileStudentNumber: string | null;
+  profileHasPhoto: boolean;
   currency: string;
   programFee: number;
   enrollFee: number;
@@ -55,8 +56,21 @@ function PendingCard({ app }: { app: ComputedApplication }) {
       )}
       {app.profileStudentNumber && (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-          <span className="font-semibold">⚠ This email already has an active student account</span>
-          {" "}({app.profileStudentNumber}) — approving will fail. Delete silently instead.
+          <div className="flex items-start justify-between gap-3">
+            <span>
+              <span className="font-semibold">⚠ This email already has an active student account</span>
+              {" "}({app.profileStudentNumber}) — approving will fail. Delete silently instead.
+              {!app.profileHasPhoto && app.photo_url && (
+                <span className="ml-1 font-semibold text-amber-700">Their profile has no photo — sync it from this application first.</span>
+              )}
+            </span>
+            {!app.profileHasPhoto && app.photo_url && (
+              <form action={syncApplicationPhoto} className="shrink-0">
+                <input type="hidden" name="application_id" value={app.id} />
+                <DeleteButton label="Sync photo →" pendingLabel="Syncing…" className="rounded bg-amber-100 px-2 py-1 font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50" />
+              </form>
+            )}
+          </div>
         </div>
       )}
       {!app.profileStudentNumber && app.priorReviewedStatuses.length > 0 && (

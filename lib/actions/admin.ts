@@ -482,6 +482,16 @@ export async function deleteApplication(formData: FormData) {
   revalidatePath("/admin/applications");
 }
 
+export async function syncApplicationPhoto(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const applicationId = String(formData.get("application_id"));
+  const { data: app } = await admin.from("applications").select("email, photo_url").eq("id", applicationId).single();
+  if (!app?.photo_url) return;
+  await admin.from("profiles").update({ avatar_url: app.photo_url }).eq("email", app.email);
+  revalidatePath("/admin/applications");
+}
+
 export async function resendInvite(formData: FormData) {
   await requireRole(["admin"]);
   const email = String(formData.get("email") || "").trim();

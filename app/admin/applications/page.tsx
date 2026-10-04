@@ -13,11 +13,11 @@ export default async function AdminApplicationsPage({
 
   const [{ data: applications }, { data: profiles }, { data: programs }] = await Promise.all([
     supabase.from("applications").select("*").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("email, student_number, full_name"),
+    supabase.from("profiles").select("email, student_number, full_name, avatar_url"),
     supabase.from("programs").select("id, name, fee_usa, fee_international, enrollment_fee_usa, enrollment_fee_international, program_level"),
   ]);
 
-  const profileByEmail = new Map((profiles ?? []).map((p: { email: string; student_number: string | null; full_name: string }) => [p.email, p]));
+  const profileByEmail = new Map((profiles ?? []).map((p: { email: string; student_number: string | null; full_name: string; avatar_url: string | null }) => [p.email, p]));
   const programByName = new Map((programs ?? []).map((p) => [p.name as string, p]));
 
   // Track duplicates in pending
@@ -58,6 +58,7 @@ export default async function AdminApplicationsPage({
       isDuplicate: (pendingEmailCount.get(app.email) ?? 1) > 1,
       priorReviewedStatuses: reviewedStatusesByEmail.get(app.email) ?? [],
       profileStudentNumber: profile?.student_number ?? null,
+      profileHasPhoto: !!(profile?.avatar_url),
       currency,
       programFee,
       enrollFee,
