@@ -1081,9 +1081,9 @@ export async function sendStudentInquiryEmail(opts: {
   }
 }
 
-// ─── New assignment notification (admin → enrolled students) ─────────────────
+// ─── New assignment notification bulk (admin → multiple enrolled students) ───
 
-export async function sendNewAssignmentEmail(opts: {
+export async function sendNewAssignmentEmailBulk(opts: {
   to: string[];
   studentNames: string[];
   courseTitle: string;

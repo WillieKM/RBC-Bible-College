@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { adminCreateAssignment } from "@/lib/actions/admin";
+import { adminCreateAssignmentNotify } from "@/lib/actions/admin";
 import { AdminAssignmentForm } from "@/components/AdminAssignmentForm";
 import Link from "next/link";
 
@@ -49,7 +49,7 @@ export default async function AdminAssignmentsPage({
       )}
 
       {/* Create assignment form */}
-      <AdminAssignmentForm courses={courseOptions} action={adminCreateAssignment} />
+      <AdminAssignmentForm courses={courseOptions} action={adminCreateAssignmentNotify} />
 
       {/* Assignment table */}
       <div className="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">

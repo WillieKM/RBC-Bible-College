@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail, sendNewAssignmentEmail } from "@/lib/email";
+import { sendAccountInviteEmail, sendProfessorWelcomeEmail, sendCompletionEmail, sendBulkAnnouncementEmail, sendInvoiceReminderEmail, sendDirectMessageEmail, sendNewAssignmentEmailBulk } from "@/lib/email";
 import { requireRole, requireFinanceAccess } from "@/lib/auth";
 import { feeForLevel, ENROLLMENT_FEES } from "@/lib/fees";
 import type { ProgramLevel } from "@/lib/types";
@@ -518,7 +518,7 @@ export async function mergeApplicationToProfile(formData: FormData) {
   revalidatePath("/admin/applications");
 }
 
-export async function adminCreateAssignment(formData: FormData) {
+export async function adminCreateAssignmentNotify(formData: FormData) {
   await requireRole(["admin"]);
   const admin = createAdminClient();
 
@@ -556,7 +556,7 @@ export async function adminCreateAssignment(formData: FormData) {
     if (notifyTarget === "individual" && notifyStudentId) {
       const { data: student } = await admin.from("profiles").select("email, full_name").eq("id", notifyStudentId).single();
       if (student) {
-        void sendNewAssignmentEmail({ to: [student.email], studentNames: [student.full_name], courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+        void sendNewAssignmentEmailBulk({ to: [student.email], studentNames: [student.full_name], courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
       }
     } else if (notifyTarget === "all") {
       const { data: enrollments } = await admin.from("enrollments").select("profiles(email, full_name)").eq("course_id", courseId);
@@ -564,7 +564,7 @@ export async function adminCreateAssignment(formData: FormData) {
         .map((e) => e.profiles as unknown as { email: string; full_name: string } | null)
         .filter(Boolean) as { email: string; full_name: string }[];
       if (recipients.length > 0) {
-        void sendNewAssignmentEmail({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+        void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
       }
     }
   }
