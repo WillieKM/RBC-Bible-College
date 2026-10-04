@@ -5,6 +5,8 @@ import { useFormStatus } from "react-dom";
 
 type CourseOption = { id: string; title: string; code: string | null; programName: string | null };
 type StudentOption = { id: string; full_name: string };
+type ProgramOption = { id: string; name: string };
+type ProfessorOption = { id: string; full_name: string; email: string };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -21,9 +23,13 @@ function SubmitButton() {
 
 export function AdminAssignmentForm({
   courses,
+  programs,
+  professors,
   action,
 }: {
   courses: CourseOption[];
+  programs: ProgramOption[];
+  professors: ProfessorOption[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -32,14 +38,16 @@ export function AdminAssignmentForm({
   const [loadingStudents, setLoadingStudents] = useState(false);
 
   useEffect(() => {
-    if (!selectedCourseId) { setStudents([]); return; }
+    if (!selectedCourseId || (notifyTarget !== "individual" && notifyTarget !== "all")) {
+      return;
+    }
     setLoadingStudents(true);
     fetch(`/api/admin/course-students?course_id=${selectedCourseId}`)
       .then((r) => r.json())
       .then((data) => setStudents(data.students ?? []))
       .catch(() => setStudents([]))
       .finally(() => setLoadingStudents(false));
-  }, [selectedCourseId]);
+  }, [selectedCourseId, notifyTarget]);
 
   // Group courses by program
   const grouped = new Map<string, CourseOption[]>();
@@ -49,6 +57,8 @@ export function AdminAssignmentForm({
     list.push(c);
     grouped.set(key, list);
   }
+
+  const needsStudentList = notifyTarget === "individual" || notifyTarget === "all";
 
   return (
     <form action={action} className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
@@ -118,21 +128,32 @@ export function AdminAssignmentForm({
         </div>
 
         {/* Email notification */}
-        <div className="sm:col-span-2 border-t border-slate-100 pt-4">
-          <label className="block text-sm font-medium text-slate-700">Notify students by email</label>
+        <div className="sm:col-span-2 border-t border-slate-100 pt-4 space-y-3">
+          <label className="block text-sm font-medium text-slate-700">Notify by email</label>
           <select
             name="notify_target"
             value={notifyTarget}
             onChange={(e) => setNotifyTarget(e.target.value)}
-            className="mt-1 w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+            className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
           >
-            <option value="none">No notification</option>
-            <option value="all">All enrolled students</option>
-            <option value="individual">Specific student</option>
+            <optgroup label="No notification">
+              <option value="none">No notification</option>
+            </optgroup>
+            <optgroup label="Students">
+              <option value="all">All enrolled students (this course)</option>
+              <option value="individual">Specific enrolled student</option>
+              <option value="program">All students in a program</option>
+              <option value="all_students">All students (school-wide)</option>
+            </optgroup>
+            <optgroup label="Professors">
+              <option value="all_professors">All professors</option>
+              <option value="professor">Specific professor</option>
+            </optgroup>
           </select>
 
+          {/* Specific enrolled student */}
           {notifyTarget === "individual" && (
-            <div className="mt-3">
+            <div>
               <label className="block text-sm font-medium text-slate-700">Select student</label>
               {loadingStudents ? (
                 <p className="mt-1 text-xs text-slate-400">Loading enrolled students…</p>
@@ -152,10 +173,64 @@ export function AdminAssignmentForm({
             </div>
           )}
 
+          {/* All enrolled in this course — show count */}
           {notifyTarget === "all" && selectedCourseId && (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="text-xs text-slate-500">
               {loadingStudents ? "Loading…" : `${students.length} enrolled student${students.length !== 1 ? "s" : ""} will receive an email.`}
             </p>
+          )}
+
+          {/* Students by program */}
+          {notifyTarget === "program" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Select program</label>
+              {programs.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-400">No programs found.</p>
+              ) : (
+                <select
+                  name="notify_program_id"
+                  className="mt-1 w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                >
+                  <option value="">Select program…</option>
+                  {programs.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+              <p className="mt-1 text-xs text-slate-400">All students enrolled in any course in this program will be notified.</p>
+            </div>
+          )}
+
+          {/* All students school-wide */}
+          {notifyTarget === "all_students" && (
+            <p className="text-xs text-amber-600 font-medium">All active students across every program will receive this notification.</p>
+          )}
+
+          {/* All professors */}
+          {notifyTarget === "all_professors" && (
+            <p className="text-xs text-slate-500">
+              {professors.length} professor{professors.length !== 1 ? "s" : ""} will receive this notification.
+            </p>
+          )}
+
+          {/* Specific professor */}
+          {notifyTarget === "professor" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Select professor</label>
+              {professors.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-400">No professors found.</p>
+              ) : (
+                <select
+                  name="notify_professor_id"
+                  className="mt-1 w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                >
+                  <option value="">Select professor…</option>
+                  {professors.map((p) => (
+                    <option key={p.id} value={p.id}>{p.full_name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           )}
         </div>
       </div>

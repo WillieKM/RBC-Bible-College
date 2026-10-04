@@ -529,6 +529,8 @@ export async function adminCreateAssignmentNotify(formData: FormData) {
   const pointsRaw = formData.get("points_possible");
   const notifyTarget = String(formData.get("notify_target") || "none");
   const notifyStudentId = String(formData.get("notify_student_id") || "").trim();
+  const notifyProgramId = String(formData.get("notify_program_id") || "").trim();
+  const notifyProfessorId = String(formData.get("notify_professor_id") || "").trim();
 
   if (!courseId || !title) { redirect("/admin/assignments?error=Course+and+title+are+required"); }
 
@@ -561,10 +563,43 @@ export async function adminCreateAssignmentNotify(formData: FormData) {
     } else if (notifyTarget === "all") {
       const { data: enrollments } = await admin.from("enrollments").select("profiles(email, full_name)").eq("course_id", courseId);
       const recipients = (enrollments ?? [])
-        .map((e) => e.profiles as unknown as { email: string; full_name: string } | null)
-        .filter(Boolean) as { email: string; full_name: string }[];
+        .flatMap((e) => { const p = e.profiles as unknown as { email: string; full_name: string } | null; return p ? [p] : []; });
       if (recipients.length > 0) {
         void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+      }
+    } else if (notifyTarget === "program" && notifyProgramId) {
+      // All students enrolled in any course in the selected program
+      const { data: programCourses } = await admin.from("courses").select("id").eq("program_id", notifyProgramId);
+      const programCourseIds = (programCourses ?? []).map((c) => c.id);
+      if (programCourseIds.length > 0) {
+        const { data: enrollments } = await admin.from("enrollments").select("profiles(email, full_name)").in("course_id", programCourseIds);
+        const seen = new Set<string>();
+        const recipients = (enrollments ?? []).flatMap((e) => {
+          const p = e.profiles as unknown as { email: string; full_name: string } | null;
+          if (!p || seen.has(p.email)) return [];
+          seen.add(p.email);
+          return [p];
+        });
+        if (recipients.length > 0) {
+          void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+        }
+      }
+    } else if (notifyTarget === "all_students") {
+      const { data: students } = await admin.from("profiles").select("email, full_name").eq("role", "student");
+      const recipients = (students ?? []).filter((s) => s.email);
+      if (recipients.length > 0) {
+        void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name ?? "Student"), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+      }
+    } else if (notifyTarget === "all_professors") {
+      const { data: profs } = await admin.from("profiles").select("email, full_name").eq("role", "professor");
+      const recipients = (profs ?? []).filter((p) => p.email);
+      if (recipients.length > 0) {
+        void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name ?? "Professor"), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
+      }
+    } else if (notifyTarget === "professor" && notifyProfessorId) {
+      const { data: prof } = await admin.from("profiles").select("email, full_name").eq("id", notifyProfessorId).single();
+      if (prof?.email) {
+        void sendNewAssignmentEmailBulk({ to: [prof.email], studentNames: [prof.full_name ?? "Professor"], courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
       }
     }
   }
