@@ -1081,6 +1081,26 @@ export async function sendStudentInquiryEmail(opts: {
   }
 }
 
+// ─── Professor inquiry to admin ───────────────────────────────────────────────
+
+export async function sendProfessorInquiryEmail(opts: {
+  adminEmails: string[];
+  professorName: string;
+  professorEmail: string;
+  subject: string;
+  body: string;
+}) {
+  const html = wrap(
+    `Professor Inquiry: ${opts.subject}`,
+    `<p style="font-size:15px;color:#475569;"><strong>${esc(opts.professorName)}</strong> (<a href="mailto:${esc(opts.professorEmail)}" style="color:#d4af37;">${esc(opts.professorEmail)}</a>) sent a message:</p>
+     <div style="background:#f8fafc;border-radius:10px;padding:16px 20px;margin:16px 0;font-size:15px;color:#1e293b;white-space:pre-wrap;">${esc(opts.body)}</div>
+     <p style="font-size:13px;color:#94a3b8;">Reply directly to ${esc(opts.professorEmail)} to respond.</p>`
+  );
+  for (const email of opts.adminEmails) {
+    await send(email, `[Professor Inquiry] ${opts.subject}`, html);
+  }
+}
+
 // ─── New assignment notification bulk (admin → multiple enrolled students) ───
 
 export async function sendNewAssignmentEmailBulk(opts: {

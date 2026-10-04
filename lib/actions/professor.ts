@@ -3,10 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { sendGradedEmail, sendNewAssignmentEmail, sendDirectMessageEmail } from "@/lib/email";
+import { sendGradedEmail, sendNewAssignmentEmail, sendDirectMessageEmail, sendProfessorInquiryEmail } from "@/lib/email";
 import { writeAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function createAssignment(formData: FormData) {
   const profile = await requireRole(["professor"]);
@@ -224,4 +225,27 @@ export async function sendProfessorMessage(formData: FormData) {
   }
 
   revalidatePath(`/professor/courses/${courseId}`);
+}
+
+export async function sendProfessorInquiry(formData: FormData) {
+  const profile = await requireRole(["professor"]);
+  const subject = String(formData.get("subject") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  if (!subject || !body) { redirect("/professor/contact?error=missing"); }
+
+  const admin = createAdminClient();
+  const { data: admins } = await admin.from("profiles").select("email").eq("role", "admin");
+  const adminEmails = (admins ?? []).map((a) => a.email).filter(Boolean) as string[];
+
+  if (adminEmails.length > 0) {
+    await sendProfessorInquiryEmail({
+      adminEmails,
+      professorName: profile.full_name,
+      professorEmail: profile.email,
+      subject,
+      body,
+    });
+  }
+
+  redirect("/professor/contact?sent=1");
 }

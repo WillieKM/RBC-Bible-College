@@ -138,7 +138,10 @@ export function professorNavGroups(): NavGroup[] {
       ],
     },
     {
-      links: [{ href: "/settings", label: "Settings" }],
+      links: [
+        { href: "/professor/contact", label: "Contact Admin" },
+        { href: "/settings", label: "Settings" },
+      ],
     },
   ];
 }
