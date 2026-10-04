@@ -48,10 +48,15 @@ export default async function StudentTranscriptPage() {
 
   type AssignmentRow = { id: string; title: string; points_possible: number | null; due_date: string | null };
   type CourseRow = { id: string; title: string; code: string | null; credits: number | null; program_id: string | null; assignments: AssignmentRow[] };
+  type ComputedCourse = {
+    id: string; title: string; code: string | null; credits: number | null; programId: string | null;
+    assignments: (AssignmentRow & { submission: { assignment_id: string; grade: number | null; graded_at: string | null } | null })[];
+    graded: number; total: number; submitted: number; earnedPts: number; possiblePts: number; pct: number | null;
+  };
 
-  const courses = (enrollments ?? []).map((e) => {
+  const courses: ComputedCourse[] = (enrollments ?? []).flatMap((e) => {
     const c = e.courses as unknown as CourseRow | null;
-    if (!c) return null;
+    if (!c) return [];
     const assignments = (c.assignments ?? []).map((a) => ({
       ...a,
       submission: submissionMap.get(a.id) ?? null,
@@ -60,24 +65,16 @@ export default async function StudentTranscriptPage() {
     const earnedPts = graded.reduce((s, a) => s + (a.submission?.grade ?? 0), 0);
     const possiblePts = graded.reduce((s, a) => s + (a.points_possible ?? 0), 0);
     const pct = possiblePts > 0 ? Math.round((earnedPts / possiblePts) * 100) : null;
-    return {
-      id: c.id,
-      title: c.title,
-      code: c.code,
-      credits: c.credits,
-      programId: c.program_id,
-      assignments,
-      graded: graded.length,
-      total: assignments.length,
+    return [{
+      id: c.id, title: c.title, code: c.code, credits: c.credits, programId: c.program_id,
+      assignments, graded: graded.length, total: assignments.length,
       submitted: assignments.filter((a) => a.submission).length,
-      earnedPts,
-      possiblePts,
-      pct,
-    };
-  }).filter(Boolean) as NonNullable<ReturnType<typeof courses[0]["valueOf"]>>[];
+      earnedPts, possiblePts, pct,
+    }];
+  });
 
   // Group by program
-  const byProgram = new Map<string, typeof courses>();
+  const byProgram = new Map<string, ComputedCourse[]>();
   for (const c of courses) {
     const key = c.programId ?? "other";
     const list = byProgram.get(key) ?? [];
