@@ -4,6 +4,7 @@ import { Sidebar, type NavGroup } from "@/components/Sidebar";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
+import { getProgramLevel } from "@/lib/research-server";
 
 const PORTAL_LABEL = { admin: "Admin", student: "Student", professor: "Professor" } as const;
 
@@ -34,6 +35,7 @@ export async function DashboardShell({
     .order("created_at", { ascending: false })
     .limit(20);
   const notifications = (data ?? []) as Notification[];
+  const doctorate = activePortal === "student" && (await getProgramLevel(profile.program_id)) === "doctorate";
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -83,7 +85,7 @@ export async function DashboardShell({
       </div>
 
       {(activePortal === "student" || activePortal === "professor") && (
-        <BottomNav portal={activePortal} />
+        <BottomNav portal={activePortal} doctorate={doctorate} />
       )}
     </div>
   );

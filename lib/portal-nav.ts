@@ -1,5 +1,5 @@
 import type { NavGroup } from "@/components/Sidebar";
-import type { Profile } from "@/lib/types";
+import type { Profile, ProgramLevel } from "@/lib/types";
 
 export function adminNavGroups(profile: Profile): NavGroup[] {
   return [
@@ -28,6 +28,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
         { href: "/admin/programs", label: "Programs" },
         { href: "/admin/courses", label: "Courses" },
         { href: "/admin/assignments", label: "Assignments" },
+        { href: "/admin/research", label: "Research" },
         { href: "/admin/modules", label: "Modules" },
       ],
     },
@@ -64,7 +65,9 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
   ];
 }
 
-export function studentNavGroups(profile: Profile): NavGroup[] {
+// Master's scholars get Research alongside Assignments (lecturers may still set
+// assignments); Doctorate scholars get Research in place of Assignments.
+export function studentNavGroups(profile: Profile, programLevel?: ProgramLevel | null): NavGroup[] {
   return [
     {
       links: [{ href: "/student/getting-started", label: "Getting Started" }],
@@ -73,7 +76,10 @@ export function studentNavGroups(profile: Profile): NavGroup[] {
       label: "Study",
       links: [
         { href: "/student", label: "My Courses" },
-        { href: "/student/assignments", label: "Assignments" },
+        ...(programLevel === "masters" || programLevel === "doctorate"
+          ? [{ href: "/student/research", label: "Research" }]
+          : []),
+        ...(programLevel === "doctorate" ? [] : [{ href: "/student/assignments", label: "Assignments" }]),
         { href: "/student/modules", label: "Modules" },
         { href: "/student/zoom", label: "Zoom & Recordings" },
         { href: "/student/transcript", label: "Transcript" },
@@ -115,6 +121,7 @@ export function professorNavGroups(): NavGroup[] {
       links: [
         { href: "/professor", label: "My Courses" },
         { href: "/professor/assignments", label: "Assignments" },
+        { href: "/professor/research", label: "Research" },
         { href: "/professor/gradebook", label: "Grade Book" },
         { href: "/professor/modules", label: "Modules" },
       ],
@@ -146,8 +153,8 @@ export function professorNavGroups(): NavGroup[] {
   ];
 }
 
-export function getNavGroups(profile: Profile): NavGroup[] {
+export function getNavGroups(profile: Profile, programLevel?: ProgramLevel | null): NavGroup[] {
   if (profile.role === "admin")     return adminNavGroups(profile);
   if (profile.role === "professor") return professorNavGroups();
-  return studentNavGroups(profile);
+  return studentNavGroups(profile, programLevel);
 }

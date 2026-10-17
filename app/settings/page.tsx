@@ -5,6 +5,7 @@ import { PasswordField } from "@/components/PasswordField";
 import { ProfilePhotoInput } from "@/components/ProfilePhotoInput";
 import { redirect } from "next/navigation";
 import { getNavGroups } from "@/lib/portal-nav";
+import { getProgramLevel } from "@/lib/research-server";
 
 export default async function SettingsPage({
   searchParams,
@@ -14,11 +15,12 @@ export default async function SettingsPage({
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
   const { saved, pw_saved, error, details_saved, profile_error, details_error } = await searchParams;
+  const programLevel = profile.role === "student" ? await getProgramLevel(profile.program_id) : null;
 
   return (
     <DashboardShell
       profile={profile}
-      groups={getNavGroups(profile)}
+      groups={getNavGroups(profile, programLevel)}
       activePortal={profile.role as "admin" | "student" | "professor"}
     >
       <div className="max-w-lg">
