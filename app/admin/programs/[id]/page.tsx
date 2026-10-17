@@ -1,12 +1,19 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assignProgramProfessor, createCourse, enrollProgramInModules, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
+import { assignProgramProfessor, createCourse, syncProgramStudents, updateStudentProgram, updateProgramFee } from "@/lib/actions/admin";
 import { PROGRAM_LEVEL_LABELS, feeForLevel, formatFee } from "@/lib/fees";
 import type { Course, Profile, Program } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function AdminProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminProgramDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ synced?: string; sync_error?: string }>;
+}) {
   const { id } = await params;
+  const { synced, sync_error } = await searchParams;
   const supabase = createAdminClient();
 
   const [{ data: program }, { data: modules }, { data: students }, { data: professors }, { data: allStudents }] = await Promise.all([
@@ -169,15 +176,25 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-800">Modules</h2>
-        {(modules ?? []).length > 0 && (students ?? []).length > 0 && (
-          <form action={enrollProgramInModules}>
-            <input type="hidden" name="program_id" value={(program as Program).id} />
-            <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
-              Enroll all students in all modules
-            </button>
-          </form>
-        )}
+        <form action={syncProgramStudents}>
+          <input type="hidden" name="program_id" value={(program as Program).id} />
+          <button
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            title="Moves students stranded in empty programs of the same level into this one, then enrolls every student here in every module."
+          >
+            Sync students
+          </button>
+        </form>
       </div>
+      <p className="mt-1 text-xs text-slate-500">
+        Sync pulls in students stuck in empty {PROGRAM_LEVEL_LABELS[(program as Program).program_level]} programs and enrolls everyone here in all modules.
+      </p>
+      {synced && (
+        <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{synced}</div>
+      )}
+      {sync_error && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{sync_error}</div>
+      )}
       <form action={createCourse} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="program_id" value={(program as Program).id} />
         <div>

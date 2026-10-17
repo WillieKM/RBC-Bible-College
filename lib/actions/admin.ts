@@ -132,6 +132,80 @@ export async function enrollProgramInModules(formData: FormData) {
   revalidatePath(`/admin/programs/${programId}`);
 }
 
+// One-click repair for a program: pull in students stranded in *empty* programs
+// of the same level (e.g. duplicates auto-created on approval when the program
+// name didn't match), then enroll every program student in every module.
+export async function syncProgramStudents(formData: FormData) {
+  const caller = await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const programId = String(formData.get("program_id") || "");
+  const back = `/admin/programs/${programId}`;
+
+  const { data: program } = await admin.from("programs").select("id, program_level").eq("id", programId).maybeSingle();
+  if (!program) redirect("/admin/programs");
+
+  // Same-level programs that have no modules at all.
+  const [{ data: sameLevel }, { data: courseRows }] = await Promise.all([
+    admin.from("programs").select("id, name").eq("program_level", program.program_level).neq("id", programId),
+    admin.from("courses").select("program_id").not("program_id", "is", null),
+  ]);
+  const programsWithModules = new Set((courseRows ?? []).map((c) => c.program_id));
+  const emptyPrograms = (sameLevel ?? []).filter((p) => !programsWithModules.has(p.id));
+
+  const notes: string[] = [];
+  if (emptyPrograms.length > 0) {
+    const { data: stranded } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("role", "student")
+      .in("program_id", emptyPrograms.map((p) => p.id));
+    if ((stranded ?? []).length > 0) {
+      // Changing a student's program is a finance-tier action (see updateStudentProgram).
+      if (caller.finance_access) {
+        await admin.from("profiles").update({ program_id: programId }).in("id", (stranded ?? []).map((s) => s.id));
+        notes.push(`Moved ${stranded!.length} student${stranded!.length === 1 ? "" : "s"} from ${emptyPrograms.map((p) => `"${p.name}"`).join(", ")}`);
+      } else {
+        notes.push(`${stranded!.length} student${stranded!.length === 1 ? " is" : "s are"} in empty ${emptyPrograms.map((p) => `"${p.name}"`).join(", ")} — an admin with finance access must run Sync to move them`);
+      }
+    }
+  }
+
+  const [{ data: modules }, { data: students }] = await Promise.all([
+    admin.from("courses").select("id").eq("program_id", programId),
+    admin.from("profiles").select("id").eq("role", "student").eq("program_id", programId),
+  ]);
+  const moduleIds = (modules ?? []).map((m) => m.id);
+  const studentIds = (students ?? []).map((s) => s.id);
+
+  let added = 0;
+  if (moduleIds.length > 0 && studentIds.length > 0) {
+    const { data: existing } = await admin
+      .from("enrollments")
+      .select("course_id, student_id")
+      .in("course_id", moduleIds)
+      .in("student_id", studentIds);
+    const have = new Set((existing ?? []).map((e) => `${e.course_id}:${e.student_id}`));
+    const missing = studentIds.flatMap((sid) =>
+      moduleIds.filter((cid) => !have.has(`${cid}:${sid}`)).map((cid) => ({ course_id: cid, student_id: sid }))
+    );
+    if (missing.length > 0) {
+      const { error } = await admin
+        .from("enrollments")
+        .upsert(missing, { onConflict: "course_id,student_id", ignoreDuplicates: true });
+      if (error) redirect(`${back}?sync_error=${encodeURIComponent(`Could not enroll students: ${error.message}`)}`);
+      added = missing.length;
+    }
+  } else if (moduleIds.length === 0) {
+    notes.push("This program has no modules yet, so there was nothing to enroll in");
+  }
+  notes.push(`${added} new enrollment${added === 1 ? "" : "s"} added for ${studentIds.length} student${studentIds.length === 1 ? "" : "s"}`);
+
+  revalidatePath(back);
+  revalidatePath("/admin/programs");
+  revalidatePath("/student");
+  redirect(`${back}?synced=${encodeURIComponent(notes.join(". ") + ".")}`);
+}
+
 export async function syncStudentEnrollment(formData: FormData) {
   await requireRole(["admin"]);
   const supabase = createAdminClient();
