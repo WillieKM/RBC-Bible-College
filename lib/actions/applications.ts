@@ -343,11 +343,36 @@ export async function reviewApplication(formData: FormData) {
     let programEnrollFeeIntl: number | null = null;
     let programEnrollFeeUsa: number | null = null;
     if (application.program) {
-      const { data: existingProgram } = await admin
+      // Match the applicant's chosen program to an existing one. An exact-name
+      // lookup alone used to miss on small differences ("Doctor of Divinity
+      // (D.Div.)" vs the admin's "Doctorate in Theology") and silently create an
+      // empty duplicate program, leaving the student with no courses.
+      const programCols = "id, fee_international, fee_usa, enrollment_fee_international, enrollment_fee_usa";
+      let existingProgram: {
+        id: string;
+        fee_international: number | null;
+        fee_usa: number | null;
+        enrollment_fee_international: number | null;
+        enrollment_fee_usa: number | null;
+      } | null = null;
+
+      // 1. Same name, ignoring case and surrounding spaces.
+      const { data: byName } = await admin
         .from("programs")
-        .select("id, fee_international, fee_usa, enrollment_fee_international, enrollment_fee_usa")
-        .eq("name", application.program)
-        .maybeSingle();
+        .select(programCols)
+        .ilike("name", application.program.trim().replace(/[%_\\]/g, "\\$&"))
+        .limit(1);
+      existingProgram = byName?.[0] ?? null;
+
+      // 2. Otherwise, the only program at this level, if there is exactly one.
+      if (!existingProgram && application.program_level) {
+        const { data: sameLevel } = await admin
+          .from("programs")
+          .select(programCols)
+          .eq("program_level", application.program_level)
+          .limit(2);
+        if (sameLevel?.length === 1) existingProgram = sameLevel[0];
+      }
 
       if (existingProgram) {
         programId = existingProgram.id;
