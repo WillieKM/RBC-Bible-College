@@ -9,6 +9,7 @@ import { createInviteLink } from "@/lib/actions/invite";
 import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 type SupabaseClient = ReturnType<typeof createAdminClient>;
 
@@ -493,13 +494,19 @@ export async function inviteUser(formData: FormData) {
     await sendAccountInviteEmail({ to: email, fullName, role, loginUrl });
   }
 
-  // Step 4 (optional): enrol in modules and auto-create fee invoice — fire-and-forget
+  // Step 4 (optional): enrol in modules, then auto-create fee invoices.
   if (role === "student" && programId) {
-    void (async () => {
-      try {
-        const supabase = createAdminClient();
-        await enrollStudentInProgramModules(supabase, userId, programId);
+    // Awaited: a fire-and-forget promise can be cut off on Vercel once the
+    // redirect is sent, leaving the student with a program but no courses.
+    try {
+      await enrollStudentInProgramModules(admin, userId, programId);
+    } catch (enrollErr) {
+      console.error("[inviteUser] enrollment failed:", enrollErr);
+    }
 
+    // Invoices run after the response via after(), which Vercel keeps alive.
+    const createInvoices = async () => {
+      try {
         const { data: prog } = await admin
           .from("programs")
           .select("name, program_level, fee_international, fee_usa")
@@ -538,8 +545,13 @@ export async function inviteUser(formData: FormData) {
             invoice_number: envInvoiceNumber,
           });
         }
-      } catch { /* enrolment/invoice errors must never block the invite */ }
-    })();
+      } catch { /* invoice errors must never block the invite */ }
+    };
+    try {
+      after(createInvoices);
+    } catch {
+      void createInvoices();
+    }
   }
 
   revalidatePath("/admin/users");
