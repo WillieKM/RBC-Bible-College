@@ -11,11 +11,14 @@ import { notFound } from "next/navigation";
 
 export default async function ProfessorCoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const profile = await requireRole(["professor"]);
   const { id } = await params;
+  const { error } = await searchParams;
   const admin = createAdminClient();
 
   // Use admin client to bypass RLS for professor reads
@@ -51,8 +54,12 @@ export default async function ProfessorCoursePage({
       {/* ── New Assignment ── */}
       <section id="assignments">
         <h2 className="text-lg font-semibold text-slate-800">New Assignment</h2>
+        {error && (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        )}
         <form action={createAssignment} className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <input type="hidden" name="course_id" value={course.id} />
+          <input type="hidden" name="return_to" value={`/professor/courses/${course.id}`} />
           <div>
             <label className="block text-sm font-medium text-slate-700">Title</label>
             <input name="title" required className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />

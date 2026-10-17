@@ -3,8 +3,13 @@ import { requireRole } from "@/lib/auth";
 import { createAssignment } from "@/lib/actions/professor";
 import Link from "next/link";
 
-export default async function ProfessorAssignmentsPage() {
+export default async function ProfessorAssignmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const profile = await requireRole(["professor"]);
+  const { error } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: courses } = await supabase
@@ -122,6 +127,10 @@ export default async function ProfessorAssignmentsPage() {
       <p className="mt-1 text-sm text-slate-500">
         {list.length} assignment{list.length !== 1 ? "s" : ""} across your courses
       </p>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
 
       {/* ── Quick create ── */}
       <details className="mt-4 rounded-xl border border-slate-200 bg-white shadow-sm">

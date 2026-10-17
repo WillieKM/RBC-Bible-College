@@ -11,24 +11,35 @@ import { redirect } from "next/navigation";
 
 export async function createAssignment(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  // The live RLS policies on courses/assignments don't cover professors (see
+  // 6745ca7), so a user-scoped client silently finds no course and inserts
+  // nothing. Use the service role and enforce ownership explicitly below.
+  const supabase = createAdminClient();
 
   const courseId = String(formData.get("course_id"));
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const dueDate = String(formData.get("due_date") || "") || null;
   const pointsPossible = formData.get("points_possible") ? Number(formData.get("points_possible")) : null;
-  if (!title) return;
+  const returnTo = String(formData.get("return_to") || "") === `/professor/courses/${courseId}`
+    ? `/professor/courses/${courseId}`
+    : "/professor/assignments";
+  const fail = (message: string): never => redirect(`${returnTo}?error=${encodeURIComponent(message)}`);
+  if (!title) fail("Title is required.");
 
   // Confirm the course belongs to this professor
-  const { data: course } = await supabase.from("courses").select("id, title, professor_id").eq("id", courseId).single();
-  if (!course || course.professor_id !== profile.id) return;
+  const { data: course } = await supabase.from("courses").select("id, title, professor_id").eq("id", courseId).maybeSingle();
+  if (!course || course.professor_id !== profile.id) return fail("You can only create assignments for your own courses.");
 
-  const { data: newAssignment } = await supabase
+  const { data: newAssignment, error: insertError } = await supabase
     .from("assignments")
     .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible })
     .select("id")
     .single();
+  if (insertError || !newAssignment) {
+    console.error("[createAssignment] insert failed:", insertError);
+    return fail(`Could not create the assignment: ${insertError?.message ?? "unknown error"}`);
+  }
 
   // Notify enrolled students
   const { data: enrollments } = await supabase
@@ -58,6 +69,7 @@ export async function createAssignment(formData: FormData) {
 
   revalidatePath(`/professor/courses/${courseId}`);
   revalidatePath("/professor/assignments");
+  redirect(returnTo); // also clears any earlier ?error from the URL
 }
 
 export async function gradeSubmission(formData: FormData) {
