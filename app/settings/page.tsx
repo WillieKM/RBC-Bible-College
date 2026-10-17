@@ -2,17 +2,18 @@ import { getCurrentProfile } from "@/lib/auth";
 import { updateProfile, updatePassword, updatePersonalDetails } from "@/lib/actions/auth";
 import { DashboardShell } from "@/components/DashboardShell";
 import { PasswordField } from "@/components/PasswordField";
+import { ProfilePhotoInput } from "@/components/ProfilePhotoInput";
 import { redirect } from "next/navigation";
 import { getNavGroups } from "@/lib/portal-nav";
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; pw_saved?: string; error?: string; details_saved?: string }>;
+  searchParams: Promise<{ saved?: string; pw_saved?: string; error?: string; details_saved?: string; profile_error?: string; details_error?: string }>;
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  const { saved, pw_saved, error, details_saved } = await searchParams;
+  const { saved, pw_saved, error, details_saved, profile_error, details_error } = await searchParams;
 
   return (
     <DashboardShell
@@ -38,30 +39,13 @@ export default async function SettingsPage({
         >
           <h2 className="font-semibold text-slate-800">Profile Information</h2>
 
-          <div className="flex items-center gap-4">
-            {profile.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="h-16 w-16 rounded-full object-cover ring-2 ring-gold/40"
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold/10 text-xl font-bold text-gold">
-                {profile.full_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Profile photo</label>
-              <input
-                name="photo"
-                type="file"
-                accept="image/*"
-                className="mt-1 block text-sm text-slate-600"
-              />
-              <p className="mt-0.5 text-xs text-slate-400">JPG, PNG, or WEBP. Will be cropped to a circle.</p>
+          {profile_error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {profile_error}
             </div>
-          </div>
+          )}
+
+          <ProfilePhotoInput currentUrl={profile.avatar_url} fullName={profile.full_name} />
 
           <div>
             <label htmlFor="full_name" className="block text-sm font-medium text-slate-700">Full name</label>
@@ -138,6 +122,11 @@ export default async function SettingsPage({
             {details_saved && (
               <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
                 Details saved.
+              </div>
+            )}
+            {details_error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {details_error}
               </div>
             )}
 

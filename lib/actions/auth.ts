@@ -159,7 +159,6 @@ export async function updatePersonalDetails(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile || profile.role !== "student") redirect("/login");
 
-  const supabase = await createClient();
   const updates: Record<string, unknown> = {};
 
   const fields: [string, string | null][] = [
@@ -179,18 +178,30 @@ export async function updatePersonalDetails(formData: FormData) {
   }
 
   if (Object.keys(updates).length > 0) {
-    await supabase.from("profiles").update(updates).eq("id", profile.id);
+    // profiles has no self-update RLS policy (only admins can write), so the
+    // whitelisted fields above are written with the service role instead.
+    const { error } = await createAdminClient().from("profiles").update(updates).eq("id", profile.id);
+    if (error) redirect(`/settings?details_error=${encodeURIComponent("Could not save your details. Please try again.")}`);
   }
 
   revalidatePath("/settings");
   redirect("/settings?details_saved=1");
 }
 
+const PHOTO_BUCKET = "application-photos";
+const MAX_PROFILE_PHOTO_BYTES = 4 * 1024 * 1024; // under Vercel's 4.5MB request limit
+const PHOTO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export async function updateProfile(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  const supabase = await createClient();
+  const fail = (message: string): never => redirect(`/settings?profile_error=${encodeURIComponent(message)}`);
+  const admin = createAdminClient();
   const updates: Record<string, unknown> = {};
 
   const fullName = String(formData.get("full_name") || "").trim();
@@ -204,22 +215,39 @@ export async function updateProfile(formData: FormData) {
 
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
-    const admin = createAdminClient();
-    const ext = photo.name.split(".").pop() || "jpg";
-    const path = `profiles/${profile.id}.${ext}`;
+    const ext = PHOTO_EXT[photo.type];
+    if (!ext) fail("Photo must be a JPG, PNG, or WEBP image.");
+    if (photo.size > MAX_PROFILE_PHOTO_BYTES) fail("Photo is too large. Please choose an image under 4MB.");
+
+    // New file name on every upload so browsers and the storage CDN don't
+    // keep serving the previous photo from cache.
+    const path = `profiles/${profile.id}-${Date.now()}.${ext}`;
     const { error: uploadError } = await admin.storage
-      .from("application-photos")
-      .upload(path, photo, { contentType: photo.type, upsert: true });
-    if (!uploadError) {
-      const { data: urlData } = admin.storage.from("application-photos").getPublicUrl(path);
-      updates.avatar_url = urlData.publicUrl;
-    }
+      .from(PHOTO_BUCKET)
+      .upload(path, photo, { contentType: photo.type });
+    if (uploadError) fail("Photo upload failed. Please try again.");
+
+    updates.avatar_url = admin.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
   if (Object.keys(updates).length > 0) {
-    await supabase.from("profiles").update(updates).eq("id", profile.id);
+    // profiles has no self-update RLS policy (only admins can write), so the
+    // whitelisted fields above are written with the service role instead.
+    const { error } = await admin.from("profiles").update(updates).eq("id", profile.id);
+    if (error) fail("Could not save your changes. Please try again.");
   }
 
-  revalidatePath("/settings");
+  if (typeof updates.avatar_url === "string") {
+    // Clean up this user's earlier profile photos (application photos live elsewhere).
+    const keep = updates.avatar_url.split("/").pop();
+    const { data: existing } = await admin.storage.from(PHOTO_BUCKET).list("profiles", { search: profile.id });
+    const stale = (existing ?? [])
+      .filter((f) => f.name.startsWith(profile.id) && f.name !== keep)
+      .map((f) => `profiles/${f.name}`);
+    if (stale.length > 0) await admin.storage.from(PHOTO_BUCKET).remove(stale);
+  }
+
+  // Avatar shows in the sidebar on every portal page, not just /settings.
+  revalidatePath("/", "layout");
   redirect("/settings?saved=1");
 }
