@@ -6,10 +6,13 @@ import { notFound } from "next/navigation";
 
 export default async function AdminCourseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ assignment_error?: string }>;
 }) {
   const { id } = await params;
+  const { assignment_error } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: course } = await supabase.from("courses").select("*").eq("id", id).single();
@@ -134,6 +137,12 @@ export default async function AdminCourseDetailPage({
         })}
         {(assignments ?? []).length === 0 && <p className="text-sm text-slate-500">No assignments yet.</p>}
       </div>
+
+      {assignment_error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {assignment_error}
+        </div>
+      )}
 
       <form action={adminCreateAssignment} className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="course_id" value={course.id} />

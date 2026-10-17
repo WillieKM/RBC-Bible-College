@@ -271,11 +271,16 @@ export async function adminCreateAssignment(formData: FormData) {
   const dueDate = String(formData.get("due_date") || "") || null;
   const pointsPossible = formData.get("points_possible") ? Number(formData.get("points_possible")) : null;
   const approvedBy = String(formData.get("approved_by") || "") || null;
-  if (!title || !courseId) return;
+  if (!courseId) redirect("/admin/courses");
+  if (!title) redirect(`/admin/courses/${courseId}?assignment_error=${encodeURIComponent("Title is required.")}`);
 
-  await supabase
+  const { error } = await supabase
     .from("assignments")
     .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible, approved_by: approvedBy });
+  if (error) {
+    console.error("[adminCreateAssignment] insert failed:", error);
+    redirect(`/admin/courses/${courseId}?assignment_error=${encodeURIComponent(`Could not create the assignment: ${error.message}`)}`);
+  }
 
   revalidatePath(`/admin/courses/${courseId}`);
   redirect(`/admin/courses/${courseId}`);
