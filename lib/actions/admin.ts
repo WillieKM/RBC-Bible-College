@@ -353,35 +353,60 @@ export async function inviteUser(formData: FormData) {
   await requireRole(["admin"]);
 
   const fullName = String(formData.get("full_name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
   const role = String(formData.get("role") || "");
-  if (!fullName || !email || !["admin", "professor", "student"].includes(role)) return;
+  const fail = (message: string): never => redirect(`/admin/users?invite_error=${encodeURIComponent(message)}`);
+  if (!fullName || !email || !["admin", "professor", "student"].includes(role)) {
+    return fail("Name, email, and role are all required.");
+  }
 
   const admin = createAdminClient();
 
   // Step 1: create the auth user (email_confirm skips Supabase's own email)
+  let userId: string;
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
   });
-  if (createError || !created?.user) {
-    revalidatePath("/admin/users");
-    return;
+  if (created?.user) {
+    userId = created.user.id;
+  } else {
+    // The email already has a login. If it has no profile — left behind by a
+    // duplicate merge or an earlier failed invite — reuse it instead of failing.
+    const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = authList?.users.find((u) => u.email?.toLowerCase() === email);
+    if (!existing) {
+      console.error("[inviteUser] createUser failed:", createError);
+      return fail(`Could not create the account: ${createError?.message ?? "unknown error"}`);
+    }
+    const { data: existingProfile } = await admin.from("profiles").select("id").eq("id", existing.id).maybeSingle();
+    if (existingProfile) {
+      return fail(`${email} already has an account. Search for them in the list below.`);
+    }
+    userId = existing.id;
   }
 
   // Step 2: create the profile row (with optional program + region for students)
   const programId = role === "student" ? (String(formData.get("program_id") || "").trim() || null) : null;
   const region = role === "student" ? (String(formData.get("region") || "international")) : null;
-  await admin.from("profiles").insert({ id: created.user.id, full_name: fullName, email, role, program_id: programId, region });
+  const { error: profileError } = await admin
+    .from("profiles")
+    .insert({ id: userId, full_name: fullName, email, role, program_id: programId, region });
+  if (profileError) {
+    console.error("[inviteUser] profile insert failed:", profileError);
+    return fail(`Could not create the profile for ${email}: ${profileError.message}`);
+  }
 
   // Step 3: send invite email immediately — nothing below must block this
-  let loginUrl: string;
+  let loginUrl: string | null = null;
   try {
     loginUrl = await createInviteLink(email, fullName, role);
   } catch (linkErr) {
     console.error("[inviteUser] createInviteLink failed:", linkErr);
+  }
+  if (!loginUrl) {
     revalidatePath("/admin/users");
-    return;
+    return fail(`Account created for ${email}, but the invite link failed. Use "Resend invite" on their row.`);
   }
   if (role === "professor") {
     await sendProfessorWelcomeEmail({ to: email, fullName, loginUrl });
@@ -394,7 +419,7 @@ export async function inviteUser(formData: FormData) {
     void (async () => {
       try {
         const supabase = createAdminClient();
-        await enrollStudentInProgramModules(supabase, created.user.id, programId);
+        await enrollStudentInProgramModules(supabase, userId, programId);
 
         const { data: prog } = await admin
           .from("programs")
@@ -413,7 +438,7 @@ export async function inviteUser(formData: FormData) {
           const { data: seqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
           const invoiceNumber = `INV-${year}-${String((seqData ?? 1) + 799).padStart(4, "0")}`;
           await admin.from("invoices").insert({
-            student_id: created.user.id,
+            student_id: userId,
             title: `${prog.name} — Program Fees`,
             notes: `Tuition fees for ${prog.name} (${regionKey === "usa" ? "USA" : "International"} rate: ${currency}${feeAmount.toLocaleString()})`,
             total_amount: feeAmount,
@@ -427,7 +452,7 @@ export async function inviteUser(formData: FormData) {
           const { data: envSeqData } = await admin.rpc("next_sequence_number", { seq_key: `invoice_number_${year}` });
           const envInvoiceNumber = `INV-${year}-${String((envSeqData ?? 1) + 799).padStart(4, "0")}`;
           await admin.from("invoices").insert({
-            student_id: created.user.id,
+            student_id: userId,
             title: `${prog.name} — Enrollment Fee`,
             notes: `One-time enrollment/registration fee for ${prog.name}.`,
             total_amount: enrollFeeAmt,
@@ -439,6 +464,7 @@ export async function inviteUser(formData: FormData) {
   }
 
   revalidatePath("/admin/users");
+  redirect(`/admin/users?invited=${encodeURIComponent(email)}`);
 }
 
 export async function updateUserRole(formData: FormData) {
