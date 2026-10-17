@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   // Ungraded submissions older than 3 days
   const { data: submissions } = await admin
     .from("submissions")
-    .select("id, student_id, submitted_at, profiles(full_name), assignments(title, courses(title, professor_id, profiles(full_name, email)))")
+    .select("id, student_id, submitted_at, profiles:student_id(full_name), assignments(title, courses(title, professor_id, profiles:professor_id(full_name, email)))")
     .is("graded_at", null)
     .lt("submitted_at", threeDaysAgo.toISOString());
 

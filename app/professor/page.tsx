@@ -24,7 +24,7 @@ export default async function ProfessorHomePage() {
   const { data: ungraded } = assignmentIds.length > 0
     ? await supabase
         .from("submissions")
-        .select("*, profiles(full_name, email), assignments(title, course_id, points_possible, courses(title, code))")
+        .select("*, profiles:student_id(full_name, email), assignments(title, course_id, points_possible, courses(title, code))")
         .in("assignment_id", assignmentIds)
         .is("grade", null)
         .order("submitted_at", { ascending: true })

@@ -31,13 +31,13 @@ export default async function AdminHomePage() {
 
     supabase
       .from("submissions")
-      .select("id, submitted_at, student_id, assignment_id, grade, profiles(full_name), assignments(title, courses(title))")
+      .select("id, submitted_at, student_id, assignment_id, grade, profiles:student_id(full_name), assignments(title, courses(title))")
       .order("submitted_at", { ascending: false })
       .limit(8),
 
     supabase
       .from("submissions")
-      .select("id, graded_at, grade, profiles(full_name), assignments(title, courses(title)), graded_by_profile:graded_by(full_name)")
+      .select("id, graded_at, grade, profiles:student_id(full_name), assignments(title, courses(title)), graded_by_profile:graded_by(full_name)")
       .not("graded_at", "is", null)
       .order("graded_at", { ascending: false })
       .limit(8),

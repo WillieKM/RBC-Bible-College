@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { sendGradedEmail, sendNewAssignmentEmail, sendDirectMessageEmail, sendProfessorInquiryEmail } from "@/lib/email";
@@ -74,23 +73,38 @@ export async function createAssignment(formData: FormData) {
 
 export async function gradeSubmission(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient(); // see createAssignment: live RLS doesn't cover professors
 
   const submissionId = String(formData.get("submission_id"));
   const assignmentId = String(formData.get("assignment_id"));
   const grade = formData.get("grade") ? Number(formData.get("grade")) : null;
   const feedback = String(formData.get("feedback") || "").trim() || null;
+  const fail = (message: string): never =>
+    redirect(`/professor/assignments/${assignmentId}?error=${encodeURIComponent(message)}`);
 
   if (grade === null) return;
 
-  await supabase
+  // Only the professor who teaches the submission's course may grade it.
+  const { data: owner } = await supabase
+    .from("submissions")
+    .select("assignments(courses(professor_id))")
+    .eq("id", submissionId)
+    .maybeSingle();
+  const ownerId = (owner?.assignments as unknown as { courses: { professor_id: string | null } | null } | null)?.courses?.professor_id;
+  if (ownerId !== profile.id) return fail("You can only grade submissions for your own courses.");
+
+  const { error: gradeError } = await supabase
     .from("submissions")
     .update({ grade, feedback, graded_at: new Date().toISOString(), graded_by: profile.id })
     .eq("id", submissionId);
+  if (gradeError) {
+    console.error("[gradeSubmission] update failed:", gradeError);
+    return fail(`Could not save the grade: ${gradeError.message}`);
+  }
 
   const { data: submission } = await supabase
     .from("submissions")
-    .select("*, profiles(*), assignments(*, courses(*))")
+    .select("*, profiles:student_id(*), assignments(*, courses(*))")
     .eq("id", submissionId)
     .single();
 
@@ -125,7 +139,7 @@ export async function gradeSubmission(formData: FormData) {
 
 export async function addCourseMaterial(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient(); // ownership enforced below
   const courseId = String(formData.get("course_id"));
   const title = String(formData.get("title") || "").trim();
   const type = String(formData.get("type") || "link") as "link" | "note" | "file";
@@ -149,26 +163,31 @@ export async function addCourseMaterial(formData: FormData) {
     }
   }
 
-  await supabase.from("course_materials").insert({ course_id: courseId, title, type, url, body, file_url: fileUrl });
+  const { error } = await supabase.from("course_materials").insert({ course_id: courseId, title, type, url, body, file_url: fileUrl });
+  if (error) {
+    console.error("[addCourseMaterial] insert failed:", error);
+    redirect(`/professor/courses/${courseId}?error=${encodeURIComponent(`Could not add the material: ${error.message}`)}`);
+  }
   revalidatePath(`/professor/courses/${courseId}`);
 }
 
 export async function deleteCourseMaterial(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient(); // ownership enforced below
   const id = String(formData.get("id"));
   const courseId = String(formData.get("course_id"));
 
   const { data: course } = await supabase.from("courses").select("professor_id").eq("id", courseId).single();
   if (!course || course.professor_id !== profile.id) return;
 
-  await supabase.from("course_materials").delete().eq("id", id);
+  // Scope to the course too, so a material id from another course can't be deleted.
+  await supabase.from("course_materials").delete().eq("id", id).eq("course_id", courseId);
   revalidatePath(`/professor/courses/${courseId}`);
 }
 
 export async function saveAttendance(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient(); // ownership enforced below
   const courseId = String(formData.get("course_id"));
   const sessionDate = String(formData.get("session_date"));
   if (!sessionDate) return;
@@ -186,13 +205,17 @@ export async function saveAttendance(formData: FormData) {
     present: formData.get(`present_${e.student_id}`) === "on",
   }));
 
-  await supabase.from("attendance").upsert(rows, { onConflict: "course_id,student_id,session_date" });
+  const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "course_id,student_id,session_date" });
+  if (error) {
+    console.error("[saveAttendance] upsert failed:", error);
+    redirect(`/professor/courses/${courseId}/attendance?error=${encodeURIComponent(`Could not save attendance: ${error.message}`)}`);
+  }
   revalidatePath(`/professor/courses/${courseId}`);
 }
 
 export async function sendProfessorMessage(formData: FormData) {
   const profile = await requireRole(["professor"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient(); // ownership and enrollment enforced below
 
   const courseId = String(formData.get("course_id"));
   const studentId = String(formData.get("student_id") || "");

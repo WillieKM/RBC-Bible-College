@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { saveAttendance } from "@/lib/actions/professor";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -10,12 +10,13 @@ export default async function ProfessorAttendancePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; error?: string }>;
 }) {
   const profile = await requireRole(["professor"]);
   const { id } = await params;
-  const { date: selectedDate } = await searchParams;
-  const supabase = await createClient();
+  const { date: selectedDate, error } = await searchParams;
+  // Live RLS doesn't cover professors (see 6745ca7); ownership is checked just below.
+  const supabase = createAdminClient();
 
   const { data: course } = await supabase.from("courses").select("*").eq("id", id).single();
   if (!course || course.professor_id !== profile.id) notFound();
@@ -44,6 +45,10 @@ export default async function ProfessorAttendancePage({
     <div className="max-w-2xl">
       <Link href={`/professor/courses/${id}`} className="text-sm text-gold-dark hover:underline">← Back to course</Link>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">Attendance — {course.title}</h1>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
 
       {/* Date picker */}
       <form method="GET" className="mt-4 flex items-end gap-3">

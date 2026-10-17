@@ -12,11 +12,11 @@ export default async function ProfessorAssignmentPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ai_grade?: string; ai_feedback?: string; ai_for?: string; ai_error?: string }>;
+  searchParams: Promise<{ ai_grade?: string; ai_feedback?: string; ai_for?: string; ai_error?: string; error?: string }>;
 }) {
   const profile = await requireRole(["professor"]);
   const { id } = await params;
-  const { ai_grade, ai_feedback, ai_for, ai_error } = await searchParams;
+  const { ai_grade, ai_feedback, ai_for, ai_error, error } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: assignment } = await supabase
@@ -28,7 +28,7 @@ export default async function ProfessorAssignmentPage({
   if (!assignment || assignment.courses?.professor_id !== profile.id) notFound();
 
   const [{ data: submissions }, { data: enrollments }, { data: programs }] = await Promise.all([
-    supabase.from("submissions").select("*, profiles(*)").eq("assignment_id", id),
+    supabase.from("submissions").select("*, profiles:student_id(*)").eq("assignment_id", id),
     supabase.from("enrollments").select("*, profiles(*)").eq("course_id", assignment.course_id),
     supabase.from("programs").select("id, name"),
   ]);
@@ -75,6 +75,9 @@ export default async function ProfessorAssignmentPage({
         {assignment.points_possible ? ` · ${assignment.points_possible} pts` : ""}
       </p>
 
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
       {ai_error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           AI grading error: {ai_error}

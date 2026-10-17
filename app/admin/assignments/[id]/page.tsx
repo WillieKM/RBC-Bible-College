@@ -40,7 +40,7 @@ export default async function AdminAssignmentDetailPage({
 
   const { data: submissions } = await admin
     .from("submissions")
-    .select("id, student_id, content, file_url, grade, feedback, graded_at, submitted_at, profiles(full_name, student_number)")
+    .select("id, student_id, content, file_url, grade, feedback, graded_at, submitted_at, profiles:student_id(full_name, student_number)")
     .eq("assignment_id", id)
     .order("submitted_at", { ascending: false });
 
