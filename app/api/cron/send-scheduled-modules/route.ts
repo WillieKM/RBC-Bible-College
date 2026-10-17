@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       const { data: allProfessors } = await admin
         .from("profiles")
         .select("full_name, email")
-        .eq("role", "professor");
+        .or("role.eq.professor,secondary_role.eq.professor");
       professorEmails = allProfessors ?? [];
     }
 

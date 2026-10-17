@@ -14,7 +14,7 @@ export default async function AdminModulesPage({
 
   const [{ data }, { data: professors }] = await Promise.all([
     admin.from("module_files").select("*").order("created_at", { ascending: false }),
-    admin.from("profiles").select("id, full_name").eq("role", "professor").order("full_name"),
+    admin.from("profiles").select("id, full_name").or("role.eq.professor,secondary_role.eq.professor").order("full_name"),
   ]);
 
   const modules = (data ?? []) as ModuleFile[];

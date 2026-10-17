@@ -54,7 +54,7 @@ export async function proxy(request: NextRequest) {
     // Must have a profile in our database
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, secondary_role")
       .eq("id", data.user.id)
       .single();
 
@@ -64,10 +64,11 @@ export async function proxy(request: NextRequest) {
       return loginRedirect("Your account is not set up. Contact an administrator.");
     }
 
-    // For role-specific routes: check role (admins can access everything)
+    // For role-specific routes: check role (admins can access everything).
+    // Dual-access users get in via their secondary role too, matching requireRole().
     if (protectedPrefix) {
       const requiredRole = ROLE_PREFIXES[protectedPrefix];
-      if (profile.role !== requiredRole && profile.role !== "admin") {
+      if (profile.role !== requiredRole && profile.secondary_role !== requiredRole && profile.role !== "admin") {
         return loginRedirect("You do not have permission to access that page.");
       }
     }

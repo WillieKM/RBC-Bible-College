@@ -12,7 +12,7 @@ export default async function AdminProgramsPage() {
     supabase.from("programs").select("*").order("name", { ascending: true }),
     supabase.from("profiles").select("id, program_id").eq("role", "student"),
     supabase.from("courses").select("id, program_id"),
-    supabase.from("profiles").select("*").eq("role", "professor"),
+    supabase.from("profiles").select("*").or("role.eq.professor,secondary_role.eq.professor"),
   ]);
 
   const professorMap = new Map((professors ?? []).map((p: Profile) => [p.id, p.full_name]));

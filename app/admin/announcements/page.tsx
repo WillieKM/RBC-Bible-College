@@ -8,7 +8,7 @@ export default async function AdminAnnouncementsPage() {
   const supabase = createAdminClient();
   const [{ data: announcements }, { data: professors }] = await Promise.all([
     supabase.from("announcements").select("*, profiles(full_name)").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, full_name").eq("role", "professor").order("full_name"),
+    supabase.from("profiles").select("id, full_name").or("role.eq.professor,secondary_role.eq.professor").order("full_name"),
   ]);
 
   return (

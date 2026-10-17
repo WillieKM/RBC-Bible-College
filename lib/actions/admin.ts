@@ -591,7 +591,7 @@ export async function adminCreateAssignmentNotify(formData: FormData) {
         void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name ?? "Student"), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
       }
     } else if (notifyTarget === "all_professors") {
-      const { data: profs } = await admin.from("profiles").select("email, full_name").eq("role", "professor");
+      const { data: profs } = await admin.from("profiles").select("email, full_name").or("role.eq.professor,secondary_role.eq.professor");
       const recipients = (profs ?? []).filter((p) => p.email);
       if (recipients.length > 0) {
         void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name ?? "Professor"), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
@@ -809,7 +809,7 @@ export async function sendBulkEmail(formData: FormData) {
   } else {
     let query = supabase.from("profiles").select("email");
     if (target === "students") query = query.eq("role", "student");
-    else if (target === "professors") query = query.eq("role", "professor");
+    else if (target === "professors") query = query.or("role.eq.professor,secondary_role.eq.professor");
     else if (target.startsWith("prof:")) query = query.eq("id", target.slice(5));
     else if (target === "all") query = query.in("role", ["student", "professor"]);
     else if (target.startsWith("payment:")) query = query.eq("role", "student").eq("payment_status", target.slice(8));

@@ -16,10 +16,10 @@ export async function GET(
   // Load profile: role + program_id for audience check
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, program_id")
+    .select("role, secondary_role, program_id")
     .eq("id", user.id)
     .single();
-  const isProfessorOrAdmin = profile?.role === "professor" || profile?.role === "admin";
+  const isProfessorOrAdmin = profile?.role === "professor" || profile?.role === "admin" || profile?.secondary_role === "professor";
 
   const { id } = await params;
   const admin = createAdminClient();

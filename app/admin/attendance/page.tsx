@@ -8,7 +8,7 @@ export default async function AdminAttendancePage() {
   const [{ data: courses }, { data: programs }, { data: professors }] = await Promise.all([
     supabase.from("courses").select("id, title, code, program_id, professor_id").order("title"),
     supabase.from("programs").select("id, name").order("name"),
-    supabase.from("profiles").select("id, full_name").eq("role", "professor"),
+    supabase.from("profiles").select("id, full_name").or("role.eq.professor,secondary_role.eq.professor"),
   ]);
 
   const programMap = new Map((programs ?? []).map((p) => [p.id as string, p.name as string]));

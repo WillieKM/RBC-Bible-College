@@ -19,7 +19,7 @@ export default async function AdminAssignmentsPage({
       .select("*, courses(title, code, profiles(full_name))")
       .order("due_date", { ascending: true }),
     supabase.from("submissions").select("assignment_id"),
-    supabase.from("profiles").select("id, full_name, email").eq("role", "professor"),
+    supabase.from("profiles").select("id, full_name, email").or("role.eq.professor,secondary_role.eq.professor"),
     supabase.from("courses").select("id, title, code, program_id, programs(name)").order("title"),
     supabase.from("programs").select("id, name").order("name"),
   ]);

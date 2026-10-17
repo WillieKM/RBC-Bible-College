@@ -6,7 +6,7 @@ export default async function AdminHoursPage() {
   const admin = createAdminClient();
 
   const [{ data: professors }, { data: hours }] = await Promise.all([
-    admin.from("profiles").select("id, full_name, email").eq("role", "professor").order("full_name"),
+    admin.from("profiles").select("id, full_name, email").or("role.eq.professor,secondary_role.eq.professor").order("full_name"),
     admin.from("professor_hours").select("*").order("date", { ascending: false }),
   ]);
 

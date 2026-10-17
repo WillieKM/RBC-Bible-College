@@ -8,7 +8,7 @@ export default async function AdminCoursesPage() {
 
   const [{ data: courses }, { data: professors }, { data: programs }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("*").eq("role", "professor"),
+    supabase.from("profiles").select("*").or("role.eq.professor,secondary_role.eq.professor"),
     supabase.from("programs").select("*").order("name", { ascending: true }),
   ]);
 

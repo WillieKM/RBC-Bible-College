@@ -27,7 +27,7 @@ export default async function AdminHomePage() {
     supabase.from("programs").select("*", { count: "exact", head: true }),
     supabase.from("courses").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "professor"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).or("role.eq.professor,secondary_role.eq.professor"),
 
     supabase
       .from("submissions")

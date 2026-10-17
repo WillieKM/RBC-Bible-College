@@ -19,7 +19,7 @@ export default async function AdminCourseDetailPage({
     supabase.from("enrollments").select("*, profiles(*)").eq("course_id", id),
     supabase.from("profiles").select("*").eq("role", "student"),
     supabase.from("programs").select("*").order("name", { ascending: true }),
-    supabase.from("profiles").select("*").eq("role", "professor"),
+    supabase.from("profiles").select("*").or("role.eq.professor,secondary_role.eq.professor"),
     supabase.from("courses").select("*").neq("id", id).order("code", { ascending: true }),
     supabase.from("assignments").select("*").eq("course_id", id).order("due_date", { ascending: true }),
   ]);
