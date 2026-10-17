@@ -3,6 +3,9 @@ import type { Profile, Notification } from "@/lib/types";
 import { Sidebar, type NavGroup } from "@/components/Sidebar";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
+import Link from "next/link";
+
+const PORTAL_LABEL = { admin: "Admin", student: "Student", professor: "Professor" } as const;
 
 export async function DashboardShell({
   profile,
@@ -16,6 +19,12 @@ export async function DashboardShell({
   activePortal?: "admin" | "student" | "professor";
 }) {
   const isAdmin = profile.role === "admin";
+
+  // For dual-access users (e.g. student + professor), the portal they're not currently in.
+  const otherPortal =
+    activePortal && profile.secondary_role
+      ? [profile.role, profile.secondary_role].find((r) => r !== activePortal) ?? null
+      : null;
 
   const supabase = await createClient();
   const { data } = await supabase
@@ -48,6 +57,23 @@ export async function DashboardShell({
               portal — your admin account isn&apos;t enrolled as a{" "}
               {activePortal}, so personal course data won&apos;t appear here.
             </p>
+          </div>
+        )}
+
+        {/* Dual-access switch bar — the sidebar switcher is hidden in the mobile drawer */}
+        {!isAdmin && otherPortal && (
+          <div className="border-b border-gold/30 bg-gold/10 px-4 py-2 sm:px-6">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+              <p className="text-xs text-slate-700">
+                You&apos;re in the <span className="font-semibold">{PORTAL_LABEL[activePortal!]}</span> portal.
+              </p>
+              <Link
+                href={`/${otherPortal}`}
+                className="shrink-0 rounded-lg bg-gold px-3 py-1.5 text-xs font-semibold text-ink hover:bg-gold-dark"
+              >
+                Switch to {PORTAL_LABEL[otherPortal]} →
+              </Link>
+            </div>
           </div>
         )}
 
