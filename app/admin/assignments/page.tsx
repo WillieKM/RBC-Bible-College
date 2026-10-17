@@ -13,10 +13,12 @@ export default async function AdminAssignmentsPage({
   const { error } = await searchParams;
   const supabase = createAdminClient();
 
-  const [{ data: assignments }, { data: submissionCounts }, { data: professors }, { data: courses }, { data: programs }] = await Promise.all([
+  const [{ data: assignments, error: listError }, { data: submissionCounts }, { data: professors }, { data: courses }, { data: programs }] = await Promise.all([
     supabase
       .from("assignments")
-      .select("*, courses(title, code, profiles(full_name))")
+      // Name the FK explicitly: courses also reach profiles through enrollments and
+      // attendance, and an ambiguous embed makes the whole query fail (empty list).
+      .select("*, courses(title, code, profiles:professor_id(full_name))")
       .order("due_date", { ascending: true }),
     supabase.from("submissions").select("assignment_id"),
     supabase.from("profiles").select("id, full_name, email").or("role.eq.professor,secondary_role.eq.professor"),
@@ -47,6 +49,11 @@ export default async function AdminAssignmentsPage({
 
       {error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
+      {listError && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          Could not load assignments: {listError.message}
+        </div>
       )}
 
       {/* Create assignment form */}
