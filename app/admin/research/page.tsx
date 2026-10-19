@@ -18,7 +18,7 @@ export default async function AdminResearchPage({
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Research</h1>
-      <p className="mt-1 text-sm text-slate-500">All research uploads from Master&apos;s and Doctorate scholars.</p>
+      <p className="mt-1 text-sm text-slate-500">All research proposals, theses, and dissertations from Bachelor&apos;s, Master&apos;s, and Doctorate scholars.</p>
       <ResearchReviewList rows={(data ?? []) as unknown as ResearchRow[]} reviewed={!!reviewed} />
     </div>
   );

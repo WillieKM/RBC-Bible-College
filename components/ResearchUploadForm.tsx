@@ -77,7 +77,7 @@ export function ResearchUploadForm() {
       onSubmit={handleSubmit}
       className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4"
     >
-      <h2 className="font-semibold text-slate-800">Submit your dissertation or research</h2>
+      <h2 className="font-semibold text-slate-800">Submit your thesis or research</h2>
 
       {message && (
         <div

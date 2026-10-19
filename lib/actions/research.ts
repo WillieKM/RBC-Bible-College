@@ -33,7 +33,7 @@ export async function createResearchUpload(input: {
   size: number;
 }): Promise<Result<{ path: string; token: string }>> {
   const profile = await requireResearchScholar();
-  if (!profile) return { ok: false, error: "Research uploads are only available to Master's and Doctorate scholars." };
+  if (!profile) return { ok: false, error: "Research submissions are only available to Bachelor's, Master's, and Doctorate scholars." };
   if (!RESEARCH_MIME_TYPES.includes(input.contentType)) return { ok: false, error: "Please upload a PDF or Word document." };
   if (input.size > RESEARCH_MAX_BYTES) return { ok: false, error: "File is too large. The limit is 50MB." };
 
@@ -53,7 +53,7 @@ export async function recordResearchSubmission(input: {
   note: string;
 }): Promise<Result> {
   const profile = await requireResearchScholar();
-  if (!profile) return { ok: false, error: "Research uploads are only available to Master's and Doctorate scholars." };
+  if (!profile) return { ok: false, error: "Research submissions are only available to Bachelor's, Master's, and Doctorate scholars." };
   if (!input.path.startsWith(`research/${profile.id}/`)) return { ok: false, error: "Invalid upload." };
 
   const title = input.title.trim();

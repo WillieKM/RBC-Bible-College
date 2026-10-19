@@ -78,8 +78,8 @@ export default async function StudentHomePage() {
           className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-gold/40 bg-gold/10 px-5 py-4 hover:bg-gold/20"
         >
           <div>
-            <p className="font-semibold text-slate-900">Submit your dissertation or research</p>
-            <p className="text-sm text-slate-600">Upload your proposal, chapters, drafts, or final dissertation for review.</p>
+            <p className="font-semibold text-slate-900">Submit your thesis or research</p>
+            <p className="text-sm text-slate-600">Upload your research proposal, chapters, drafts, or final thesis / dissertation for review.</p>
           </div>
           <span className="shrink-0 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink">Submit →</span>
         </Link>

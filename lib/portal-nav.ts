@@ -1,5 +1,6 @@
 import type { NavGroup } from "@/components/Sidebar";
 import type { Profile, ProgramLevel } from "@/lib/types";
+import { isResearchLevel } from "@/lib/research";
 
 export function adminNavGroups(profile: Profile): NavGroup[] {
   return [
@@ -65,8 +66,8 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
   ];
 }
 
-// Master's scholars get Research alongside Assignments (lecturers may still set
-// assignments); Doctorate scholars get Research in place of Assignments.
+// Bachelor's and Master's scholars get Research alongside Assignments (lecturers
+// may still set assignments); Doctorate scholars get Research in place of Assignments.
 export function studentNavGroups(profile: Profile, programLevel?: ProgramLevel | null): NavGroup[] {
   return [
     {
@@ -76,8 +77,8 @@ export function studentNavGroups(profile: Profile, programLevel?: ProgramLevel |
       label: "Study",
       links: [
         { href: "/student", label: "My Courses" },
-        ...(programLevel === "masters" || programLevel === "doctorate"
-          ? [{ href: "/student/research", label: "Dissertation & Research" }]
+        ...(isResearchLevel(programLevel)
+          ? [{ href: "/student/research", label: "Thesis & Research" }]
           : []),
         ...(programLevel === "doctorate" ? [] : [{ href: "/student/assignments", label: "Assignments" }]),
         { href: "/student/modules", label: "Modules" },

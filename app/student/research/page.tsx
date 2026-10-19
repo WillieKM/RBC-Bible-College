@@ -17,13 +17,13 @@ export default async function StudentResearchPage() {
   if (!isResearchLevel(level)) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dissertation &amp; Research</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Thesis &amp; Research</h1>
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
-            Dissertation and research submissions are for Master&apos;s and Doctorate scholars.
+            Thesis and research submissions are for Bachelor&apos;s, Master&apos;s, and Doctorate scholars.
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            If you are a Master&apos;s or Doctorate scholar, your account isn&apos;t linked to your program yet.
+            If you are in one of these programs, your account isn&apos;t linked to your program yet.
             Please contact the admin office.
           </p>
         </div>
@@ -40,9 +40,9 @@ export default async function StudentResearchPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Dissertation &amp; Research</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Thesis &amp; Research</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Submit your proposal, chapters, drafts, and final dissertation here. Your professor will review each submission.
+        Submit your research proposal, chapters, drafts, and final thesis or dissertation here. Your professor will review each submission.
       </p>
 
       <ResearchUploadForm />

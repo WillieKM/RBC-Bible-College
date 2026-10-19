@@ -11,10 +11,10 @@ export const RESEARCH_MIME_TYPES = [
 ];
 
 export const RESEARCH_KINDS = {
-  proposal: "Proposal",
+  proposal: "Research proposal",
   chapter: "Chapter",
   draft: "Draft",
-  final: "Final dissertation",
+  final: "Final thesis / dissertation",
   other: "Other",
 } as const;
 export type ResearchKind = keyof typeof RESEARCH_KINDS;
@@ -49,7 +49,7 @@ export interface ResearchSubmission {
   created_at: string;
 }
 
-// Only Master's and Doctorate scholars get the Research page.
+// Bachelor's (thesis), Master's, and Doctorate (dissertation) scholars get the Research page.
 export function isResearchLevel(level: ProgramLevel | string | null | undefined): boolean {
-  return level === "masters" || level === "doctorate";
+  return level === "bachelors" || level === "masters" || level === "doctorate";
 }

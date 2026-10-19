@@ -24,7 +24,7 @@ export default async function ProfessorResearchPage({
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Research</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Uploads from Master&apos;s and Doctorate scholars in your courses and the programs you lead.
+        Research proposals, theses, and dissertations from scholars in your courses and the programs you lead.
       </p>
       <ResearchReviewList rows={(data ?? []) as unknown as ResearchRow[]} reviewed={!!reviewed} />
     </div>
