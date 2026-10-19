@@ -22,6 +22,7 @@ import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { headers } from "next/headers";
 import { after } from "next/server";
+import { findAuthUserByEmail } from "@/lib/auth-users";
 
 const TOP_LEVEL_FORM_KEYS = new Set([
   "full_name",
@@ -322,8 +323,7 @@ export async function reviewApplication(formData: FormData) {
       if (!isAlreadyExists) {
         redirect(`/admin/applications?error=${encodeURIComponent(inviteError.message ?? "Could not create account")}`);
       }
-      const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
-      const existingAuth = (authList?.users ?? []).find((u) => u.email === application.email);
+      const existingAuth = await findAuthUserByEmail(admin, application.email, { knownToExist: true });
       if (!existingAuth) {
         redirect(`/admin/applications?error=${encodeURIComponent(`${application.email} already has an auth account but we couldn't retrieve it. This is likely a duplicate application — delete it instead of approving, or check the Supabase dashboard.`)}`);
       }

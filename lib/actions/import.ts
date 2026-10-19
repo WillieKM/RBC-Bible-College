@@ -8,6 +8,7 @@ import { feeForLevel } from "@/lib/fees";
 import { nextSequenceNumber } from "@/lib/sequences";
 import { redirect } from "next/navigation";
 import { createInviteLink } from "@/lib/actions/invite";
+import { findAuthUserByEmail } from "@/lib/auth-users";
 
 type ImportRow = {
   full_name: string;
@@ -82,24 +83,29 @@ export async function bulkImportStudents(formData: FormData) {
 
   for (const row of rows) {
     try {
-      // Skip if user already exists in auth
-      const { data: existing } = await admin.auth.admin.listUsers();
-      const alreadyExists = (existing?.users ?? []).some(
-        (u) => u.email?.toLowerCase() === row.email
-      );
-      if (alreadyExists) {
-        results.push({ email: row.email, status: "skipped", reason: "already has an account" });
-        continue;
-      }
-
-      // createUser creates the auth account; we send our own permanent invite link below.
-      const { data: invited, error: inviteError } = await admin.auth.admin.createUser({
-        email: row.email,
-        email_confirm: true,
-      });
-      if (inviteError || !invited?.user) {
-        results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
-        continue;
+      // Existing login? Skip if it already has a profile; if it doesn't (a
+      // leftover from a duplicate merge or failed invite), reuse it. The old
+      // check read only the first page (50 users) of listUsers.
+      let userId: string;
+      const existing = await findAuthUserByEmail(admin, row.email);
+      if (existing) {
+        const { data: existingProfile } = await admin.from("profiles").select("id").eq("id", existing.id).maybeSingle();
+        if (existingProfile) {
+          results.push({ email: row.email, status: "skipped", reason: "already has an account" });
+          continue;
+        }
+        userId = existing.id;
+      } else {
+        // createUser creates the auth account; we send our own permanent invite link below.
+        const { data: invited, error: inviteError } = await admin.auth.admin.createUser({
+          email: row.email,
+          email_confirm: true,
+        });
+        if (inviteError || !invited?.user) {
+          results.push({ email: row.email, status: "failed", reason: inviteError?.message ?? "invite failed" });
+          continue;
+        }
+        userId = invited.user.id;
       }
 
       // Resolve program
@@ -115,7 +121,7 @@ export async function bulkImportStudents(formData: FormData) {
 
       // Create profile
       await admin.from("profiles").insert({
-        id: invited.user.id,
+        id: userId,
         full_name: row.full_name,
         email: row.email,
         role: "student",
@@ -126,7 +132,7 @@ export async function bulkImportStudents(formData: FormData) {
 
       // Enroll in program modules
       if (programId) {
-        await enrollStudentInProgramModules(admin, invited.user.id, programId);
+        await enrollStudentInProgramModules(admin, userId, programId);
       }
 
       const inviteUrl = await createInviteLink(row.email, row.full_name, "student");
@@ -146,7 +152,7 @@ export async function bulkImportStudents(formData: FormData) {
           const invoiceNumber = `INV-${year}-${String(invSeq + 799).padStart(4, "0")}`;
           const currency = row.region === "usa" ? "$" : "KSh";
           await admin.from("invoices").insert({
-            student_id: invited.user.id,
+            student_id: userId,
             title: `${prog.name} — Program Fees`,
             description: `Tuition fees for ${prog.name} (${row.region === "usa" ? "USA" : "International"} rate: ${currency}${fee.toLocaleString()})`,
             total_amount: fee,

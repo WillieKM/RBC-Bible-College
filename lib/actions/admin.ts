@@ -10,6 +10,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { findAuthUserByEmail } from "@/lib/auth-users";
 
 type SupabaseClient = ReturnType<typeof createAdminClient>;
 
@@ -453,8 +454,7 @@ export async function inviteUser(formData: FormData) {
   } else {
     // The email already has a login. If it has no profile — left behind by a
     // duplicate merge or an earlier failed invite — reuse it instead of failing.
-    const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    const existing = authList?.users.find((u) => u.email?.toLowerCase() === email);
+    const existing = await findAuthUserByEmail(admin, email, { knownToExist: true });
     if (!existing) {
       console.error("[inviteUser] createUser failed:", createError);
       return fail(`Could not create the account: ${createError?.message ?? "unknown error"}`);
