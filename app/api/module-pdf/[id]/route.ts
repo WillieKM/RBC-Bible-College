@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
+import { studentCanSeeModule } from "@/lib/module-audience";
 
 export async function GET(
   req: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
 
   if (!module?.file_url) return new NextResponse("Not found", { status: 404 });
 
-  // For students, verify the module's audience matches their program level
+  // For students, verify the module is for everyone, their level, or their program
   if (!isProfessorOrAdmin && module.send_audience && module.send_audience !== "all") {
     let programLevel: string | null = null;
     if (profile?.program_id) {
@@ -42,7 +43,7 @@ export async function GET(
         .single();
       programLevel = prog?.program_level ?? null;
     }
-    if (module.send_audience !== programLevel) {
+    if (!studentCanSeeModule(module.send_audience, programLevel, profile?.program_id ?? null)) {
       return new NextResponse("Not found", { status: 404 });
     }
   }

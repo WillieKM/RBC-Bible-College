@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { ModuleSearch } from "@/components/ModuleSearch";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
+import { studentAudienceFilter } from "@/lib/module-audience";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -27,9 +28,8 @@ export default async function StudentModulesPage() {
     .select("*")
     .order("sent_at", { ascending: false, nullsFirst: false });
 
-  if (programLevel) {
-    query = query.or(`send_audience.eq.all,send_audience.eq.${programLevel},send_audience.is.null`);
-  }
+  // Only modules for everyone, this student's level, or this student's program.
+  query = query.or(studentAudienceFilter(programLevel, profile.program_id));
 
   const { data } = await query;
 

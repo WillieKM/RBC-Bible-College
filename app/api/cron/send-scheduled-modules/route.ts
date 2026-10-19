@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendModuleFileEmail } from "@/lib/email";
+import { audienceProgramId } from "@/lib/module-audience";
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -40,10 +41,11 @@ export async function GET(request: Request) {
     let professorEmails: { full_name: string; email: string }[] = [];
 
     if (audience !== "all") {
-      const { data: matchingPrograms } = await admin
-        .from("programs")
-        .select("id")
-        .eq("program_level", audience);
+      // One specific program ("program:<id>"), or every program at a level.
+      const singleProgram = audienceProgramId(audience);
+      const { data: matchingPrograms } = singleProgram
+        ? { data: [{ id: singleProgram }] }
+        : await admin.from("programs").select("id").eq("program_level", audience);
 
       const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
       studentQuery = studentQuery.in("program_id", programIds.length > 0 ? programIds : noMatch);

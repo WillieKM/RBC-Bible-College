@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadModule, updateModule, deleteModule, sendModuleNow } from "@/lib/actions/modules";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ModuleAudienceOptions } from "@/components/ModuleAudienceOptions";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
 
@@ -12,13 +13,15 @@ export default async function AdminModulesPage({
   const { error, edit, sent } = await searchParams;
   const admin = createAdminClient();
 
-  const [{ data }, { data: professors }] = await Promise.all([
+  const [{ data }, { data: professors }, { data: programs }] = await Promise.all([
     admin.from("module_files").select("*").order("created_at", { ascending: false }),
     admin.from("profiles").select("id, full_name").or("role.eq.professor,secondary_role.eq.professor").order("full_name"),
+    admin.from("programs").select("id, name").order("name"),
   ]);
 
   const modules = (data ?? []) as ModuleFile[];
   const profList = (professors ?? []) as { id: string; full_name: string }[];
+  const programList = (programs ?? []) as { id: string; name: string }[];
 
   return (
     <div>
@@ -79,6 +82,20 @@ export default async function AdminModulesPage({
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
+        </div>
+        <div>
+          <label htmlFor="upload_audience" className="block text-sm font-medium text-slate-700">Who can see this *</label>
+          <select
+            id="upload_audience"
+            name="send_audience"
+            required
+            defaultValue=""
+            className="mt-1 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="" disabled>Choose a program…</option>
+            <ModuleAudienceOptions programs={programList} professors={profList} includeProfessors={false} />
+          </select>
+          <p className="mt-1 text-xs text-slate-400">Students outside this audience won&apos;t see the module at all.</p>
         </div>
         <div className="flex items-center gap-2">
           <input type="checkbox" name="restrict_download" id="restrict_upload" value="1" className="rounded" />
@@ -147,20 +164,7 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                     >
-                      <optgroup label="Students">
-                        <option value="all">All students</option>
-                        <option value="diploma">Diploma / Certificate only</option>
-                        <option value="bachelors">Bachelor&apos;s only</option>
-                        <option value="masters">Master&apos;s only</option>
-                        <option value="doctorate">Doctorate only</option>
-                      </optgroup>
-                      {profList.length > 0 && (
-                        <optgroup label="Specific Professor">
-                          {profList.map((p) => (
-                            <option key={p.id} value={`prof:${p.id}`}>{p.full_name}</option>
-                          ))}
-                        </optgroup>
-                      )}
+                      <ModuleAudienceOptions programs={programList} professors={profList} />
                     </select>
                   </div>
                 </div>
@@ -225,20 +229,7 @@ export default async function AdminModulesPage({
                       defaultValue={m.send_audience ?? "all"}
                       className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
                     >
-                      <optgroup label="Students">
-                        <option value="all">All students</option>
-                        <option value="diploma">Diploma / Certificate students</option>
-                        <option value="bachelors">Bachelor&apos;s students</option>
-                        <option value="masters">Master&apos;s students</option>
-                        <option value="doctorate">Doctorate students</option>
-                      </optgroup>
-                      {profList.length > 0 && (
-                        <optgroup label="Specific Professor">
-                          {profList.map((p) => (
-                            <option key={p.id} value={`prof:${p.id}`}>{p.full_name}</option>
-                          ))}
-                        </optgroup>
-                      )}
+                      <ModuleAudienceOptions programs={programList} professors={profList} />
                     </select>
                   </div>
                   <DeleteButton

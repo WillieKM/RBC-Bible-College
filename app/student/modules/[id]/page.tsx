@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { studentCanSeeModule } from "@/lib/module-audience";
 
 export default async function ModuleViewerPage({
   params,
@@ -32,9 +33,8 @@ export default async function ModuleViewerPage({
 
   if (!module) notFound();
 
-  // Block access if this module targets a different program level
-  const audience = module.send_audience as string | null;
-  if (audience && audience !== "all" && audience !== programLevel) notFound();
+  // Block access if this module targets a different program or level
+  if (!studentCanSeeModule(module.send_audience as string | null, programLevel, profile.program_id)) notFound();
 
   // #toolbar=0&navpanes=0 suppresses the browser PDF toolbar in Chrome/Edge/Safari
   const viewerSrc = `/api/module-pdf/${id}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;

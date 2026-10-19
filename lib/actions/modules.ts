@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth";
 import { sendModuleFileEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { audienceProgramId, isValidAudience } from "@/lib/module-audience";
 
 export type ModuleAudience = "all" | "diploma" | "bachelors" | "masters" | "doctorate" | string;
 
@@ -24,6 +25,12 @@ export async function uploadModule(formData: FormData) {
   const manualTitle = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const restrictDownload = formData.get("restrict_download") === "1";
+  // Who may see the module. Saved at upload so it's never left blank (blank
+  // used to mean "every student").
+  const audience = String(formData.get("send_audience") || "").trim();
+  if (!isValidAudience(audience)) {
+    redirect(`/admin/modules?error=${encodeURIComponent("Choose who can see this module.")}`);
+  }
 
   // getAll supports both single and multiple file selections
   const files = (formData.getAll("file") as File[]).filter((f) => f instanceof File && f.size > 0);
@@ -53,7 +60,7 @@ export async function uploadModule(formData: FormData) {
     }
 
     const { data: publicUrl } = admin.storage.from("module-files").getPublicUrl(path);
-    rows.push({ title, description, file_url: publicUrl.publicUrl, file_name: file.name, uploaded_by: profile.id, restrict_download: restrictDownload });
+    rows.push({ title, description, file_url: publicUrl.publicUrl, file_name: file.name, uploaded_by: profile.id, restrict_download: restrictDownload, send_audience: audience });
   }
 
   await admin.from("module_files").insert(rows);
@@ -84,7 +91,9 @@ export async function updateModule(formData: FormData) {
     title,
     description,
     send_at: sendAt,
-    send_audience: sendAt ? (sendAudience ?? "all") : null,
+    // Keep the audience even when no send date is set; clearing it made the
+    // module visible to every student.
+    send_audience: sendAudience && isValidAudience(sendAudience) ? sendAudience : "all",
     restrict_download: restrictDownload,
     ...(sendAt ? { sent_at: null } : {}),
   }).eq("id", id);
@@ -133,10 +142,11 @@ async function resolveRecipients(
     return { students: students ?? [], professors: [] };
   }
 
-  const { data: matchingPrograms } = await admin
-    .from("programs")
-    .select("id")
-    .eq("program_level", audience);
+  // One specific program, or every program at a level.
+  const singleProgram = audienceProgramId(audience);
+  const { data: matchingPrograms } = singleProgram
+    ? { data: [{ id: singleProgram }] }
+    : await admin.from("programs").select("id").eq("program_level", audience);
 
   const programIds = (matchingPrograms ?? []).map((p: { id: string }) => p.id);
   const noMatch = ["00000000-0000-0000-0000-000000000000"];
@@ -155,7 +165,8 @@ export async function sendModuleNow(formData: FormData) {
   const admin = createAdminClient();
 
   const moduleId = String(formData.get("module_id") || "");
-  const audience = String(formData.get("send_audience") || "all") as ModuleAudience;
+  const rawAudience = String(formData.get("send_audience") || "all");
+  const audience = (isValidAudience(rawAudience) ? rawAudience : "all") as ModuleAudience;
 
   if (!moduleId) return;
 
