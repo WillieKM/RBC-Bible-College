@@ -2,6 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import type { Announcement, Assignment, Course } from "@/lib/types";
 import Link from "next/link";
+import { getProgramLevel } from "@/lib/research-server";
+import { isResearchLevel } from "@/lib/research";
 
 // Payment details — set matching env vars in Vercel to override
 const ZELLE_CASHAPP = process.env.PAYMENT_ZELLE_CASHAPP || "253-275-8494";
@@ -66,8 +68,22 @@ export default async function StudentHomePage() {
     .filter((a) => a.due_date && a.due_date >= today && submissionMap.get(a.id)?.grade == null)
     .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1));
 
+  const researchScholar = isResearchLevel(await getProgramLevel(profile.program_id));
+
   return (
     <div>
+      {researchScholar && (
+        <Link
+          href="/student/research"
+          className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-gold/40 bg-gold/10 px-5 py-4 hover:bg-gold/20"
+        >
+          <div>
+            <p className="font-semibold text-slate-900">Submit your dissertation or research</p>
+            <p className="text-sm text-slate-600">Upload your proposal, chapters, drafts, or final dissertation for review.</p>
+          </div>
+          <span className="shrink-0 rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink">Submit →</span>
+        </Link>
+      )}
       <h1 className="text-2xl font-bold text-slate-900">My Modules</h1>
       <p className="text-sm text-slate-500">{program ? program.name : "No program assigned yet"}</p>
       {profile.student_number && (

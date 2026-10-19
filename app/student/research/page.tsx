@@ -17,10 +17,14 @@ export default async function StudentResearchPage() {
   if (!isResearchLevel(level)) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Research</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Dissertation &amp; Research</h1>
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
           <p className="text-sm font-medium text-slate-500">
-            Research uploads are for Master&apos;s and Doctorate scholars.
+            Dissertation and research submissions are for Master&apos;s and Doctorate scholars.
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            If you are a Master&apos;s or Doctorate scholar, your account isn&apos;t linked to your program yet.
+            Please contact the admin office.
           </p>
         </div>
       </div>
@@ -36,16 +40,16 @@ export default async function StudentResearchPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Research</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Dissertation &amp; Research</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Upload your proposal, chapters, drafts, and final dissertation. Your professor will review each upload.
+        Submit your proposal, chapters, drafts, and final dissertation here. Your professor will review each submission.
       </p>
 
       <ResearchUploadForm />
 
-      <h2 className="mt-8 font-semibold text-slate-800">Your uploads</h2>
+      <h2 className="mt-8 font-semibold text-slate-800">Your submissions</h2>
       {submissions.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">Nothing uploaded yet.</p>
+        <p className="mt-3 text-sm text-slate-500">Nothing submitted yet.</p>
       ) : (
         <ul className="mt-3 space-y-3">
           {submissions.map((s) => (

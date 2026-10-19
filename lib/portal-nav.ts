@@ -77,7 +77,7 @@ export function studentNavGroups(profile: Profile, programLevel?: ProgramLevel |
       links: [
         { href: "/student", label: "My Courses" },
         ...(programLevel === "masters" || programLevel === "doctorate"
-          ? [{ href: "/student/research", label: "Research" }]
+          ? [{ href: "/student/research", label: "Dissertation & Research" }]
           : []),
         ...(programLevel === "doctorate" ? [] : [{ href: "/student/assignments", label: "Assignments" }]),
         { href: "/student/modules", label: "Modules" },

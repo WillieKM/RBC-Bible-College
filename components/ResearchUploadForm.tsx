@@ -62,7 +62,7 @@ export function ResearchUploadForm() {
       if (!saved.ok) throw new Error(saved.error);
 
       formRef.current?.reset();
-      setMessage({ kind: "ok", text: "Uploaded. Your professor has been notified." });
+      setMessage({ kind: "ok", text: "Submitted. Your professor has been notified." });
       router.refresh();
     } catch (err) {
       setMessage({ kind: "error", text: err instanceof Error ? err.message : "Upload failed. Please try again." });
@@ -77,7 +77,7 @@ export function ResearchUploadForm() {
       onSubmit={handleSubmit}
       className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4"
     >
-      <h2 className="font-semibold text-slate-800">Upload research work</h2>
+      <h2 className="font-semibold text-slate-800">Submit your dissertation or research</h2>
 
       {message && (
         <div
@@ -127,7 +127,7 @@ export function ResearchUploadForm() {
         disabled={busy}
         className="rounded-lg bg-gold px-5 py-2 text-sm font-semibold text-ink hover:bg-gold-dark disabled:opacity-60"
       >
-        {busy ? "Uploading…" : "Upload"}
+        {busy ? "Submitting…" : "Submit"}
       </button>
     </form>
   );
