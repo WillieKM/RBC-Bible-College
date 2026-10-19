@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { uploadModule, updateModule, deleteModule, sendModuleNow } from "@/lib/actions/modules";
+import { uploadModule, updateModule, deleteModule, sendModuleNow, bulkSetModuleAudience } from "@/lib/actions/modules";
+import { PROGRAM_LEVEL_LABELS } from "@/lib/fees";
+import type { ProgramLevel } from "@/lib/types";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ModuleAudienceOptions } from "@/components/ModuleAudienceOptions";
 import Link from "next/link";
@@ -8,9 +10,9 @@ import type { ModuleFile } from "@/lib/types";
 export default async function AdminModulesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; edit?: string; sent?: string }>;
+  searchParams: Promise<{ error?: string; edit?: string; sent?: string; bulk_updated?: string }>;
 }) {
-  const { error, edit, sent } = await searchParams;
+  const { error, edit, sent, bulk_updated } = await searchParams;
   const admin = createAdminClient();
 
   const [{ data }, { data: professors }, { data: programs }] = await Promise.all([
@@ -22,6 +24,18 @@ export default async function AdminModulesPage({
   const modules = (data ?? []) as ModuleFile[];
   const profList = (professors ?? []) as { id: string; full_name: string }[];
   const programList = (programs ?? []) as { id: string; name: string }[];
+  const programName = new Map(programList.map((p) => [p.id, p.name]));
+  const profName = new Map(profList.map((p) => [p.id, p.full_name]));
+
+  // Human-readable "who can see this" for each module row.
+  function audienceLabel(a: string | null): { text: string; warn: boolean } {
+    if (!a) return { text: "No audience set — visible to ALL students", warn: true };
+    if (a === "all") return { text: "All students", warn: false };
+    if (a.startsWith("program:")) return { text: programName.get(a.slice(8)) ?? "Unknown program", warn: false };
+    if (a.startsWith("prof:")) return { text: `Professor: ${profName.get(a.slice(5)) ?? "unknown"}`, warn: false };
+    return { text: `All ${PROGRAM_LEVEL_LABELS[a as ProgramLevel] ?? a} programs`, warn: false };
+  }
+  const unassignedCount = modules.filter((m) => !m.send_audience).length;
 
   return (
     <div>
@@ -110,6 +124,46 @@ export default async function AdminModulesPage({
 
       {/* Module list */}
       <h2 className="mt-8 text-lg font-semibold text-slate-800">Uploaded Modules ({modules.length})</h2>
+
+      {bulk_updated && (
+        <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+          Updated who can see {bulk_updated} module{bulk_updated === "1" ? "" : "s"}.
+        </div>
+      )}
+
+      {/* Bulk audience toolbar — the checkboxes on each module row belong to this form via form="bulk-audience" */}
+      {modules.length > 0 && (
+        <form
+          id="bulk-audience"
+          action={bulkSetModuleAudience}
+          className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+        >
+          <div className="min-w-56 flex-1">
+            <label htmlFor="bulk_audience" className="block text-sm font-medium text-slate-700">
+              Set who can see the ticked modules
+            </label>
+            <select
+              id="bulk_audience"
+              name="send_audience"
+              required
+              defaultValue=""
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="" disabled>Choose a program…</option>
+              <ModuleAudienceOptions programs={programList} professors={profList} includeProfessors={false} />
+            </select>
+          </div>
+          <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">
+            Apply to ticked modules
+          </button>
+          {unassignedCount > 0 && (
+            <p className="w-full text-xs text-amber-700">
+              {unassignedCount} module{unassignedCount === 1 ? " has" : "s have"} no audience yet and {unassignedCount === 1 ? "is" : "are"} visible to every student — marked in amber below.
+            </p>
+          )}
+        </form>
+      )}
+
       <div className="mt-3 space-y-2">
         {modules.length === 0 && (
           <p className="text-sm text-slate-500">No modules uploaded yet.</p>
@@ -187,8 +241,28 @@ export default async function AdminModulesPage({
               /* ── Read-only row ── */
               <div className="px-5 py-4">
                 <div className="flex items-start justify-between">
+                  <input
+                    type="checkbox"
+                    name="ids"
+                    value={m.id}
+                    form="bulk-audience"
+                    aria-label={`Select ${m.title}`}
+                    className="mr-3 mt-1 h-4 w-4 rounded border-slate-300"
+                  />
                   <div className="flex-1">
                     <p className="font-semibold text-slate-900">{m.title}</p>
+                    {(() => {
+                      const aud = audienceLabel(m.send_audience as string | null);
+                      return (
+                        <span
+                          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            aud.warn ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {aud.warn ? "⚠ " : "👥 "}{aud.text}
+                        </span>
+                      );
+                    })()}
                     {m.description && <p className="mt-0.5 text-sm text-slate-500">{m.description}</p>}
                     <div className="mt-1 flex flex-wrap items-center gap-3">
                       <span className="text-xs text-slate-400">{m.file_name}</span>

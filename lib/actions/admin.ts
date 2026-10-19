@@ -11,6 +11,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { findAuthUserByEmail } from "@/lib/auth-users";
+import { notifyEnrolledStudents } from "@/lib/assignment-notify";
+import { getBaseUrl } from "@/lib/site-url";
 
 type SupabaseClient = ReturnType<typeof createAdminClient>;
 
@@ -350,13 +352,31 @@ export async function adminCreateAssignment(formData: FormData) {
   if (!courseId) redirect("/admin/courses");
   if (!title) redirect(`/admin/courses/${courseId}?assignment_error=${encodeURIComponent("Title is required.")}`);
 
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from("assignments")
-    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible, approved_by: approvedBy });
-  if (error) {
+    .insert({ course_id: courseId, title, description, due_date: dueDate, points_possible: pointsPossible, approved_by: approvedBy })
+    .select("id")
+    .single();
+  if (error || !created) {
     console.error("[adminCreateAssignment] insert failed:", error);
-    redirect(`/admin/courses/${courseId}?assignment_error=${encodeURIComponent(`Could not create the assignment: ${error.message}`)}`);
+    redirect(`/admin/courses/${courseId}?assignment_error=${encodeURIComponent(`Could not create the assignment: ${error?.message ?? "unknown error"}`)}`);
   }
+
+  // This form has no notify option, so it previously told nobody. Notify all
+  // enrolled students (bell + email) after the response is sent.
+  const { data: course } = await supabase.from("courses").select("title").eq("id", courseId).maybeSingle();
+  const baseUrl = await getBaseUrl();
+  const notify = () =>
+    notifyEnrolledStudents({
+      courseId,
+      assignmentId: created.id,
+      assignmentTitle: title,
+      courseTitle: course?.title ?? "",
+      dueDate,
+      baseUrl,
+      email: true,
+    }).catch((e) => console.error("[adminCreateAssignment] notify failed:", e));
+  try { after(notify); } catch { void notify(); }
 
   revalidatePath(`/admin/courses/${courseId}`);
   redirect(`/admin/courses/${courseId}`);
@@ -721,6 +741,19 @@ export async function adminCreateAssignmentNotify(formData: FormData) {
     }
   }
 
+  // Bell notification for every enrolled student, whatever email option was chosen.
+  const bell = () =>
+    notifyEnrolledStudents({
+      courseId,
+      assignmentId: assignment.id,
+      assignmentTitle: title,
+      courseTitle: "",
+      dueDate: dueDateRaw || null,
+      baseUrl: "",
+      email: false,
+    }).catch((e) => console.error("[adminCreateAssignmentNotify] bell failed:", e));
+  try { after(bell); } catch { void bell(); }
+
   redirect(`/admin/assignments/${assignment.id}`);
 }
 
@@ -760,8 +793,13 @@ export async function mergeStudentProfiles(formData: FormData) {
     await admin.from("profiles").update(patch).eq("id", keepId);
   }
 
-  // Delete the duplicate profile (auth user is intentionally left — contact Supabase dashboard to remove)
+  // Delete the duplicate profile, then its login. Leaving the login behind
+  // created an orphan (login, no profile) that blocked re-inviting that email.
+  // Its records were moved to keepId above, and a login without a profile
+  // can't use the portal anyway.
   await admin.from("profiles").delete().eq("id", deleteId);
+  const { error: authDeleteError } = await admin.auth.admin.deleteUser(deleteId);
+  if (authDeleteError) console.error("[mergeStudentProfiles] deleting duplicate login failed:", authDeleteError);
   revalidatePath("/admin/students/duplicates");
   revalidatePath("/admin/students");
 }

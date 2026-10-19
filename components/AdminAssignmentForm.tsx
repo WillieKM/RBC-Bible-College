@@ -33,7 +33,7 @@ export function AdminAssignmentForm({
   action: (formData: FormData) => Promise<void>;
 }) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [notifyTarget, setNotifyTarget] = useState("none");
+  const [notifyTarget, setNotifyTarget] = useState("all");
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 

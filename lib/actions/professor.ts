@@ -7,6 +7,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/actions/notifications";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { notifyEnrolledStudents } from "@/lib/assignment-notify";
 
 export async function createAssignment(formData: FormData) {
   const profile = await requireRole(["professor"]);
@@ -65,6 +66,17 @@ export async function createAssignment(formData: FormData) {
       })
     );
   }
+
+  // Bell notification for every enrolled student (emails were sent above).
+  await notifyEnrolledStudents({
+    courseId,
+    assignmentId: newAssignment.id,
+    assignmentTitle: title,
+    courseTitle: course.title ?? "",
+    dueDate,
+    baseUrl: "",
+    email: false,
+  });
 
   revalidatePath(`/professor/courses/${courseId}`);
   revalidatePath("/professor/assignments");

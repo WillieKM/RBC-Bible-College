@@ -209,3 +209,20 @@ export async function sendModuleNow(formData: FormData) {
   revalidatePath("/professor/modules");
   redirect(`/admin/modules?sent=${recipients.length}`);
 }
+
+// Set the audience of several modules at once (Admin → Modules bulk toolbar).
+export async function bulkSetModuleAudience(formData: FormData) {
+  await requireRole(["admin"]);
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  const audience = String(formData.get("send_audience") || "");
+  if (ids.length === 0) redirect(`/admin/modules?error=${encodeURIComponent("Tick at least one module first.")}`);
+  if (!isValidAudience(audience)) redirect(`/admin/modules?error=${encodeURIComponent("Choose who can see the selected modules.")}`);
+
+  const { error } = await createAdminClient().from("module_files").update({ send_audience: audience }).in("id", ids);
+  if (error) redirect(`/admin/modules?error=${encodeURIComponent(`Could not update modules: ${error.message}`)}`);
+
+  revalidatePath("/admin/modules");
+  revalidatePath("/professor/modules");
+  revalidatePath("/student/modules");
+  redirect(`/admin/modules?bulk_updated=${ids.length}`);
+}
