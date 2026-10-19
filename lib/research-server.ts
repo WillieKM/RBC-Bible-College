@@ -1,8 +1,10 @@
 // Server-only: uses the service-role client. Never import from client components.
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile, ProgramLevel } from "@/lib/types";
+import { cache } from "react";
 
-export async function getProgramLevel(programId: string | null): Promise<ProgramLevel | null> {
+// Cached per request: the student layout and DashboardShell both need it.
+export const getProgramLevel = cache(async function getProgramLevel(programId: string | null): Promise<ProgramLevel | null> {
   if (!programId) return null;
   const { data } = await createAdminClient()
     .from("programs")
@@ -10,7 +12,7 @@ export async function getProgramLevel(programId: string | null): Promise<Program
     .eq("id", programId)
     .maybeSingle();
   return (data?.program_level as ProgramLevel | undefined) ?? null;
-}
+});
 
 // Student ids a professor may review: students enrolled in a course they teach,
 // plus students in a program they lead (doctoral scholars may have no courses).

@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import type { Profile, Role } from "@/lib/types";
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+// Cached per request: the layout, page, and helpers all call this, and each
+// call is a round trip to Supabase Auth plus a profile query.
+export const getCurrentProfile = cache(async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
@@ -14,7 +17,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .single();
 
   return profile as Profile | null;
-}
+});
 
 export async function requireRole(roles: Role[]): Promise<Profile> {
   const profile = await getCurrentProfile();
