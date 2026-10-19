@@ -21,8 +21,14 @@ export default async function StudentAssignmentPage({
   // or gated by their enrollment, so read with the service role.
   const supabase = createAdminClient();
 
-  const { data: assignment } = await supabase.from("assignments").select("*, courses(*), profiles!assignments_approved_by_fkey(full_name)").eq("id", id).single();
+  // Approver is looked up separately: embedding via the FK name
+  // (assignments_approved_by_fkey) fails the whole query, and 404s the page,
+  // if the approved_by column was added without that exact constraint.
+  const { data: assignment } = await supabase.from("assignments").select("*, courses(*)").eq("id", id).maybeSingle();
   if (!assignment) notFound();
+  const { data: approver } = assignment.approved_by
+    ? await supabase.from("profiles").select("full_name").eq("id", assignment.approved_by).maybeSingle()
+    : { data: null };
 
   // Confirm enrollment
   const { data: enrollment } = await supabase
@@ -51,7 +57,7 @@ export default async function StudentAssignmentPage({
         <h1 className="text-2xl font-bold text-slate-900">{assignment.title}</h1>
         {assignment.approved_by && (
           <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
-            ✓ Approved by {(assignment.profiles as unknown as { full_name: string } | null)?.full_name ?? "Professor"}
+            ✓ Approved by {approver?.full_name ?? "Professor"}
           </span>
         )}
       </div>
