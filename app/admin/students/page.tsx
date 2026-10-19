@@ -14,7 +14,7 @@ export default async function AdminStudentsPage({
   const admin = createAdminClient();
 
   const [{ data: students }, { data: programs }, { data: courses }, { data: enrollments }, { data: assignments }, { data: submissions }, { data: authData }, { data: allEnrollments }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("role", "student").order("full_name", { ascending: true }),
+    supabase.from("profiles").select("*").or("role.eq.student,secondary_role.eq.student").order("full_name", { ascending: true }),
     supabase.from("programs").select("*"),
     supabase.from("courses").select("id, program_id, credits"),
     supabase.from("enrollments").select("course_id, student_id"),

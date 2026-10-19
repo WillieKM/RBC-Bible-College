@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     let studentQuery = admin
       .from("profiles")
       .select("full_name, email, program_id")
-      .eq("role", "student");
+      .or("role.eq.student,secondary_role.eq.student");
 
     const noMatch = ["00000000-0000-0000-0000-000000000000"];
     let professorEmails: { full_name: string; email: string }[] = [];

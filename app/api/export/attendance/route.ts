@@ -13,7 +13,7 @@ export async function GET() {
 
   const [{ data: students }, { data: enrollments }, { data: courses }, { data: attendance }] =
     await Promise.all([
-      admin.from("profiles").select("id, full_name, student_number, program_id").eq("role", "student").order("full_name"),
+      admin.from("profiles").select("id, full_name, student_number, program_id").or("role.eq.student,secondary_role.eq.student").order("full_name"),
       admin.from("enrollments").select("student_id, course_id"),
       admin.from("courses").select("id, title, code"),
       admin.from("attendance").select("student_id, course_id, present"),

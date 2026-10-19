@@ -60,7 +60,7 @@ export async function sendZoomGroupNow(formData: FormData) {
     const programIds = (programs ?? []).map((p: { id: string }) => p.id);
 
     const { data: students } = programIds.length > 0
-      ? await admin.from("profiles").select("full_name, email").eq("role", "student").in("program_id", programIds)
+      ? await admin.from("profiles").select("full_name, email").or("role.eq.student,secondary_role.eq.student").in("program_id", programIds)
       : { data: [] };
 
     allRecipients = (students ?? []).map((s: { full_name: string; email: string }) => ({ full_name: s.full_name, email: s.email }));
@@ -190,7 +190,7 @@ export async function sendZoomNow(formData: FormData) {
     let studentsQuery = admin
       .from("profiles")
       .select("full_name, email")
-      .eq("role", "student");
+      .or("role.eq.student,secondary_role.eq.student");
 
     if (session.target_audience !== "all") {
       const { data: programs } = await admin
@@ -242,7 +242,7 @@ export async function sendZoomReminder(formData: FormData) {
   if (session.target_audience === "specific") {
     allRecipients = specificReminderRecipients;
   } else {
-    let studentsQuery = admin.from("profiles").select("full_name, email").eq("role", "student");
+    let studentsQuery = admin.from("profiles").select("full_name, email").or("role.eq.student,secondary_role.eq.student");
     if (session.target_audience !== "all") {
       const { data: programs } = await admin.from("programs").select("id").eq("program_level", session.target_audience);
       const ids = (programs ?? []).map((p: { id: string }) => p.id);

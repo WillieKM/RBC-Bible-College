@@ -25,7 +25,7 @@ export async function GET() {
     { data: applications },
     { data: { users: authUsers } },
   ] = await Promise.all([
-    admin.from("profiles").select("id, full_name, student_number, phone, email, region, program_id").eq("role", "student").order("full_name"),
+    admin.from("profiles").select("id, full_name, student_number, phone, email, region, program_id").or("role.eq.student,secondary_role.eq.student").order("full_name"),
     admin.from("programs").select("id, name, fee_usa, fee_international, enrollment_fee_usa, enrollment_fee_international, program_level"),
     admin.from("invoices").select("id, student_id, total_amount"),
     admin.from("payments").select("invoice_id, amount"),

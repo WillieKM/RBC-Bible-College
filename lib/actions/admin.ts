@@ -126,7 +126,7 @@ export async function enrollProgramInModules(formData: FormData) {
   const supabase = createAdminClient();
   const programId = String(formData.get("program_id"));
 
-  const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+  const { data: students } = await supabase.from("profiles").select("id").or("role.eq.student,secondary_role.eq.student").eq("program_id", programId);
   for (const student of students ?? []) {
     await enrollStudentInProgramModules(supabase, student.id, programId);
   }
@@ -159,7 +159,7 @@ export async function syncProgramStudents(formData: FormData) {
     const { data: stranded } = await admin
       .from("profiles")
       .select("id")
-      .eq("role", "student")
+      .or("role.eq.student,secondary_role.eq.student")
       .in("program_id", emptyPrograms.map((p) => p.id));
     if ((stranded ?? []).length > 0) {
       // Changing a student's program is a finance-tier action (see updateStudentProgram).
@@ -174,7 +174,7 @@ export async function syncProgramStudents(formData: FormData) {
 
   const [{ data: modules }, { data: students }] = await Promise.all([
     admin.from("courses").select("id").eq("program_id", programId),
-    admin.from("profiles").select("id").eq("role", "student").eq("program_id", programId),
+    admin.from("profiles").select("id").or("role.eq.student,secondary_role.eq.student").eq("program_id", programId),
   ]);
   const moduleIds = (modules ?? []).map((m) => m.id);
   const studentIds = (students ?? []).map((s) => s.id);
@@ -272,7 +272,7 @@ export async function createCourse(formData: FormData) {
   }
 
   if (programId) {
-    const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+    const { data: students } = await supabase.from("profiles").select("id").or("role.eq.student,secondary_role.eq.student").eq("program_id", programId);
     if (students && students.length > 0) {
       await supabase
         .from("enrollments")
@@ -320,7 +320,7 @@ export async function updateCourse(formData: FormData) {
     .eq("id", id);
 
   if (programId) {
-    const { data: students } = await supabase.from("profiles").select("id").eq("role", "student").eq("program_id", programId);
+    const { data: students } = await supabase.from("profiles").select("id").or("role.eq.student,secondary_role.eq.student").eq("program_id", programId);
     if (students && students.length > 0) {
       await supabase
         .from("enrollments")
@@ -702,7 +702,7 @@ export async function adminCreateAssignmentNotify(formData: FormData) {
         }
       }
     } else if (notifyTarget === "all_students") {
-      const { data: students } = await admin.from("profiles").select("email, full_name").eq("role", "student");
+      const { data: students } = await admin.from("profiles").select("email, full_name").or("role.eq.student,secondary_role.eq.student");
       const recipients = (students ?? []).filter((s) => s.email);
       if (recipients.length > 0) {
         void sendNewAssignmentEmailBulk({ to: recipients.map((r) => r.email), studentNames: recipients.map((r) => r.full_name ?? "Student"), courseTitle, assignmentTitle: title, dueDate: dueDateRaw || null, assignmentUrl });
@@ -908,7 +908,7 @@ export async function sendBulkEmail(formData: FormData) {
 
   if (target === "login:never") {
     const [{ data: studentProfiles }, { data: authData }] = await Promise.all([
-      supabase.from("profiles").select("id, email").eq("role", "student"),
+      supabase.from("profiles").select("id, email").or("role.eq.student,secondary_role.eq.student"),
       supabase.auth.admin.listUsers({ perPage: 1000 }),
     ]);
     const loggedInIds = new Set(
@@ -920,17 +920,17 @@ export async function sendBulkEmail(formData: FormData) {
     const { data: progs } = await supabase.from("programs").select("id").eq("program_level", level);
     const progIds = (progs ?? []).map((p) => p.id as string);
     if (progIds.length > 0) {
-      const { data: recipients } = await supabase.from("profiles").select("email").eq("role", "student").in("program_id", progIds);
+      const { data: recipients } = await supabase.from("profiles").select("email").or("role.eq.student,secondary_role.eq.student").in("program_id", progIds);
       emails = (recipients ?? []).map((r) => r.email);
     }
   } else {
     let query = supabase.from("profiles").select("email");
-    if (target === "students") query = query.eq("role", "student");
+    if (target === "students") query = query.or("role.eq.student,secondary_role.eq.student");
     else if (target === "professors") query = query.or("role.eq.professor,secondary_role.eq.professor");
     else if (target.startsWith("prof:")) query = query.eq("id", target.slice(5));
     else if (target === "all") query = query.in("role", ["student", "professor"]);
-    else if (target.startsWith("payment:")) query = query.eq("role", "student").eq("payment_status", target.slice(8));
-    else if (target.startsWith("region:")) query = query.eq("role", "student").eq("region", target.slice(7));
+    else if (target.startsWith("payment:")) query = query.or("role.eq.student,secondary_role.eq.student").eq("payment_status", target.slice(8));
+    else if (target.startsWith("region:")) query = query.or("role.eq.student,secondary_role.eq.student").eq("region", target.slice(7));
     else query = query.in("role", ["student", "professor"]);
 
     const { data: recipients } = await query;

@@ -13,7 +13,7 @@ export async function GET() {
   const { data: students } = await admin
     .from("profiles")
     .select("full_name, email, student_number, role, payment_status, completed_at, created_at, programs(name)")
-    .eq("role", "student")
+    .or("role.eq.student,secondary_role.eq.student")
     .order("created_at", { ascending: false });
 
   const rows = (students ?? []).map((s) => {

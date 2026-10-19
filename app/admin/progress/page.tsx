@@ -24,7 +24,7 @@ export default async function AdminProgressPage() {
     { data: attendance },
     { data: invoices },
   ] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, email, student_number").eq("role", "student").order("full_name"),
+    supabase.from("profiles").select("id, full_name, email, student_number").or("role.eq.student,secondary_role.eq.student").order("full_name"),
     supabase.from("enrollments").select("course_id, student_id"),
     supabase.from("assignments").select("id, course_id, points_possible"),
     supabase.from("submissions").select("assignment_id, student_id, grade"),

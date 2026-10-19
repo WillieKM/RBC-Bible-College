@@ -26,7 +26,7 @@ export default async function AdminHomePage() {
     supabase.from("applications").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("programs").select("*", { count: "exact", head: true }),
     supabase.from("courses").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).or("role.eq.student,secondary_role.eq.student"),
     supabase.from("profiles").select("*", { count: "exact", head: true }).or("role.eq.professor,secondary_role.eq.professor"),
 
     supabase
@@ -56,8 +56,8 @@ export default async function AdminHomePage() {
 
     admin.from("invoices").select("id, total_amount, profiles(region)"),
     admin.from("payments").select("invoice_id, amount"),
-    admin.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student").not("completed_at", "is", null),
-    supabase.from("profiles").select("id, program_id").eq("role", "student"),
+    admin.from("profiles").select("*", { count: "exact", head: true }).or("role.eq.student,secondary_role.eq.student").not("completed_at", "is", null),
+    supabase.from("profiles").select("id, program_id").or("role.eq.student,secondary_role.eq.student"),
     supabase.from("programs").select("id, name").order("name", { ascending: true }),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);

@@ -18,7 +18,7 @@ export default async function AdminInvoicesPage({
 
   const [{ data: invoicesRaw }, { data: students }, { data: programs }] = await Promise.all([
     supabase.from("invoices").select("*, profiles(full_name, email, region, program_id), payments(amount)").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, full_name, email, program_id, region").eq("role", "student").order("full_name"),
+    supabase.from("profiles").select("id, full_name, email, program_id, region").or("role.eq.student,secondary_role.eq.student").order("full_name"),
     supabase.from("programs").select("id, name, program_level, fee_international, fee_usa"),
   ]);
 

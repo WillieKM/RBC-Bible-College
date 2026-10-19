@@ -138,7 +138,7 @@ async function resolveRecipients(
   }
 
   if (audience === "all") {
-    const { data: students } = await admin.from("profiles").select("full_name, email").eq("role", "student");
+    const { data: students } = await admin.from("profiles").select("full_name, email").or("role.eq.student,secondary_role.eq.student");
     return { students: students ?? [], professors: [] };
   }
 
@@ -154,7 +154,7 @@ async function resolveRecipients(
   const { data: students } = await admin
     .from("profiles")
     .select("full_name, email")
-    .eq("role", "student")
+    .or("role.eq.student,secondary_role.eq.student")
     .in("program_id", programIds.length > 0 ? programIds : noMatch);
 
   return { students: students ?? [], professors: [] };

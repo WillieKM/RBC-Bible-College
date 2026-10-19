@@ -20,7 +20,7 @@ export default async function AdminCourseDetailPage({
 
   const [{ data: enrollments }, { data: students }, { data: programs }, { data: professors }, { data: otherModules }, { data: assignments }] = await Promise.all([
     supabase.from("enrollments").select("*, profiles(*)").eq("course_id", id),
-    supabase.from("profiles").select("*").eq("role", "student"),
+    supabase.from("profiles").select("*").or("role.eq.student,secondary_role.eq.student"),
     supabase.from("programs").select("*").order("name", { ascending: true }),
     supabase.from("profiles").select("*").or("role.eq.professor,secondary_role.eq.professor"),
     supabase.from("courses").select("*").neq("id", id).order("code", { ascending: true }),

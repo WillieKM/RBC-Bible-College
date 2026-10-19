@@ -12,7 +12,7 @@ export default async function AdminAttendanceReportPage() {
     { data: courses },
     { data: attendance },
   ] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, student_number, program_id").eq("role", "student").order("full_name"),
+    supabase.from("profiles").select("id, full_name, student_number, program_id").or("role.eq.student,secondary_role.eq.student").order("full_name"),
     supabase.from("enrollments").select("student_id, course_id"),
     supabase.from("courses").select("id, title, code, program_id"),
     supabase.from("attendance").select("student_id, course_id, present"),

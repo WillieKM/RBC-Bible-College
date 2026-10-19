@@ -19,9 +19,9 @@ export default async function AdminProgramDetailPage({
   const [{ data: program }, { data: modules }, { data: students }, { data: professors }, { data: allStudents }] = await Promise.all([
     supabase.from("programs").select("*").eq("id", id).single(),
     supabase.from("courses").select("*").eq("program_id", id).order("code", { ascending: true }),
-    supabase.from("profiles").select("*").eq("role", "student").eq("program_id", id),
+    supabase.from("profiles").select("*").or("role.eq.student,secondary_role.eq.student").eq("program_id", id),
     supabase.from("profiles").select("*").or("role.eq.professor,secondary_role.eq.professor"),
-    supabase.from("profiles").select("*").eq("role", "student"),
+    supabase.from("profiles").select("*").or("role.eq.student,secondary_role.eq.student"),
   ]);
 
   if (!program) notFound();

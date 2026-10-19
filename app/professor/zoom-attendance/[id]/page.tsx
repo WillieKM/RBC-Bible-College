@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import type { ZoomSession } from "@/lib/types";
 
 async function getStudents(admin: ReturnType<typeof createAdminClient>, audience: string) {
-  let query = admin.from("profiles").select("id, full_name, email").eq("role", "student").order("full_name");
+  let query = admin.from("profiles").select("id, full_name, email").or("role.eq.student,secondary_role.eq.student").order("full_name");
 
   if (audience === "all") return query;
 

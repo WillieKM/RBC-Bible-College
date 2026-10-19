@@ -105,7 +105,7 @@ export async function GET(request: Request) {
       let studentsQuery = admin
         .from("profiles")
         .select("full_name, email")
-        .eq("role", "student");
+        .or("role.eq.student,secondary_role.eq.student");
 
       if (session.target_audience !== "all") {
         const { data: programs } = await admin
