@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import type { Announcement, Assignment, Course } from "@/lib/types";
 import Link from "next/link";
@@ -10,7 +10,10 @@ const MPESA_ACCOUNT = process.env.MPESA_ACCOUNT         || "249679";
 
 export default async function StudentHomePage() {
   const profile = await requireRole(["student"]);
-  const supabase = await createClient();
+  // Live RLS doesn't reliably let students read their enrollments/courses/assignments
+  // (same as professors, see 6745ca7). Every query below is scoped to this student
+  // or gated by their enrollment, so read with the service role.
+  const supabase = createAdminClient();
 
   const [{ data: enrollments }, { data: program }, { data: programCourses }, { data: announcements }, { data: invoices }] = await Promise.all([
     supabase

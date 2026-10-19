@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { submitAssignment } from "@/lib/actions/student";
 import { resolveSignedFileUrl } from "@/lib/storage";
@@ -11,12 +11,15 @@ export default async function StudentAssignmentPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ submitted?: string; submit_error?: string }>;
 }) {
   const profile = await requireRole(["student"]);
   const { id } = await params;
-  const { submitted } = await searchParams;
-  const supabase = await createClient();
+  const { submitted, submit_error } = await searchParams;
+  // Live RLS doesn't reliably let students read their enrollments/courses/assignments
+  // (same as professors, see 6745ca7). Every query below is scoped to this student
+  // or gated by their enrollment, so read with the service role.
+  const supabase = createAdminClient();
 
   const { data: assignment } = await supabase.from("assignments").select("*, courses(*), profiles!assignments_approved_by_fkey(full_name)").eq("id", id).single();
   if (!assignment) notFound();
@@ -60,6 +63,9 @@ export default async function StudentAssignmentPage({
         {assignment.points_possible ? ` · ${assignment.points_possible} pts` : ""}
       </p>
 
+      {submit_error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{submit_error}</div>
+      )}
       {submitted && (
         <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 font-medium">
           ✓ Your work was received. Your professor will review it and give you a grade — you&apos;ll get an email when it&apos;s ready.

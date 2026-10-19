@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { formatRelativeDue } from "@/lib/format";
 import type { Assignment } from "@/lib/types";
@@ -39,7 +39,10 @@ const STATUS_ORDER: Status[] = ["overdue", "due-soon", "pending", "submitted", "
 
 export default async function StudentAssignmentsPage() {
   const profile = await requireRole(["student"]);
-  const supabase = await createClient();
+  // Live RLS doesn't reliably let students read their enrollments/courses/assignments
+  // (same as professors, see 6745ca7). Every query below is scoped to this student
+  // or gated by their enrollment, so read with the service role.
+  const supabase = createAdminClient();
 
   const { data: enrollments } = await supabase
     .from("enrollments")

@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { sendNewSubmissionEmail, sendSubmissionConfirmationEmail, sendStudentInquiryEmail } from "@/lib/email";
@@ -10,9 +9,14 @@ import { redirect } from "next/navigation";
 
 export async function submitAssignment(formData: FormData) {
   const profile = await requireRole(["student"]);
-  const supabase = await createClient();
+  // Live RLS doesn't reliably let students read assignments (see the student
+  // pages), so the lookup found nothing and the action returned without saving.
+  // Use the service role and check enrollment explicitly below.
+  const supabase = createAdminClient();
 
   const assignmentId = String(formData.get("assignment_id"));
+  const fail = (message: string): never =>
+    redirect(`/student/assignments/${assignmentId}?submit_error=${encodeURIComponent(message)}`);
   const content = String(formData.get("content") || "").trim() || null;
   const shareLink = String(formData.get("share_link") || "").trim() || null;
   const file = formData.get("file") as File | null;
@@ -21,18 +25,30 @@ export async function submitAssignment(formData: FormData) {
     .from("assignments")
     .select("*, courses(*, professor:professor_id(*))")
     .eq("id", assignmentId)
-    .single();
-  if (!assignment) return;
+    .maybeSingle();
+  if (!assignment) return fail("This assignment could not be found.");
+
+  const { data: enrollment } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("course_id", assignment.course_id)
+    .eq("student_id", profile.id)
+    .maybeSingle();
+  if (!enrollment) return fail("You are not enrolled in this assignment's course.");
 
   // Share link takes priority; fall back to file upload if no link given
   let fileUrl: string | null = shareLink;
   if (!shareLink && file && file.size > 0) {
     const path = `${profile.id}/${assignmentId}/${file.name}`;
     const { error: uploadError } = await supabase.storage.from("submissions").upload(path, file, { upsert: true });
-    if (!uploadError) fileUrl = path;
+    if (uploadError) {
+      console.error("[submitAssignment] upload failed:", uploadError);
+      return fail("Your file could not be uploaded. Please try again, or submit a share link instead.");
+    }
+    fileUrl = path;
   }
 
-  await supabase.from("submissions").upsert(
+  const { error: saveError } = await supabase.from("submissions").upsert(
     {
       assignment_id: assignmentId,
       student_id: profile.id,
@@ -42,6 +58,10 @@ export async function submitAssignment(formData: FormData) {
     },
     { onConflict: "assignment_id,student_id" }
   );
+  if (saveError) {
+    console.error("[submitAssignment] save failed:", saveError);
+    return fail(`Your submission could not be saved: ${saveError.message}`);
+  }
 
   const professor = assignment.courses?.professor;
   if (professor) {
