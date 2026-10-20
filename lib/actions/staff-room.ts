@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { STAFF_FILES_BUCKET, STAFF_FILE_MAX_BYTES, STAFF_MAX_FILES, staffFileType } from "@/lib/staff-room";
 
 // requireRole(["professor"]) admits professors, dual-access professors, and admins.
 async function requireStaff() {
@@ -13,6 +14,35 @@ async function requireStaff() {
 
 function staffRoomPath(role: string) {
   return role === "admin" ? "/admin/staff-room" : "/professor/staff-room";
+}
+
+// Step 1 of attaching a file: a one-time signed URL so the browser uploads
+// straight to Storage (files can exceed Vercel's 4.5MB request limit).
+export async function createStaffUpload(input: {
+  fileName: string;
+  size: number;
+}): Promise<{ ok: true; path: string; token: string; contentType: string } | { ok: false; error: string }> {
+  const profile = await requireStaff();
+  const contentType = staffFileType(input.fileName);
+  if (!contentType) return { ok: false, error: `"${input.fileName}" isn't a supported file type.` };
+  if (input.size > STAFF_FILE_MAX_BYTES) return { ok: false, error: `"${input.fileName}" is larger than 50MB.` };
+
+  const safeName = input.fileName.replace(/[^\w.\-]+/g, "_").slice(-120);
+  const path = `staff-room/${profile.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+  const { data, error } = await createAdminClient().storage.from(STAFF_FILES_BUCKET).createSignedUploadUrl(path);
+  if (error || !data) return { ok: false, error: "Could not start the upload. Please try again." };
+  return { ok: true, path: data.path, token: data.token, contentType };
+}
+
+// Attachments arrive as parallel "attachment_path"/"attachment_name" fields;
+// only paths this user was issued (staff-room/<their id>/...) are accepted.
+function attachmentsFrom(formData: FormData, uploaderId: string) {
+  const paths = formData.getAll("attachment_path").map(String);
+  const names = formData.getAll("attachment_name").map(String);
+  return paths
+    .map((path, i) => ({ file_path: path, file_name: names[i] || path.split("/").pop() || "file" }))
+    .filter((a) => a.file_path.startsWith(`staff-room/${uploaderId}/`))
+    .slice(0, STAFF_MAX_FILES);
 }
 
 function revalidateStaffRoom() {
@@ -39,6 +69,14 @@ export async function createStaffPost(formData: FormData) {
   }
 
   const postId: string = post.id;
+
+  const files = attachmentsFrom(formData, profile.id);
+  if (files.length > 0) {
+    const { error: attachError } = await admin
+      .from("staff_room_attachments")
+      .insert(files.map((f) => ({ ...f, post_id: postId })));
+    if (attachError) console.error("[createStaffPost] attachments insert failed:", attachError);
+  }
 
   // Bell notification for every other staff member, after the response.
   const notifyStaff = async () => {
@@ -83,10 +121,22 @@ export async function replyStaffPost(formData: FormData) {
     .maybeSingle();
   if (!parent || parent.parent_id) redirect(back);
 
-  const { error } = await admin.from("staff_room_posts").insert({ author_id: profile.id, parent_id: parentId, body });
-  if (error) {
+  const { data: reply, error } = await admin
+    .from("staff_room_posts")
+    .insert({ author_id: profile.id, parent_id: parentId, body })
+    .select("id")
+    .single();
+  if (error || !reply) {
     console.error("[replyStaffPost] insert failed:", error);
-    redirect(`${back}?error=${encodeURIComponent(`Could not reply: ${error.message}`)}`);
+    redirect(`${back}?error=${encodeURIComponent(`Could not reply: ${error?.message ?? "unknown error"}`)}`);
+  }
+
+  const files = attachmentsFrom(formData, profile.id);
+  if (files.length > 0) {
+    const { error: attachError } = await admin
+      .from("staff_room_attachments")
+      .insert(files.map((f) => ({ ...f, post_id: reply.id })));
+    if (attachError) console.error("[replyStaffPost] attachments insert failed:", attachError);
   }
 
   // Let the topic's author know, unless they're replying to themselves.
@@ -114,6 +164,12 @@ export async function deleteStaffPost(formData: FormData) {
   const { data: post } = await admin.from("staff_room_posts").select("author_id").eq("id", id).maybeSingle();
   // Authors delete their own posts; admins can delete any. Replies cascade.
   if (post && (post.author_id === profile.id || profile.role === "admin")) {
+    // Collect files on the post and its replies before the rows cascade away.
+    const { data: replies } = await admin.from("staff_room_posts").select("id").eq("parent_id", id);
+    const postIds = [id, ...(replies ?? []).map((r) => r.id)];
+    const { data: files } = await admin.from("staff_room_attachments").select("file_path").in("post_id", postIds);
+    if (files?.length) await admin.storage.from(STAFF_FILES_BUCKET).remove(files.map((f) => f.file_path));
+
     await admin.from("staff_room_posts").delete().eq("id", id);
   }
 

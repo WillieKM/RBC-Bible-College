@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createStaffPost, deleteStaffPost, replyStaffPost, togglePinStaffPost } from "@/lib/actions/staff-room";
+import { deleteStaffPost, togglePinStaffPost } from "@/lib/actions/staff-room";
+import { StaffPostForm } from "@/components/StaffPostForm";
 import { DeleteButton } from "@/components/DeleteButton";
 import type { Profile } from "@/lib/types";
 
@@ -14,9 +15,6 @@ type Post = {
   author: { full_name: string; role: string } | null;
 };
 
-const inputClass =
-  "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold";
-
 function when(d: string) {
   return new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
@@ -28,6 +26,33 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
     .select("*, author:author_id(full_name, role)")
     .order("created_at", { ascending: true });
   const all = (data ?? []) as unknown as Post[];
+
+  const { data: fileRows } = await createAdminClient()
+    .from("staff_room_attachments")
+    .select("id, post_id, file_name")
+    .order("created_at", { ascending: true });
+  const filesByPost = new Map<string, { id: string; file_name: string }[]>();
+  for (const f of fileRows ?? []) {
+    filesByPost.set(f.post_id, [...(filesByPost.get(f.post_id) ?? []), { id: f.id, file_name: f.file_name }]);
+  }
+  const attachments = (postId: string) => {
+    const files = filesByPost.get(postId) ?? [];
+    if (files.length === 0) return null;
+    return (
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {files.map((f) => (
+          <li key={f.id}>
+            <a
+              href={`/api/staff-file/${f.id}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-gold hover:text-gold-dark"
+            >
+              📎 {f.file_name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   const repliesByPost = new Map<string, Post[]>();
   for (const p of all) {
@@ -57,14 +82,7 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
-      <form action={createStaffPost} className="mt-6 space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="font-semibold text-slate-800">Start a topic</h2>
-        <input name="title" required placeholder="Topic, e.g. Exam timetable for next term" className={inputClass} />
-        <textarea name="body" rows={3} required placeholder="Write your message…" className={inputClass} />
-        <div className="flex justify-end">
-          <button className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-dark">Post</button>
-        </div>
-      </form>
+      <StaffPostForm mode="topic" />
 
       <div className="mt-6 space-y-4">
         {topics.length === 0 && <p className="text-sm text-slate-400">No topics yet. Start the first one above.</p>}
@@ -104,6 +122,7 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
                 </div>
               </div>
               <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{t.body}</p>
+              {attachments(t.id)}
 
               {replies.length > 0 && (
                 <div className="mt-4 space-y-3 border-l-2 border-slate-100 pl-4">
@@ -114,6 +133,7 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
                           <span className="font-semibold text-slate-700">{r.author?.full_name ?? "Former staff"}</span> · {when(r.created_at)}
                         </p>
                         <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700">{r.body}</p>
+                        {attachments(r.id)}
                       </div>
                       {canDelete(r) && (
                         <form action={deleteStaffPost}>
@@ -126,13 +146,7 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
                 </div>
               )}
 
-              <form action={replyStaffPost} className="mt-4 flex gap-2">
-                <input type="hidden" name="parent_id" value={t.id} />
-                <input name="body" required placeholder="Write a reply…" className={inputClass} />
-                <button className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                  Reply
-                </button>
-              </form>
+              <StaffPostForm mode="reply" parentId={t.id} />
             </article>
           );
         })}
