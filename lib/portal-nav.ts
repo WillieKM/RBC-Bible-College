@@ -47,6 +47,7 @@ export function adminNavGroups(profile: Profile): NavGroup[] {
     {
       label: "Community",
       links: [
+        { href: "/admin/staff-room", label: "Staff Room" },
         { href: "/admin/prayers", label: "Prayer Board" },
         { href: "/admin/announcements", label: "Announcements" },
         { href: "/admin/library", label: "Library" },
@@ -138,6 +139,7 @@ export function professorNavGroups(): NavGroup[] {
     {
       label: "Community",
       links: [
+        { href: "/professor/staff-room", label: "Staff Room" },
         { href: "/professor/announcements", label: "Announcements" },
         { href: "/professor/prayers", label: "Prayer Board" },
         { href: "/professor/library", label: "Library" },
