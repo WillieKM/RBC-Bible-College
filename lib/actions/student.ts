@@ -63,6 +63,9 @@ export async function submitAssignment(formData: FormData) {
     return fail(`Your submission could not be saved: ${saveError.message}`);
   }
 
+  // Submitted: the autosaved draft is no longer needed.
+  await supabase.from("assignment_drafts").delete().eq("student_id", profile.id).eq("assignment_id", assignmentId);
+
   const professor = assignment.courses?.professor;
   if (professor) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -97,6 +100,37 @@ export async function submitAssignment(formData: FormData) {
   revalidatePath(`/professor/assignments/${assignmentId}`);
   revalidatePath("/professor/assignments");
   redirect(`/student/assignments/${assignmentId}?submitted=1`);
+}
+
+// Autosave for the assignment "Response" box. Called from the browser every few
+// seconds while the scholar types; restored when they come back.
+export async function saveAssignmentDraft(input: {
+  assignmentId: string;
+  content: string;
+}): Promise<{ ok: true; savedAt: string } | { ok: false; error: string }> {
+  const profile = await requireRole(["student"]);
+  const admin = createAdminClient();
+
+  const { data: assignment } = await admin.from("assignments").select("course_id").eq("id", input.assignmentId).maybeSingle();
+  if (!assignment) return { ok: false, error: "Assignment not found." };
+  const { data: enrollment } = await admin
+    .from("enrollments")
+    .select("id")
+    .eq("course_id", assignment.course_id)
+    .eq("student_id", profile.id)
+    .maybeSingle();
+  if (!enrollment) return { ok: false, error: "You are not enrolled in this course." };
+
+  const savedAt = new Date().toISOString();
+  const { error } = await admin.from("assignment_drafts").upsert(
+    { student_id: profile.id, assignment_id: input.assignmentId, content: input.content.slice(0, 200_000), updated_at: savedAt },
+    { onConflict: "student_id,assignment_id" }
+  );
+  if (error) {
+    console.error("[saveAssignmentDraft] upsert failed:", error);
+    return { ok: false, error: "Couldn't save your draft." };
+  }
+  return { ok: true, savedAt };
 }
 
 export async function sendStudentInquiry(formData: FormData) {

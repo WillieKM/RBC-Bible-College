@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { submitAssignment } from "@/lib/actions/student";
 import { resolveSignedFileUrl } from "@/lib/storage";
 import { SubmitAssignmentButton } from "@/components/SubmitAssignmentButton";
+import { ResponseAutosave } from "@/components/ResponseAutosave";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -45,6 +46,17 @@ export default async function StudentAssignmentPage({
     .eq("assignment_id", id)
     .eq("student_id", profile.id)
     .single();
+
+  // Autosaved draft: shown instead of the last submission when it's newer.
+  const { data: draft } = await supabase
+    .from("assignment_drafts")
+    .select("content, updated_at")
+    .eq("assignment_id", id)
+    .eq("student_id", profile.id)
+    .maybeSingle();
+  const draftIsNewer =
+    !!draft && (!submission?.submitted_at || new Date(draft.updated_at) > new Date(submission.submitted_at));
+  const responseInitial = draftIsNewer ? draft!.content : (submission?.content ?? "");
 
   const fileUrl = await resolveSignedFileUrl(supabase, "submissions", submission?.file_url ?? null);
 
@@ -90,17 +102,19 @@ export default async function StudentAssignmentPage({
       <h2 className="mt-6 text-lg font-semibold text-slate-800">
         {submission ? "Your Submission" : "Submit Your Work"}
       </h2>
-      <form action={submitAssignment} encType="multipart/form-data" className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <form id={`submit-form-${assignment.id}`} action={submitAssignment} encType="multipart/form-data" className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="assignment_id" value={assignment.id} />
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Response</label>
-          <textarea
-            name="content"
-            rows={6}
-            defaultValue={submission?.content ?? ""}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </div>
+        {draftIsNewer && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Welcome back — we restored the draft you were working on. It isn&apos;t submitted yet: press{" "}
+            <strong>{submission ? "Resubmit" : "Submit"}</strong> when you&apos;re finished.
+          </p>
+        )}
+        <ResponseAutosave
+          assignmentId={assignment.id}
+          initialValue={responseInitial}
+          restoredAt={draftIsNewer ? draft!.updated_at : null}
+        />
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Share link <span className="font-normal text-slate-400">(Google Drive, OneDrive, Dropbox, etc. — optional)</span>
