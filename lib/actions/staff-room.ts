@@ -5,16 +5,20 @@ import { requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { isLecturer } from "@/lib/staff-room";
 import { STAFF_FILES_BUCKET, STAFF_FILE_MAX_BYTES, STAFF_MAX_FILES, staffFileType } from "@/lib/staff-room";
 
-// requireRole(["professor"]) admits professors, dual-access professors, and admins.
+// The Staff Room is for lecturers only — at the lecturers' request, admins are
+// excluded. (requireRole alone always admits admins, so check explicitly; an
+// admin who also lectures via secondary_role still counts as a lecturer.)
 async function requireStaff() {
-  return requireRole(["professor"]);
+  const profile = await requireRole(["professor"]);
+  if (!isLecturer(profile)) redirect("/admin");
+  return profile;
 }
 
-function staffRoomPath(role: string) {
-  return role === "admin" ? "/admin/staff-room" : "/professor/staff-room";
-}
+const STAFF_ROOM = "/professor/staff-room";
+const staffRoomPath = (_role?: string) => STAFF_ROOM;
 
 // Step 1 of attaching a file: a one-time signed URL so the browser uploads
 // straight to Storage (files can exceed Vercel's 4.5MB request limit).
@@ -46,8 +50,7 @@ function attachmentsFrom(formData: FormData, uploaderId: string) {
 }
 
 function revalidateStaffRoom() {
-  revalidatePath("/admin/staff-room");
-  revalidatePath("/professor/staff-room");
+  revalidatePath(STAFF_ROOM);
 }
 
 export async function createStaffPost(formData: FormData) {
@@ -83,7 +86,7 @@ export async function createStaffPost(formData: FormData) {
     const { data: staff } = await admin
       .from("profiles")
       .select("id, role")
-      .or("role.eq.admin,role.eq.professor,secondary_role.eq.professor")
+      .or("role.eq.professor,secondary_role.eq.professor")
       .neq("id", profile.id);
     if (!staff?.length) return;
     await admin.from("notifications").insert(
@@ -162,8 +165,8 @@ export async function deleteStaffPost(formData: FormData) {
 
   const admin = createAdminClient();
   const { data: post } = await admin.from("staff_room_posts").select("author_id").eq("id", id).maybeSingle();
-  // Authors delete their own posts; admins can delete any. Replies cascade.
-  if (post && (post.author_id === profile.id || profile.role === "admin")) {
+  // Authors delete their own posts. Replies cascade.
+  if (post && post.author_id === profile.id) {
     // Collect files on the post and its replies before the rows cascade away.
     const { data: replies } = await admin.from("staff_room_posts").select("id").eq("parent_id", id);
     const postIds = [id, ...(replies ?? []).map((r) => r.id)];
@@ -178,12 +181,12 @@ export async function deleteStaffPost(formData: FormData) {
 }
 
 export async function togglePinStaffPost(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireStaff();
   const id = String(formData.get("id") || "");
   const pinned = formData.get("pinned") === "true";
   if (id) {
     await createAdminClient().from("staff_room_posts").update({ pinned: !pinned }).eq("id", id).is("parent_id", null);
   }
   revalidateStaffRoom();
-  redirect("/admin/staff-room");
+  redirect(STAFF_ROOM);
 }

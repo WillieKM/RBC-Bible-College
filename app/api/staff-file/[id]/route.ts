@@ -1,15 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth";
-import { STAFF_FILES_BUCKET } from "@/lib/staff-room";
+import { STAFF_FILES_BUCKET, isLecturer } from "@/lib/staff-room";
 import { NextResponse } from "next/server";
 
-// Staff Room attachments: staff only. Redirects to a short-lived signed URL
+// Staff Room attachments: lecturers only. Redirects to a short-lived signed URL
 // rather than proxying, since files can exceed Vercel's response size limit.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const profile = await getCurrentProfile();
-  const isStaff =
-    !!profile && (profile.role === "admin" || profile.role === "professor" || profile.secondary_role === "professor");
-  if (!isStaff) return new NextResponse("Not found", { status: 404 });
+  if (!isLecturer(profile)) return new NextResponse("Not found", { status: 404 });
 
   const { id } = await params;
   const admin = createAdminClient();

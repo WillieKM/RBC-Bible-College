@@ -68,14 +68,13 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
     .filter((p) => !p.parent_id)
     .sort((a, b) => Number(b.pinned) - Number(a.pinned) || lastActivity(b).localeCompare(lastActivity(a)));
 
-  const isAdmin = viewer.role === "admin";
-  const canDelete = (p: Post) => isAdmin || p.author_id === viewer.id;
+  const canDelete = (p: Post) => p.author_id === viewer.id;
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-slate-900">Staff Room</h1>
       <p className="mt-1 text-sm text-slate-500">
-        A private space for lecturers and administrators. Students can&apos;t see anything here.
+        A private space for lecturers only. Students and administrators can&apos;t see anything here.
       </p>
 
       {error && (
@@ -102,17 +101,15 @@ export async function StaffRoomBoard({ viewer, error }: { viewer: Profile; error
                   <h3 className="font-semibold text-slate-900">{t.title}</h3>
                   <p className="text-xs text-slate-400">
                     {t.author?.full_name ?? "Former staff"}
-                    {t.author?.role === "admin" ? " · Admin" : ""} · {when(t.created_at)}
+                    · {when(t.created_at)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  {isAdmin && (
-                    <form action={togglePinStaffPost}>
-                      <input type="hidden" name="id" value={t.id} />
-                      <input type="hidden" name="pinned" value={String(t.pinned)} />
-                      <button className="text-xs font-medium text-slate-500 hover:text-gold-dark">{t.pinned ? "Unpin" : "Pin"}</button>
-                    </form>
-                  )}
+                  <form action={togglePinStaffPost}>
+                    <input type="hidden" name="id" value={t.id} />
+                    <input type="hidden" name="pinned" value={String(t.pinned)} />
+                    <button className="text-xs font-medium text-slate-500 hover:text-gold-dark">{t.pinned ? "Unpin" : "Pin"}</button>
+                  </form>
                   {canDelete(t) && (
                     <form action={deleteStaffPost}>
                       <input type="hidden" name="id" value={t.id} />

@@ -1,5 +1,10 @@
 // Shared by server and client code — keep this file free of server-only imports.
 
+// Staff Room membership: lecturers only (main or secondary role), not admins.
+export function isLecturer(p: { role: string; secondary_role: string | null } | null | undefined): boolean {
+  return !!p && (p.role === "professor" || p.secondary_role === "professor");
+}
+
 export const STAFF_FILES_BUCKET = "submissions";
 export const STAFF_FILE_MAX_BYTES = 50 * 1024 * 1024;
 export const STAFF_MAX_FILES = 5;
