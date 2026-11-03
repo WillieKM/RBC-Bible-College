@@ -46,7 +46,8 @@ async function recordFailedAttempt(ip: string, email: string) {
 }
 
 export async function login(formData: FormData) {
-  const email = String(formData.get("email") || "");
+  // Trim/lowercase: phone keyboards often add a trailing space on autocomplete.
+  const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const returnTo = String(formData.get("returnTo") || "").trim();
 
@@ -107,7 +108,7 @@ export async function logout() {
 }
 
 export async function sendPasswordReset(formData: FormData) {
-  const email = String(formData.get("email") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
 
   const ip = await getClientIp();
   if (await isRateLimited(ip, RESET_RATE_MAX)) {
@@ -116,12 +117,14 @@ export async function sendPasswordReset(formData: FormData) {
 
   const admin = createAdminClient();
 
-  // Only allow resets for emails that exist in our profiles table
-  const { data: profile } = await admin
+  // Only allow resets for emails that exist in our profiles table. Case-insensitive:
+  // stored emails may have capitals, and an exact match silently sent nothing.
+  const { data: matches } = await admin
     .from("profiles")
     .select("id, full_name")
-    .eq("email", email)
-    .maybeSingle();
+    .ilike("email", email.replace(/[%_\\]/g, "\\$&"))
+    .limit(1);
+  const profile = matches?.[0] ?? null;
 
   if (!profile) {
     // Don't reveal whether the email is registered
@@ -149,9 +152,21 @@ export async function sendPasswordReset(formData: FormData) {
 
 export async function updatePassword(formData: FormData) {
   const password = String(formData.get("password") || "");
+  // From the reset page, errors must stay there: /settings needs a session,
+  // which is exactly what may be missing if the reset link didn't take.
+  const fromReset = formData.get("from") === "reset";
+  const errorPage = fromReset ? "/settings/new-password" : "/settings";
+  if (password.length < 8) {
+    redirect(`${errorPage}?error=${encodeURIComponent("Password must be at least 8 characters.")}`);
+  }
+
   const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
+    redirect(`${errorPage}?error=${encodeURIComponent("Your reset link has expired. Please request a new one.")}`);
+  }
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`${errorPage}?error=${encodeURIComponent(error.message)}`);
   redirect("/settings?pw_saved=1");
 }
 

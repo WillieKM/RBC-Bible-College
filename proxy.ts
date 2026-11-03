@@ -11,6 +11,12 @@ const ROLE_PREFIXES: Record<string, string> = {
 // Routes requiring any authenticated user with a profile
 const AUTH_PREFIXES = ["/settings"];
 
+// Under /settings but must work while logged out: the password-reset link lands
+// here with a one-time token that the page itself exchanges for a session.
+// Gating it sent every resetting user to /login, so their password was never
+// changed and their "new" password was rejected.
+const PUBLIC_PATHS = ["/settings/new-password"];
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -45,7 +51,8 @@ export async function proxy(request: NextRequest) {
   };
 
   const protectedPrefix = Object.keys(ROLE_PREFIXES).find((p) => pathname.startsWith(p));
-  const isAuthOnly = AUTH_PREFIXES.some((p) => pathname.startsWith(p));
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isAuthOnly = !isPublic && AUTH_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (protectedPrefix || isAuthOnly) {
     // Must be authenticated

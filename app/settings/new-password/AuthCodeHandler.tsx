@@ -13,6 +13,8 @@ export function AuthCodeHandler() {
   const [errorDetail, setErrorDetail] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Set by updatePassword when saving failed (e.g. too short, link expired).
+  const submitError = searchParams.get("error");
 
   useEffect(() => {
     const supabase = createClient();
@@ -80,6 +82,10 @@ export function AuthCodeHandler() {
   if (status === "ready" || status === "authenticated") {
     return (
       <form action={updatePassword} className="mt-6 space-y-4">
+        <input type="hidden" name="from" value="reset" />
+        {submitError && (
+          <div className="rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">{submitError}</div>
+        )}
         <PasswordField label="New password" />
         <p className="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
         <button
@@ -96,7 +102,7 @@ export function AuthCodeHandler() {
   return (
     <div className="mt-6 space-y-3">
       <div className="rounded-lg bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">
-        This link has expired or already been used.
+        {submitError ?? "This link has expired or already been used."}
         {errorDetail && <p className="mt-1 text-xs opacity-70">{errorDetail}</p>}
       </div>
       <a
