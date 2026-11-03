@@ -95,6 +95,7 @@ export function studentNavGroups(profile: Profile, programLevel?: ProgramLevel |
     {
       label: "Community",
       links: [
+        { href: "/student/qa", label: "Q&A" },
         { href: "/student/announcements", label: "Announcements" },
         { href: "/student/prayers", label: "Prayer Board" },
         { href: "/student/library", label: "Library" },
@@ -138,6 +139,7 @@ export function professorNavGroups(): NavGroup[] {
     {
       label: "Community",
       links: [
+        { href: "/professor/qa", label: "Q&A" },
         { href: "/professor/staff-room", label: "Staff Room" },
         { href: "/professor/announcements", label: "Announcements" },
         { href: "/professor/prayers", label: "Prayer Board" },
