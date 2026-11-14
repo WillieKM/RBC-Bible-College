@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { ModuleSearch } from "@/components/ModuleSearch";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
-import { studentAudienceFilter } from "@/lib/module-audience";
+
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -22,18 +22,19 @@ export default async function StudentModulesPage() {
     programLevel = prog?.program_level ?? null;
   }
 
-  // Show modules sent to "all" or specifically to this student's program level
-  let query = supabase
+  // Fetch all modules and filter client-side to avoid PostgREST .or() null-check quirks
+  const { data } = await supabase
     .from("module_files")
     .select("*")
     .order("sent_at", { ascending: false, nullsFirst: false });
 
-  // Only modules for everyone, this student's level, or this student's program.
-  query = query.or(studentAudienceFilter(programLevel, profile.program_id));
-
-  const { data } = await query;
-
-  const modules = (data ?? []) as ModuleFile[];
+  const modules = ((data ?? []) as ModuleFile[]).filter((m) => {
+    const aud = m.send_audience;
+    if (aud?.startsWith("prof:")) return false;
+    if (!aud || aud === "all") return true;
+    if (programLevel && aud === programLevel) return true;
+    return false;
+  });
   const now = Date.now();
 
   const current  = modules.filter((m) => m.sent_at && now - new Date(m.sent_at).getTime() <= TWO_WEEKS_MS);
