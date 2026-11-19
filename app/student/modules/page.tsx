@@ -31,6 +31,7 @@ export default async function StudentModulesPage() {
     const aud = m.send_audience;
     if (aud?.startsWith("prof:")) return false;
     if (!aud || aud === "all") return true;
+    if (profile.program_id && aud === `program:${profile.program_id}`) return true;
     if (programLevel && aud === programLevel) return true;
     return false;
   });
