@@ -1,20 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { ModuleSearch } from "@/components/ModuleSearch";
 import Link from "next/link";
 import type { ModuleFile } from "@/lib/types";
 
-
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default async function StudentModulesPage() {
   const profile = await requireRole(["student"]);
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
   // Resolve the student's program level so we can filter modules correctly
   let programLevel: string | null = null;
   if (profile.program_id) {
-    const { data: prog } = await supabase
+    const { data: prog } = await admin
       .from("programs")
       .select("program_level")
       .eq("id", profile.program_id)
@@ -22,8 +21,8 @@ export default async function StudentModulesPage() {
     programLevel = prog?.program_level ?? null;
   }
 
-  // Fetch all modules and filter client-side to avoid PostgREST .or() null-check quirks
-  const { data } = await supabase
+  // Use admin client to bypass RLS — audience filtering is enforced below in JS
+  const { data } = await admin
     .from("module_files")
     .select("*")
     .order("sent_at", { ascending: false, nullsFirst: false });
