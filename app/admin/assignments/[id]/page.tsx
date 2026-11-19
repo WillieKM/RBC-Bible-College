@@ -44,15 +44,29 @@ export default async function AdminAssignmentDetailPage({
     .eq("assignment_id", id)
     .order("submitted_at", { ascending: false });
 
-  const { data: enrollments } = course
-    ? await admin
-        .from("enrollments")
-        .select("student_id, profiles:student_id(full_name, student_number)")
-        .eq("course_id", course.id)
-    : { data: [] };
+  type EnrollmentRow = { student_id: string; profiles: unknown };
+  let enrollments: EnrollmentRow[] = [];
+  if (course) {
+    const { data: enrData } = await admin
+      .from("enrollments")
+      .select("student_id, profiles:student_id(full_name, student_number)")
+      .eq("course_id", course.id);
+    enrollments = (enrData ?? []) as EnrollmentRow[];
+  }
 
   const submittedIds = new Set((submissions ?? []).map((s) => s.student_id));
-  const notSubmitted = (enrollments ?? []).filter((e) => !submittedIds.has(e.student_id));
+  const notSubmitted = enrollments.filter((e) => !submittedIds.has(e.student_id));
+
+  // Resolve signed URLs for file submissions (stored as bucket paths, not full URLs)
+  const signedUrls = new Map<string, string>();
+  await Promise.all(
+    (submissions ?? [])
+      .filter((s) => s.file_url && !s.file_url.startsWith("http"))
+      .map(async (s) => {
+        const { data } = await admin.storage.from("submissions").createSignedUrl(s.file_url!, 60 * 60);
+        if (data?.signedUrl) signedUrls.set(s.id, data.signedUrl);
+      })
+  );
 
   const aiSuggestedFor = ai_for ?? null;
   const aiGrade = ai_grade ? Number(ai_grade) : null;
@@ -178,7 +192,7 @@ export default async function AdminAssignmentDetailPage({
                     )}
                     {sub.file_url && !sub.content && (
                       <a
-                        href={sub.file_url}
+                        href={signedUrls.get(sub.id) ?? sub.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-2 inline-block text-sm text-gold-dark hover:underline"
