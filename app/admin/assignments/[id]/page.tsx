@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { adminGradeSubmission } from "@/lib/actions/admin";
+import { adminGradeSubmission, adminSetStudentGrade } from "@/lib/actions/admin";
 import { gradeWithAI } from "@/lib/actions/ai-grading";
 import { DeleteButton } from "@/components/DeleteButton";
 import Link from "next/link";
@@ -43,6 +43,16 @@ export default async function AdminAssignmentDetailPage({
     .select("id, student_id, content, file_url, grade, feedback, graded_at, submitted_at, profiles:student_id(full_name, student_number)")
     .eq("assignment_id", id)
     .order("submitted_at", { ascending: false });
+
+  const { data: enrollments } = course
+    ? await admin
+        .from("enrollments")
+        .select("student_id, profiles:student_id(full_name, student_number)")
+        .eq("course_id", course.id)
+    : { data: [] };
+
+  const submittedIds = new Set((submissions ?? []).map((s) => s.student_id));
+  const notSubmitted = (enrollments ?? []).filter((e) => !submittedIds.has(e.student_id));
 
   const aiSuggestedFor = ai_for ?? null;
   const aiGrade = ai_grade ? Number(ai_grade) : null;
@@ -128,7 +138,12 @@ export default async function AdminAssignmentDetailPage({
       )}
 
       {/* Submissions */}
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">Submissions</h2>
+      <h2 className="mt-8 text-lg font-semibold text-slate-800">
+        Submissions
+        <span className="ml-2 text-sm font-normal text-slate-400">
+          {(submissions ?? []).length} submitted · {notSubmitted.length} pending
+        </span>
+      </h2>
       {(submissions ?? []).length === 0 ? (
         <p className="mt-3 text-sm text-slate-400">No submissions yet.</p>
       ) : (
@@ -191,7 +206,7 @@ export default async function AdminAssignmentDetailPage({
 
                 {/* Manual grade form */}
                 <div className="border-t border-slate-100 px-5 py-3">
-                  <form action={adminGradeSubmission} className="flex flex-wrap items-end gap-3">
+                  <form action={adminSetStudentGrade} className="flex flex-wrap items-end gap-3">
                     <input type="hidden" name="submission_id" value={sub.id} />
                     <input type="hidden" name="assignment_id" value={id} />
                     <div>
@@ -235,6 +250,62 @@ export default async function AdminAssignmentDetailPage({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Not yet submitted */}
+      {notSubmitted.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-slate-800">
+            Not Yet Submitted
+            <span className="ml-2 text-sm font-normal text-slate-400">({notSubmitted.length})</span>
+          </h2>
+          <p className="mt-1 text-xs text-slate-400">Enter a grade directly — a submission record will be created on save.</p>
+          <div className="mt-3 space-y-2">
+            {notSubmitted.map((enr) => {
+              const student = enr.profiles as unknown as { full_name: string; student_number: string | null } | null;
+              return (
+                <div key={enr.student_id} className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900">{student?.full_name ?? "Unknown"}</p>
+                      {student?.student_number && (
+                        <p className="text-xs text-slate-400">{student.student_number}</p>
+                      )}
+                    </div>
+                    <form action={adminSetStudentGrade} className="flex flex-wrap items-end gap-3">
+                      <input type="hidden" name="student_id" value={enr.student_id} />
+                      <input type="hidden" name="assignment_id" value={id} />
+                      <div>
+                        <label className="block text-xs text-slate-500">Grade (pts)</label>
+                        <input
+                          name="grade"
+                          type="number"
+                          min={0}
+                          max={assignment.points_possible ?? undefined}
+                          placeholder="0"
+                          className="mt-1 w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[160px]">
+                        <label className="block text-xs text-slate-500">Feedback</label>
+                        <input
+                          name="feedback"
+                          className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                          placeholder="Optional"
+                        />
+                      </div>
+                      <DeleteButton
+                        label="Save Grade"
+                        pendingLabel="Saving…"
+                        className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                      />
+                    </form>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

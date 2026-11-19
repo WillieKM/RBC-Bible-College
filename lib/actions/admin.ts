@@ -1073,3 +1073,27 @@ export async function adminGradeSubmission(formData: FormData) {
     .eq("id", submissionId);
   revalidatePath(`/admin/assignments/${assignmentId}`);
 }
+
+export async function adminSetStudentGrade(formData: FormData) {
+  await requireRole(["admin"]);
+  const admin = createAdminClient();
+  const submissionId = String(formData.get("submission_id") || "");
+  const studentId = String(formData.get("student_id") || "");
+  const assignmentId = String(formData.get("assignment_id") || "");
+  const gradeRaw = formData.get("grade");
+  const feedback = String(formData.get("feedback") || "").trim() || null;
+  if (gradeRaw === null || gradeRaw === "") return;
+  const grade = Number(gradeRaw);
+
+  if (submissionId) {
+    await admin.from("submissions")
+      .update({ grade, feedback, graded_at: new Date().toISOString() })
+      .eq("id", submissionId);
+  } else if (studentId && assignmentId) {
+    await admin.from("submissions").upsert(
+      { student_id: studentId, assignment_id: assignmentId, content: "", grade, feedback, graded_at: new Date().toISOString(), submitted_at: new Date().toISOString() },
+      { onConflict: "student_id,assignment_id" }
+    );
+  }
+  revalidatePath(`/admin/assignments/${assignmentId}`);
+}
